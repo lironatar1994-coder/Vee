@@ -10,7 +10,7 @@ import {
 import DatePickerDropdown from './DatePickerDropdown';
 import TimePickerDropdown from './TimePickerDropdown';
 import SmartInput from './SmartInput';
-import { renderFormattedDate, TIME_OPTIONS, repeatOptions, repeatLabels, getFullDateDisplay } from './TaskComponents/index.jsx';
+import { renderFormattedDate, TIME_OPTIONS, repeatOptions, repeatLabels, getFullDateDisplay, getDateDisplayInfo } from './TaskComponents/index.jsx';
 import ProjectSelectorDropdown from './TaskComponents/ProjectSelectorDropdown';
 import ActionMenu from './TaskComponents/ActionMenu';
 import SortableTaskItem from './TaskComponents/SortableTaskItem';
@@ -638,7 +638,14 @@ export default function TaskEditModal({
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                             <CalendarIcon size={18} />
-                            <span>{formattedDateString}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
+                                <span>{formattedDateString}</span>
+                                {item.last_completed_date && (
+                                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', opacity: 0.7, marginTop: '2px' }}>
+                                        הושלם לאחרונה: {getDateDisplayInfo(item.last_completed_date).text}
+                                    </span>
+                                )}
+                            </div>
                             {repeatRule && <RefreshCw size={14} style={{ marginRight: '0.5rem' }} />}
                         </button>
                     </div>

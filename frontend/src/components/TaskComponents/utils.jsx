@@ -109,7 +109,7 @@ export const getFullDateDisplay = (targetDate, repeatRule, time = null) => {
     return { text: combinedText, color, isImportant };
 };
 
-export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null) => {
+export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null, showRecentlyCompleted = false) => {
     if (!targetDate && (!repeatRule || repeatRule === 'none') && reminderMinutes === null) return null;
 
     const today = new Date().toISOString().split('T')[0];
@@ -158,7 +158,7 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
                     {hasAlarm && <AlarmClock size={12} style={{ opacity: 0.8, marginLeft: '2px', color: 'var(--text-secondary)' }} />}
                 </span>
             )}
-            {lastCompletedDate && !wasCompletedToday && (
+            {showRecentlyCompleted && lastCompletedDate && !wasCompletedToday && (
                 <span style={{
                     fontSize: '10px',
                     color: 'var(--text-secondary)',

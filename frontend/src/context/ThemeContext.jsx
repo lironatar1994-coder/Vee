@@ -5,21 +5,11 @@ const ThemeContext = createContext();
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
-    const [theme, setTheme] = useState('light');
-
-    useEffect(() => {
-        // Check local storage or system preference
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme) {
-            setTheme(storedTheme);
-            document.documentElement.setAttribute('data-theme', storedTheme);
-        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            setTheme('dark');
-            document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
-    }, []);
+    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+ 
+     useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+     }, []);
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
