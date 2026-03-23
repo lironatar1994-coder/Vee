@@ -1,0 +1,326 @@
+/* --- FullCalendar Overrides --- */
+
+.calendar-wrapper-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* Ensure the wrapper uses the theme fonts */
+    font-family: var(--font-primary, inherit);
+    transition: background-color 0.25s ease;
+}
+
+.calendar-wrapper-container.is-over {
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.05);
+}
+
+.calendar-wrapper-container.is-over .fc-view-harness {
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.03);
+}
+
+/* Granular slot highlight */
+.fc-drop-highlight {
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.08) !important;
+    position: relative;
+    box-shadow: inset 2px 0 0 0 var(--primary-color) !important;
+    transition: background-color 0.05s ease;
+    z-index: 4;
+}
+
+.fc-drop-highlight-slot {
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.15) !important;
+    box-shadow: inset 0 0 0 2px var(--primary-color) !important;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.calendar-wrapper-container .fc {
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: var(--bg-secondary);
+    --fc-neutral-text-color: var(--text-secondary);
+    --fc-border-color: var(--border-color);
+
+    --fc-button-text-color: var(--text-primary);
+    --fc-button-bg-color: var(--bg-secondary);
+    --fc-button-border-color: var(--border-color);
+    --fc-button-hover-bg-color: var(--hover-bg);
+    --fc-button-hover-border-color: var(--border-color);
+    --fc-button-active-bg-color: var(--primary-color);
+    --fc-button-active-border-color: var(--primary-color);
+
+    --fc-event-bg-color: var(--bg-secondary);
+    --fc-event-border-color: var(--border-color);
+    --fc-event-text-color: var(--text-primary);
+
+    --fc-today-bg-color: rgba(var(--primary-rgb, 99, 102, 241), 0.05);
+
+    font-family: inherit;
+}
+
+/* Remove ugly borders on the main view wrap */
+.calendar-wrapper-container .fc-theme-standard td,
+.calendar-wrapper-container .fc-theme-standard th {
+    border-color: rgba(0, 0, 0, 0.03); /* Very faint horizontal lines */
+}
+
+.dark .calendar-wrapper-container .fc-theme-standard td,
+.dark .calendar-wrapper-container .fc-theme-standard th {
+    border-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Remove vertical dividing lines between days in weekly view */
+.calendar-wrapper-container .fc-timegrid-col {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.calendar-wrapper-container .fc-scrollgrid {
+    border: none !important;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+/* Day grid cells */
+.calendar-wrapper-container .fc-daygrid-day-top {
+    flex-direction: row;
+    /* Keep the number on the right in RTL */
+    padding: 4px;
+}
+
+/* Header toolbar styling */
+.calendar-wrapper-container .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.calendar-wrapper-container .fc .fc-button-primary {
+    border-radius: var(--radius-sm);
+    text-transform: capitalize;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: none !important;
+}
+
+.calendar-wrapper-container .fc .fc-button-primary:not(:disabled).fc-button-active,
+.calendar-wrapper-container .fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Day grid cells */
+.calendar-wrapper-container .fc-daygrid-day {
+    transition: background-color 0.2s ease;
+}
+
+.calendar-wrapper-container .fc-daygrid-day:hover {
+    background-color: rgba(var(--text-primary-rgb, 15, 23, 42), 0.02);
+}
+
+.calendar-wrapper-container .fc-daygrid-day-number {
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 4px 8px !important;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px;
+    text-decoration: none !important;
+}
+
+/* Today styling - handled by custom-day-header now, but keep fallback */
+.calendar-wrapper-container .fc-day-today .fc-daygrid-day-number {
+    color: white !important;
+    background-color: var(--primary-color) !important;
+    font-weight: 600;
+}
+
+.calendar-wrapper-container .fc-day-today {
+    background-color: transparent !important;
+    /* Remove full cell highlight */
+}
+
+/* Time grid */
+.calendar-wrapper-container .fc-timegrid-slot {
+    height: 80px !important; /* Increase the height of every hour block */
+}
+
+.calendar-wrapper-container .fc-timegrid-slot-label-cushion {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.6;
+    padding-left: 12px;
+}
+
+/* Current time indicator */
+.calendar-wrapper-container .fc-now-indicator-line {
+    border-color: #ff3b30; /* Prominent Apple-like red */
+    border-width: 1.5px 0 0;
+}
+
+.calendar-wrapper-container .fc-now-indicator-arrow {
+    border-color: #ff3b30;
+    background-color: #ff3b30;
+    border-width: 4px;
+    border-radius: 50%;
+    transform: translateY(-50%) translateX(50%);
+}
+
+/* General Event Overrides to strip defaults */
+.calendar-wrapper-container .fc-event {
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    margin: 0 !important; /* Make flush with grid */
+    box-shadow: none !important;
+}
+
+.calendar-wrapper-container .fc-event:hover {
+    z-index: 5 !important;
+}
+
+/* Custom indicator components (used in eventContent) */
+
+/* 1. Monthly View Pill */
+.fc-custom-event-month {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 6px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: all 0.2s;
+}
+
+/* 2. All-Day Block (Weekly/Daily) */
+.fc-custom-event-allday-block {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--primary-color);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    height: 100%;
+    width: 100%;
+}
+
+/* 3. Timed Block (Weekly/Daily) */
+.fc-custom-event-timed {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 6px;
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.12);
+    border-right: 3px solid var(--primary-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.8em;
+    color: var(--primary-color);
+    height: 100%;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.fc-custom-event-timed:hover {
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.18);
+}
+
+.fc-custom-event-timed .event-title {
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.fc-custom-event-timed .event-time {
+    color: var(--primary-color);
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+.is-completed {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+/* Header columns (Sun, Mon, Tue...) */
+.calendar-wrapper-container .fc-col-header-cell-cushion {
+    padding: 0;
+    width: 100%;
+}
+
+/* Two-line modern day header */
+.custom-day-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 10px 0;
+}
+
+.custom-day-header .day-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+}
+
+.custom-day-header .date-number {
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.custom-day-header .date-number.is-today {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb, 99, 102, 241), 0.4);
+}
+
+/* More tasks link */
+.calendar-wrapper-container .fc-daygrid-more-link {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary-color) !important;
+    background: rgba(var(--primary-rgb, 99, 102, 241), 0.08);
+    padding: 3px 8px;
+    border-radius: 10px;
+    display: inline-block;
+    margin: 2px 4px;
+    transition: all 0.2s ease;
+    text-decoration: none !important;
+}
+
+.calendar-wrapper-container .fc-daygrid-more-link:hover {
+    background: rgba(var(--primary-rgb, 99, 102, 241), 0.15);
+    transform: translateY(-1px);
+}
+
+/* Hide the default FullCalendar popover visually without breaking its layout calculations */
+.fc-popover {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}

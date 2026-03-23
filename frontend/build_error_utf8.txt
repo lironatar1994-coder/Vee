@@ -1,0 +1,61 @@
+﻿
+> vee@0.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 54 modules transformed.
+node.exe : [31mx[39m Build failed in 438ms
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: 
+    ([31mx[39m Build failed in 438ms:Str  
+  ing) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommand 
+   Error
+ 
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 1 
+error:
+C:/Users/liron/100_Blessings/frontend/src/co
+mponents/Sidebar.jsx:10:4: ERROR: The 
+symbol "KeyboardSensor" has already been 
+declared[31m
+file: [36mC:/Users/liron/100_Blessings/fron
+tend/src/components/Sidebar.jsx:10:4[31m
+[33m
+[33mThe symbol "KeyboardSensor" has 
+already been declared[33m
+8  |      pointerWithin,
+9  |      KeyboardSensor,
+10 |      KeyboardSensor,
+   |      ^
+11 |      MouseSensor,
+12 |      useSensor,
+[31m
+    at failureErrorWithLog (C:\Users\liron\1
+00_Blessings\frontend\node_modules\esbuild\l
+ib\main.js:1472:15)
+    at C:\Users\liron\100_Blessings\frontend
+\node_modules\esbuild\lib\main.js:755:50
+    at responseCallbacks.<computed> (C:\User
+s\liron\100_Blessings\frontend\node_modules\
+esbuild\lib\main.js:622:9)
+    at handleIncomingPacket (C:\Users\liron\
+100_Blessings\frontend\node_modules\esbuild\
+lib\main.js:677:12)
+    at Socket.readFromStdout (C:\Users\liron
+\100_Blessings\frontend\node_modules\esbuild
+\lib\main.js:600:7)
+    at Socket.emit (node:events:508:28)
+    at addChunk 
+(node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode 
+(node:internal/streams/readable:510:3)
+    at Readable.push 
+(node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stre
+am_base_commons:189:23)[39m
