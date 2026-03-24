@@ -1370,7 +1370,7 @@ a:hover {
     opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[data-theme="dark"] .sidebar {
+[data-theme]:not([data-theme="light"]) .sidebar {
   box-shadow: none;
 }
 
@@ -2277,7 +2277,7 @@ textarea.form-control:focus {
   pointer-events: none;
 }
 
-[data-theme="dark"] .bg-orb {
+[data-theme]:not([data-theme="light"]) .bg-orb {
   opacity: 0.08;
 }
 
@@ -2316,7 +2316,7 @@ textarea.form-control:focus {
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02);
 }
 
-[data-theme="dark"] .sidebar {
+[data-theme]:not([data-theme="light"]) .sidebar {
   background: var(--sidebar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -2496,7 +2496,7 @@ textarea.form-control:focus {
   transform: translateY(0);
 }
 
-[data-theme="dark"] .global-fab-label {
+[data-theme]:not([data-theme="light"]) .global-fab-label {
   background: rgba(255, 255, 255, 0.15);
   color: white;
 }

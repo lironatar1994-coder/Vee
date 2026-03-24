@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useUser } from '../context/UserContext';
-import { User, Save, X, Settings, Bell, Palette, Layout, CreditCard, Trash2, ShieldCheck, HelpCircle, Users, UserPlus, Check, Search, Menu, LogOut } from 'lucide-react';
+import { User, Save, X, Settings, Bell, Palette, Layout, CreditCard, Trash2, ShieldCheck, HelpCircle, Users, UserPlus, Check, Search, Menu, LogOut, Moon, Sun, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTheme } from '../context/ThemeContext';
 import { subscribeToPushNotifications, unsubscribeFromPushNotifications } from '../services/NotificationService';
 
 const API_URL = '/api';
 
 const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     const { user, updateUser, logout } = useUser();
+    const { theme, changeTheme } = useTheme();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [avatarPreview, setAvatarPreview] = useState(null);
@@ -516,8 +518,81 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                 </div>
                             )}
 
+                            {/* Theme (עיצוב) Tab */}
+                            {activeTab === 'theme' && (
+                                <div className="fade-in">
+                                    <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>בחר ערכת נושא</h3>
+                                    <div style={{ 
+                                        display: 'grid', 
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+                                        gap: '1rem' 
+                                    }}>
+                                        {[
+                                            { id: 'light', label: 'בהיר', color: '#FFFFFF', icon: Sun },
+                                            { id: 'dark', label: 'כהה', color: '#1E293B', icon: Moon },
+                                            { id: 'relaxed', label: 'רגוע', color: '#FAF9F7', icon: Sparkles },
+                                            { id: 'midnight', label: 'חצות', color: '#020617', icon: Sparkles },
+                                            { id: 'forest', label: 'יער', color: '#064E3B', icon: Sparkles },
+                                            { id: 'sunset', label: 'שקיעה', color: '#4C1D95', icon: Sparkles },
+                                        ].map(t => (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => changeTheme(t.id)}
+                                                className={`theme-swatch ${theme === t.id ? 'active' : ''}`}
+                                                style={{
+                                                    padding: '1rem',
+                                                    borderRadius: '12px',
+                                                    border: `2px solid ${theme === t.id ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                                                    background: 'var(--bg-secondary)',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    gap: '0.75rem',
+                                                    transition: 'all 0.2s ease',
+                                                    boxShadow: theme === t.id ? '0 4px 12px rgba(var(--primary-rgb), 0.2)' : 'none',
+                                                    transform: theme === t.id ? 'scale(1.02)' : 'scale(1)'
+                                                }}
+                                            >
+                                                <div style={{
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    borderRadius: '50%',
+                                                    background: t.color,
+                                                    border: '1px solid var(--border-color)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: t.id === 'light' ? '#475569' : '#FFFFFF'
+                                                }}>
+                                                    <t.icon size={20} />
+                                                </div>
+                                                <span style={{ 
+                                                    fontSize: '0.9rem', 
+                                                    fontWeight: 600, 
+                                                    color: 'var(--text-primary)' 
+                                                }}>{t.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ 
+                                        marginTop: '3rem', 
+                                        padding: '1.5rem', 
+                                        background: 'rgba(var(--primary-rgb), 0.05)', 
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--border-color)'
+                                    }}>
+                                        <h4 style={{ margin: '0 0 0.5rem', color: 'var(--primary-color)' }}>טיפ לעיצוב</h4>
+                                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                                            שינוי ערכת הנושא משפיע על כל חלקי האפליקציה. אנחנו ממליצים על גרסת ה"חצות" לעבודה בלילה כדי לשמור על העיניים.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Other Tabs Placeholder */}
-                            {activeTab !== 'account' && activeTab !== 'notifications' && (
+                            {activeTab !== 'account' && activeTab !== 'notifications' && activeTab !== 'theme' && (
                                 <div className="fade-in" style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
                                     <Settings size={48} opacity={0.2} style={{ margin: '0 auto 1rem' }} />
                                     <h3>אזור בבנייה</h3>

@@ -1,0 +1,118 @@
+/* 
+ * Multi-Theme System (themes.css)
+ * Premium, smooth color-shifting system.
+ */
+
+/* Global Theme Transition */
+html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .settings-sidebar, .settings-main-area, .card, .task-item, .nav-link, .btn, input, textarea {
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light Theme (Already defined in index.css :root, but ensuring base) */
+[data-theme="light"] {
+  --bg-color: #FFFFFF;
+  --bg-secondary: #FFFFFF;
+  --bg-inset: #F8F9FA;
+  --text-primary: #020617;
+  --text-secondary: #475569;
+}
+
+/* Dark Theme (Slate/Indigo) */
+[data-theme="dark"] {
+  --bg-color: #0F172A;
+  --bg-secondary: #1E293B;
+  --bg-inset: #020617;
+  --sidebar-bg: #0F172A;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --primary-color: #6366F1;
+  --primary-hover: #4F46E5;
+  --accent-color: #38BDF8;
+  --border-color: #334155;
+  --hover-bg: #1E293B;
+  --sidebar-active-bg: #312E81;
+  --sidebar-active-text: #E0E7FF;
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(51, 65, 85, 0.5);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Midnight Theme (Deep Obsidian) */
+[data-theme="midnight"] {
+  --bg-color: #020617;
+  --bg-secondary: #0F172A;
+  --bg-inset: #000000;
+  --sidebar-bg: #020617;
+  --text-primary: #F1F5F9;
+  --text-secondary: #64748B;
+  --primary-color: #818CF8;
+  --primary-hover: #A5B4FC;
+  --accent-color: #C084FC;
+  --border-color: #1E293B;
+  --hover-bg: #1E293B;
+  --sidebar-active-bg: #4338CA;
+  --sidebar-active-text: #FFFFFF;
+  --glass-bg: rgba(2, 6, 23, 0.8);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Forest Theme (Deep Emerald) */
+[data-theme="forest"] {
+  --bg-color: #064E3B;
+  --bg-secondary: #065F46;
+  --bg-inset: #022C22;
+  --sidebar-bg: #064E3B;
+  --text-primary: #ECFDF5;
+  --text-secondary: #6EE7B7;
+  --primary-color: #10B981;
+  --primary-hover: #34D399;
+  --accent-color: #FCD34D;
+  --border-color: #065F46;
+  --hover-bg: #065F46;
+  --sidebar-active-bg: #065F46;
+  --sidebar-active-text: #FFFFFF;
+  --glass-bg: rgba(6, 78, 59, 0.8);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Sunset Theme (Warm Amber/Purple) */
+[data-theme="sunset"] {
+  --bg-color: #4C1D95;
+  --bg-secondary: #5B21B6;
+  --bg-inset: #2E1065;
+  --sidebar-bg: #4C1D95;
+  --text-primary: #FFF7ED;
+  --text-secondary: #FDBA74;
+  --primary-color: #F59E0B;
+  --primary-hover: #FBBF24;
+  --accent-color: #EC4899;
+  --border-color: #6D28D9;
+  --hover-bg: #6D28D9;
+  --sidebar-active-bg: #7C3AED;
+  --sidebar-active-text: #FFFFFF;
+  --glass-bg: rgba(76, 29, 149, 0.8);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Relaxed Theme (Beige/Soft Blue) */
+[data-theme="relaxed"] {
+  --bg-color: #FAF9F7;
+  --bg-secondary: #FFFFFF;
+  --bg-inset: #EFEEEC;
+  --sidebar-bg: #EFEEEC;
+  --text-primary: #052565;
+  --text-secondary: #475569;
+  --primary-color: #052565;
+  --primary-hover: #0F426F;
+  --accent-color: #6366F1;
+  --border-color: #E2E8F0;
+  --hover-bg: #D1E1F8;
+  --sidebar-active-bg: #D1E1F8;
+  --sidebar-active-text: #0F426F;
+  --glass-bg: rgba(250, 249, 247, 0.9);
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

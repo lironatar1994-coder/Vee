@@ -599,6 +599,26 @@ const Today = () => {
     return (
         <TaskPageLayout
             title="היום"
+            titleContent={
+                <div style={{
+                    transition: 'all 0.35s ease',
+                    opacity: Math.max(0, 1 - Math.max(0, scrollTop) / 60),
+                    transform: `translateY(${Math.max(0, scrollTop) * 0.15}px)`
+                }}>
+                    <h1
+                        style={{
+                            margin: 0,
+                            fontSize: '28px',
+                            fontWeight: 700,
+                            color: 'var(--text-primary)',
+                            letterSpacing: '-0.5px',
+                            display: 'inline-block'
+                        }}
+                    >
+                        היום
+                    </h1>
+                </div>
+            }
             headerActions={null}
             onScroll={setScrollTop}
             externalScrollTop={scrollTop}

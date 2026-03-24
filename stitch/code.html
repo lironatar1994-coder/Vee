@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Atelier Taskmaster - Today</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-fixed-variant": "#39485b",
+              "primary": "#0f426f",
+              "surface": "#faf9f7",
+              "surface-variant": "#e3e2e0",
+              "on-surface": "#1a1c1b",
+              "secondary": "#515f73",
+              "tertiary-fixed": "#ffdea8",
+              "on-primary": "#ffffff",
+              "primary-fixed-dim": "#a0cafe",
+              "on-secondary-fixed": "#0d1c2d",
+              "error": "#ba1a1a",
+              "error-container": "#ffdad6",
+              "on-tertiary": "#ffffff",
+              "secondary-fixed": "#d4e4fb",
+              "surface-container-highest": "#e3e2e0",
+              "outline": "#737780",
+              "secondary-fixed-dim": "#b8c8df",
+              "surface-bright": "#faf9f7",
+              "tertiary": "#573c00",
+              "background": "#faf9f7",
+              "on-tertiary-fixed": "#271900",
+              "on-primary-fixed": "#001d36",
+              "surface-dim": "#dadad8",
+              "on-primary-container": "#aed1ff",
+              "surface-tint": "#35618f",
+              "tertiary-fixed-dim": "#eebf6b",
+              "on-secondary": "#ffffff",
+              "on-error": "#ffffff",
+              "on-error-container": "#93000a",
+              "surface-container-high": "#e9e8e6",
+              "surface-container": "#efeeec",
+              "primary-container": "#2e5a88",
+              "inverse-on-surface": "#f1f1ef",
+              "on-primary-fixed-variant": "#194976",
+              "primary-fixed": "#d2e4ff",
+              "on-background": "#1a1c1b",
+              "inverse-surface": "#2f3130",
+              "on-tertiary-container": "#f7c872",
+              "secondary-container": "#d1e1f8",
+              "outline-variant": "#c2c7d0",
+              "surface-container-lowest": "#ffffff",
+              "on-secondary-container": "#556478",
+              "inverse-primary": "#a0cafe",
+              "surface-container-low": "#f4f3f1",
+              "on-tertiary-fixed-variant": "#5e4200",
+              "tertiary-container": "#745202",
+              "on-surface-variant": "#42474f"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .task-checkbox:checked + .checkbox-custom {
+            background-color: #0f426f;
+            border-color: #0f426f;
+        }
+        .task-checkbox:checked + .checkbox-custom::after {
+            content: 'check';
+            font-family: 'Material Symbols Outlined';
+            color: white;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface flex min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="hidden md:flex flex-col p-6 space-y-2 bg-[#efeeec] h-screen w-64 left-0 sticky font-inter text-sm font-medium tonal-shift">
+<div class="flex items-center space-x-3 mb-8 px-2">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-sm" data-icon="architecture">architecture</span>
+</div>
+<div>
+<h2 class="text-lg font-extrabold text-[#0f426f] leading-none">My Workspace</h2>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">The Modern Atelier</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center space-x-3 px-4 py-2 bg-[#d1e1f8] text-[#0f426f] rounded-lg font-semibold transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-2 text-slate-600 hover:bg-[#e3e2e0] rounded-md transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+<span>Projects</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-2 text-slate-600 hover:bg-[#e3e2e0] rounded-md transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="checklist">checklist</span>
+<span>Tasks</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-2 text-slate-600 hover:bg-[#e3e2e0] rounded-md transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span>Calendar</span>
+</a>
+</nav>
+<button class="mt-6 flex items-center justify-center space-x-2 bg-gradient-to-br from-primary to-primary-container text-on-primary py-2.5 rounded-xl shadow-sm hover:opacity-90 transition-all">
+<span class="material-symbols-outlined text-lg" data-icon="add_circle">add_circle</span>
+<span class="font-semibold">Quick Add Task</span>
+</button>
+<div class="pt-8 space-y-1 border-t border-outline-variant/20">
+<a class="flex items-center space-x-3 px-4 py-2 text-slate-600 hover:bg-[#e3e2e0] rounded-md transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-2 text-slate-600 hover:bg-[#e3e2e0] rounded-md transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span>Help</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-h-screen relative">
+<!-- Top Navigation Bar -->
+<header class="w-full top-0 sticky z-30 bg-[#faf9f7] flex justify-between items-center px-8 py-4 max-w-full no-border font-manrope tracking-tight font-semibold">
+<div class="flex items-center space-x-4">
+<h1 class="text-xl font-bold text-[#0f426f]">Today</h1>
+<span class="text-slate-400 font-medium text-sm">Oct 24</span>
+</div>
+<div class="flex items-center space-x-6">
+<div class="hidden lg:flex items-center bg-surface-container-low px-4 py-2 rounded-full w-64">
+<span class="material-symbols-outlined text-outline mr-2 text-xl" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-outline/60" placeholder="Search tasks..." type="text"/>
+</div>
+<div class="flex items-center space-x-3">
+<button class="p-2 rounded-full hover:bg-[#f4f3f1] text-[#0f426f] transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Close up portrait of a professional man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC92SzFfUnnU0aoi6r13pxTD0_36gqTpMPXnDDe9j6igIdmSH-TH84zmUHY_SP4P4iIxnvrtPi8ZcdKjNfVSyRssVo28PaScAsJu_RdtaQmZFzn5sCwCqJamPmABacBhflnO3ATXni1VzPc_gJmJNSI1ePiTiS8I02VqC8-bRX9OKpeSO-UI6-wZ_iqatm2RH-Hh_V5rTzgXz5H0WSuOHChjaKnQTRXGOfctvw-ELvZWmsjCyhF9NW7ByBJSLgJx_ZSER7Fujpee00"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Task Content -->
+<div class="px-8 md:px-16 py-8 max-w-5xl w-full mx-auto flex-1">
+<!-- Overdue Section -->
+<section class="mb-12">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-error font-headline font-bold text-sm uppercase tracking-widest">Overdue</h3>
+<button class="text-xs text-outline font-semibold hover:text-primary transition-colors">Reschedule All</button>
+</div>
+<div class="space-y-4">
+<!-- Overdue Task Card -->
+<div class="group flex items-center p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container-low transition-all duration-200">
+<label class="relative flex items-center cursor-pointer">
+<input class="task-checkbox hidden" type="checkbox"/>
+<span class="checkbox-custom w-5 h-5 border-2 border-error/30 rounded-full flex items-center justify-center transition-all"></span>
+</label>
+<div class="ml-4 flex-1">
+<h4 class="font-medium text-on-surface line-through decoration-transparent group-hover:decoration-current transition-all">Finalize Atelier Brand Guidelines</h4>
+<div class="flex items-center space-x-3 mt-1">
+<span class="text-[10px] font-bold uppercase tracking-tighter text-error flex items-center">
+<span class="material-symbols-outlined text-xs mr-1" data-icon="event_busy">event_busy</span>
+                                    Yesterday
+                                </span>
+<span class="text-[10px] font-bold uppercase tracking-tighter text-outline flex items-center">
+<span class="material-symbols-outlined text-xs mr-1" data-icon="tag">tag</span>
+                                    Branding
+                                </span>
+</div>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-2">
+<button class="p-1.5 text-outline hover:text-primary"><span class="material-symbols-outlined text-lg" data-icon="edit">edit</span></button>
+<button class="p-1.5 text-outline hover:text-primary"><span class="material-symbols-outlined text-lg" data-icon="more_horiz">more_horiz</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- Today Section -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-primary font-headline font-bold text-sm uppercase tracking-widest">Today</h3>
+<div class="flex items-center space-x-2">
+<button class="p-1.5 rounded-md hover:bg-surface-container text-outline transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="sort">sort</span>
+</button>
+</div>
+</div>
+<div class="space-y-2">
+<!-- Today Task 1 -->
+<div class="group flex items-center p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container-low transition-all duration-200">
+<label class="relative flex items-center cursor-pointer">
+<input class="task-checkbox hidden" type="checkbox"/>
+<span class="checkbox-custom w-5 h-5 border-2 border-outline-variant/40 rounded-full flex items-center justify-center transition-all"></span>
+</label>
+<div class="ml-4 flex-1">
+<h4 class="font-medium text-on-surface">Review client feedback for Project Orion</h4>
+<div class="flex items-center space-x-3 mt-1">
+<span class="text-[10px] font-bold uppercase tracking-tighter text-primary flex items-center">
+<span class="material-symbols-outlined text-xs mr-1" data-icon="schedule">schedule</span>
+                                    2:00 PM
+                                </span>
+<span class="text-[10px] font-bold uppercase tracking-tighter text-on-secondary-container flex items-center bg-secondary-container px-2 py-0.5 rounded-full">
+                                    Work
+                                </span>
+</div>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-2">
+<button class="p-1.5 text-outline hover:text-primary"><span class="material-symbols-outlined text-lg" data-icon="edit">edit</span></button>
+<button class="p-1.5 text-outline hover:text-primary"><span class="material-symbols-outlined text-lg" data-icon="more_horiz">more_horiz</span></button>
+</div>
+</div>
+<!-- Today Task 2 -->
+<div class="group flex items-center p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container-low transition-all duration-200">
+<label class="relative flex items-center cursor-pointer">
+<input class="task-checkbox hidden" type="checkbox"/>
+<span class="checkbox-custom w-5 h-5 border-2 border-outline-variant/40 rounded-full flex items-center justify-center transition-all"></span>
+</label>
+<div class="ml-4 flex-1">
+<h4 class="font-medium text-on-surface">Design system documentation update</h4>
+<div class="flex items-center space-x-3 mt-1">
+<span class="text-[10px] font-bold uppercase tracking-tighter text-outline flex items-center">
+<span class="material-symbols-outlined text-xs mr-1" data-icon="tag">tag</span>
+                                    Atelier
+                                </span>
+</div>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-2">
+<button class="p-1.5 text-outline hover:text-primary"><span class="material-symbols-outlined text-lg" data-icon="edit">edit</span></button>
+<button class="p-1.5 text-outline hover:text-primary"><span class="material-symbols-outlined text-lg" data-icon="more_horiz">more_horiz</span></button>
+</div>
+</div>
+<!-- Add Task Placeholder -->
+<button class="w-full flex items-center p-4 text-outline hover:text-primary transition-colors group">
+<span class="material-symbols-outlined mr-4 group-hover:scale-110 transition-transform" data-icon="add">add</span>
+<span class="font-medium text-sm">Add a task...</span>
+</button>
+</div>
+</section>
+<!-- Productivity Stats / Bento Insight -->
+<section class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 bg-gradient-to-br from-primary to-primary-container p-6 rounded-2xl text-on-primary flex flex-col justify-between min-h-[160px]">
+<div>
+<h5 class="font-headline font-bold text-lg">Weekly Momentum</h5>
+<p class="text-on-primary-container text-sm mt-1">You've completed 85% of your target tasks this week. Keep the flow!</p>
+</div>
+<div class="flex items-end justify-between">
+<div class="flex space-x-2">
+<div class="w-2 bg-on-primary/20 h-8 rounded-full"></div>
+<div class="w-2 bg-on-primary/40 h-12 rounded-full"></div>
+<div class="w-2 bg-on-primary/20 h-6 rounded-full"></div>
+<div class="w-2 bg-on-primary/80 h-16 rounded-full"></div>
+<div class="w-2 bg-on-primary/20 h-10 rounded-full"></div>
+<div class="w-2 bg-on-primary h-20 rounded-full"></div>
+</div>
+<span class="text-xs font-bold uppercase tracking-widest">Atelier Productivity</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-2xl flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary text-4xl mb-2" data-icon="eco" style="font-variation-settings: 'FILL' 1;">eco</span>
+<h5 class="font-headline font-bold text-primary">Focus Mode</h5>
+<p class="text-xs text-outline mt-1 px-4">Ready for a deep work session?</p>
+<button class="mt-4 text-xs font-bold uppercase text-primary border border-primary/20 px-4 py-2 rounded-full hover:bg-primary/5 transition-colors">Start Timer</button>
+</div>
+</section>
+</div>
+<!-- FAB (Floating Action Button) -->
+<button class="fixed bottom-8 right-8 md:bottom-12 md:right-12 w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all z-40">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+</main>
+<!-- Mobile Bottom Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-[#faf9f7]/80 backdrop-blur-xl z-50 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-slate-200/20">
+<a class="flex flex-col items-center justify-center bg-[#d1e1f8] text-[#0f426f] rounded-xl px-4 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-wider mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:opacity-80 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-wider mt-1">Projects</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:opacity-80 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="checklist">checklist</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-wider mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:opacity-80 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-wider mt-1">Calendar</span>
+</a>
+</nav>
+</body></html>
