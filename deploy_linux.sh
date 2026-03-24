@@ -14,8 +14,8 @@ echo -e "${BLUE}Starting deployment process for Vee...${NC}"
 # 0. Check for Puppeteer/Chromium dependencies (Common issue on headless servers)
 if command -v apt-get &> /dev/null; then
     echo -e "${BLUE}Checking for system dependencies (Chromium)...${NC}"
-    # Minimal set for headless chrome
-    sudo apt-get update -y && sudo apt-get install -y libnss3 libatk-bridge2.0-0 libx11-xcb1 libxcb-dri3-0 libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxi6 libxrandr2 libxrender1 libxtst6 libcups2 libdrm2 libgbm1 libasound2 libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0
+    # Minimal set for headless chrome, updated for Ubuntu 24.04 compatibility
+    sudo apt-get update -y && sudo apt-get install -y libnss3 libatk-bridge2.0-0 libx11-xcb1 libxcb-dri3-0 libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxi6 libxrandr2 libxrender1 libxtst6 libcups2 libdrm2 libgbm1 libasound2t64 libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0
 fi
 
 # Source NVM to ensure we use the correct Node version
