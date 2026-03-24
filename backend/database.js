@@ -316,9 +316,17 @@ const initDb = () => {
   if (tableInfoChecklistsMigration.some(col => col.name === 'active_days')) {
     try { db.exec('ALTER TABLE checklists DROP COLUMN active_days'); } catch (e) { console.error(e); }
   }
+  // Migration: Add whatsapp_enabled to users if missing
+  const hasWhatsappEnabled = tableInfoUsers.some(col => col.name === 'whatsapp_enabled');
+  if (!hasWhatsappEnabled) {
+    db.exec('ALTER TABLE users ADD COLUMN whatsapp_enabled BOOLEAN DEFAULT 0');
+  }
 
-
-
+  // Migration: Add whatsapp_last_sent_date to checklist_items if missing
+  const hasWhatsappLastSentDate = tableInfoItems.some(col => col.name === 'whatsapp_last_sent_date');
+  if (!hasWhatsappLastSentDate) {
+    db.exec('ALTER TABLE checklist_items ADD COLUMN whatsapp_last_sent_date TEXT');
+  }
 
   // Migration: Seed project_members for existing projects
   db.exec(`

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Calendar as CalendarIcon, RefreshCw, AlarmClock } from 'lucide-react';
+import ReminderBadge from './ReminderBadge';
+import { Calendar as CalendarIcon, RefreshCw } from 'lucide-react';
 
 export const API_URL = '/api';
 
@@ -109,7 +110,7 @@ export const getFullDateDisplay = (targetDate, repeatRule, time = null) => {
     return { text: combinedText, color, isImportant };
 };
 
-export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null, showRecentlyCompleted = false) => {
+export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null, showRecentlyCompleted = false, duration = null) => {
     if (!targetDate && (!repeatRule || repeatRule === 'none') && reminderMinutes === null) return null;
 
     const today = new Date().toISOString().split('T')[0];
@@ -125,37 +126,62 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
 
     const { text, color, diffDays } = dateInfo;
     
-    // Check if it was completed today
-    const wasCompletedToday = lastCompletedDate === today;
+    // Very robust checks
+    const hasTime = !!(time && typeof time === 'string' && time.trim() !== '' && time.trim().toLowerCase() !== 'null' && time.trim() !== 'ללא שעה');
+    const hasAlarm = (reminderMinutes !== null && reminderMinutes !== undefined);
     const isToday = diffDays === 0;
-    
-    // Logic: Hide "Today" text if hideToday is true. 
-    // BUT still show the icon and time if time is present.
-    const hasTime = time && time.trim() !== 'ללא שעה' && time.trim() !== '';
+    const isRecurring = !!(repeatRule && repeatRule !== 'none' && repeatRule !== 'null');
     const showDateText = !hideToday || !isToday;
-    const showCalendarIcon = (showDateText && text) || hasTime;
-    const isRecurring = repeatRule && repeatRule !== 'none';
-    const hasAlarm = reminderMinutes !== null;
 
-    // If nothing to show (hidden today, no time, no recurring, no alarm), return null
-    if (!showDateText && !hasTime && !isRecurring && !lastCompletedDate && !hasAlarm) return null;
+    // Time Formatting
+    let timeDisplay = hasTime ? time.trim() : null;
+    if (hasTime && duration && duration > 0) {
+        try {
+            const timeStr = time.trim();
+            const parts = timeStr.split(':');
+            if (parts.length >= 2) {
+                const hours = parseInt(parts[0], 10);
+                const minutes = parseInt(parts[1], 10);
+                const startDate = new Date();
+                startDate.setHours(hours, minutes, 0);
+                const endDate = new Date(startDate.getTime() + (duration || 0) * 60000);
+                timeDisplay = `${timeStr} - ${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    const shouldShowCalendarIcon = showDateText;
+
+    // Simplified hiding logic: only hide if truly nothing to show
+    if (!showDateText && !hasTime && !hasAlarm && !isRecurring && !lastCompletedDate) return null;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {(showCalendarIcon || isRecurring || hasAlarm) && (
+            {(showDateText || hasTime || isRecurring || hasAlarm) && (
                 <span style={{
                     color,
                     fontWeight: 400,
-                    fontSize: '12px',
+                    fontSize: '11px', 
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '5px',
+                    lineHeight: '1.2'
                 }}>
-                    {showCalendarIcon && <CalendarIcon size={12} />}
-                    {showDateText && text}
-                    {hasTime && <span style={{ marginRight: showDateText ? '4px' : '0' }}>{time}</span>}
-                    {isRecurring && <RefreshCw size={12} strokeWidth={3} style={{ opacity: 0.9, marginLeft: '2px' }} />}
-                    {hasAlarm && <AlarmClock size={12} style={{ opacity: 0.8, marginLeft: '2px', color: 'var(--text-secondary)' }} />}
+                    {shouldShowCalendarIcon && <CalendarIcon size={12} style={{ opacity: 0.8 }} />}
+                    {showDateText && <span>{text}</span>}
+                    {hasTime && (
+                        <span style={{ 
+                            fontWeight: 600, 
+                            color: isToday ? color : 'var(--text-primary)',
+                            background: isToday ? 'transparent' : 'rgba(var(--primary-rgb), 0.1)',
+                            padding: isToday ? '0' : '2px 6px',
+                            borderRadius: '4px'
+                        }}>
+                            {timeDisplay}
+                        </span>
+                    )}
+                    {isRecurring && <RefreshCw size={11} strokeWidth={3} style={{ opacity: 0.8 }} />}
+                    {hasAlarm && <ReminderBadge minutes={reminderMinutes} />}
                 </span>
             )}
             {showRecentlyCompleted && lastCompletedDate && !wasCompletedToday && (

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useUser } from '../context/UserContext';
 import {
     X, ChevronUp, ChevronDown, ChevronLeft, MoreHorizontal,
-    Calendar as CalendarIcon, AlarmClock, Tag, MapPin,
+    Calendar as CalendarIcon, Tag, MapPin,
     Flag, Plus, Trash2, CheckCircle, Circle, RefreshCw, Check,
     Home, List, MessageSquare, Paperclip, CheckSquare, Bell, Inbox, Folder, Send, Layout
 } from 'lucide-react';
@@ -807,7 +807,7 @@ export default function TaskEditModal({
                             onClick={() => setShowReminderMenu(!showReminderMenu)}
                             style={{
                                 ...actionRowStyle,
-                                color: reminderMinutes !== null ? 'var(--primary-color)' : 'var(--text-secondary)'
+                                color: reminderMinutes !== null ? 'var(--reminder-color)' : 'var(--text-secondary)'
                             }}
                             onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

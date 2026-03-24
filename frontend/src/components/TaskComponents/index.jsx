@@ -10,6 +10,4 @@ export { default as DailyTimelineView } from './DailyTimelineView';
 export { default as GlobalFAB } from '../GlobalFAB';
 export { GlobalFABOverlay } from '../GlobalFAB';
 export { default as CompletedTaskList } from './CompletedTaskList';
-
-
-
+export { default as ReminderBadge } from './ReminderBadge';

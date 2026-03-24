@@ -281,6 +281,8 @@ const GlobalCalendar = () => {
         const durationInput = window.globalNewItemDuration || 15;
         const descriptionInput = window.globalNewItemDescription || null;
         const repeatRuleInput = window.globalNewItemRepeatRule || null;
+        const priorityInput = window.globalNewItemPriority || 4;
+        const reminderMinutesInput = window.globalNewItemReminderMinutes;
 
         // Reset global variables immediately
         window.globalNewItemDate = null;
@@ -288,6 +290,8 @@ const GlobalCalendar = () => {
         window.globalNewItemDuration = 15;
         window.globalNewItemDescription = null;
         window.globalNewItemRepeatRule = null;
+        window.globalNewItemPriority = 4;
+        window.globalNewItemReminderMinutes = null;
 
         try {
             let targetChecklistId = _checklistId;
@@ -325,6 +329,8 @@ const GlobalCalendar = () => {
                     duration: durationInput,
                     description: descriptionInput,
                     repeat_rule: repeatRuleInput,
+                    priority: priorityInput,
+                    reminder_minutes: reminderMinutesInput,
                     parent_item_id: parentId
                 })
             });

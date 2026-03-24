@@ -45,3 +45,8 @@ temp/
 # Deployment scripts
 push_deploy.ps1
 push_deploy.sh
+
+# WhatsApp Bot Data (Crucial for Privacy/Security)
+backend/.wwebjs_auth/
+backend/.wwebjs_cache/
+backend/whatsapp_status.json

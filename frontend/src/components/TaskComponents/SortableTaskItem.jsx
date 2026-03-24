@@ -256,7 +256,7 @@ const SortableTaskItem = ({
                                         __html: item.content
                                     }}
                                 />
-                                {(item.target_date || item.repeat_rule || item.projectTitle || totalSubtasks > 0) && (
+                                {(item.target_date || item.repeat_rule || item.projectTitle || totalSubtasks > 0 || item.time || item.reminder_minutes) && (
                                     <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -283,7 +283,7 @@ const SortableTaskItem = ({
                                                             cursor: 'pointer',
                                                         }}
                                                     >
-                                                        {renderFormattedDate(item.target_date, item.repeat_rule, item.last_completed_date, item.created_at, hideToday, item.time, item.reminder_minutes)}
+                                                        {renderFormattedDate(item.target_date, item.repeat_rule, item.last_completed_date, item.created_at, hideToday, item.time, item.reminder_minutes, false, item.duration)}
                                                     </div>
                                                 ) : null
                                             )}
@@ -500,6 +500,8 @@ const areEqual = (prevProps, nextProps) => {
     if (prevProps.item.projectTitle !== nextProps.item.projectTitle) return false;
     if (prevProps.item.checklistTitle !== nextProps.item.checklistTitle) return false;
     if (prevProps.item.repeat_rule !== nextProps.item.repeat_rule) return false;
+    if (prevProps.item.reminder_minutes !== nextProps.item.reminder_minutes) return false;
+    if (prevProps.item.duration !== nextProps.item.duration) return false;
     if ((prevProps.item.children?.length || 0) !== (nextProps.item.children?.length || 0)) return false;
 
     const prevCompleted = prevProps.useProgressArray && prevProps.todayProgress

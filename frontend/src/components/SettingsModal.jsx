@@ -13,6 +13,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     const { theme, changeTheme } = useTheme();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [whatsappEnabled, setWhatsappEnabled] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
@@ -40,6 +42,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
         if (isOpen) {
             setUsername(user?.username || '');
             setEmail(user?.email || '');
+            setPhone(user?.phone || '');
+            setWhatsappEnabled(user?.whatsapp_enabled ? true : false);
             setAvatarPreview(user?.profile_image || null);
             setActiveTab(initialTab); // Re-sync tab if it was opened from a specific button
             setIsMobileViewMode(initialTab === 'account' ? false : window.innerWidth <= 992); // Land directly on Account if specified
@@ -165,9 +169,11 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
 
     const isNameChanged = username.trim() !== user?.username && username.trim() !== '';
     const isEmailChanged = email.trim() !== (user?.email || '');
+    const isPhoneChanged = phone.trim() !== (user?.phone || '');
+    const isWhatsappChanged = whatsappEnabled !== (user?.whatsapp_enabled ? true : false);
     const currentProfileImage = user?.profile_image || null;
     const isAvatarChanged = avatarPreview !== currentProfileImage;
-    const hasChanges = isNameChanged || isAvatarChanged || isEmailChanged;
+    const hasChanges = isNameChanged || isAvatarChanged || isEmailChanged || isPhoneChanged || isWhatsappChanged;
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -192,6 +198,12 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
             }
             if (isEmailChanged) {
                 bodyData.email = trimmedEmail === '' ? null : trimmedEmail;
+            }
+            if (isPhoneChanged) {
+                bodyData.phone = phone.trim() === '' ? null : phone.trim();
+            }
+            if (isWhatsappChanged) {
+                bodyData.whatsapp_enabled = whatsappEnabled;
             }
 
             const res = await fetch(`${API_URL}/users/${user.id}`, {
@@ -451,6 +463,53 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                         </div>
                                     </div>
 
+                                    {/* Phone & WhatsApp Section */}
+                                    <div style={{ marginBottom: '2.5rem', padding: '1.5rem', background: 'rgba(37, 211, 102, 0.05)', borderRadius: '12px', border: '1px solid rgba(37, 211, 102, 0.2)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                            <div>
+                                                <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 0.25rem', color: 'var(--text-primary)' }}>תזכורות בוואטסאפ</h3>
+                                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                    קבל הודעת וואטסאפ אוטומטית כשיש לך משימה.
+                                                </p>
+                                            </div>
+                                            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={whatsappEnabled}
+                                                    onChange={(e) => setWhatsappEnabled(e.target.checked)}
+                                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                                />
+                                                <span style={{
+                                                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                                                    background: whatsappEnabled ? '#25D366' : 'var(--border-color)',
+                                                    transition: '.3s', borderRadius: '24px'
+                                                }}></span>
+                                                <span style={{
+                                                    position: 'absolute', content: '""', height: '18px', width: '18px',
+                                                    left: whatsappEnabled ? '4px' : '26px', bottom: '3px', background: 'white',
+                                                    transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                                }}></span>
+                                            </label>
+                                        </div>
+                                        {whatsappEnabled && (
+                                            <div className="fade-in">
+                                                <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>מספר טלפון</h4>
+                                                <input
+                                                    type="text"
+                                                    value={phone}
+                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    placeholder="לדוגמה: 0541234567"
+                                                    style={{
+                                                        width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px',
+                                                        border: '1px solid var(--border-color)', background: 'var(--bg-color)',
+                                                        fontSize: '1rem', color: 'var(--text-primary)', minHeight: 'unset'
+                                                    }}
+                                                />
+                                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem', margin: '0.5rem 0 0' }}>יש להזין מספר טלפון ישראלי על מנת לקבל תזכורות.</p>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* Password Section */}
                                     <div style={{ marginBottom: '2.5rem' }}>
                                         <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>סיסמה</h3>
@@ -619,7 +678,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                             }}
                         >
                             <button
-                                onClick={() => { setUsername(user?.username || ''); setAvatarPreview(user?.profile_image || null); setEmail(user?.email || ''); }}
+                                onClick={() => { setUsername(user?.username || ''); setAvatarPreview(user?.profile_image || null); setEmail(user?.email || ''); setPhone(user?.phone || ''); setWhatsappEnabled(user?.whatsapp_enabled ? true : false); }}
                                 className="btn-secondary"
                                 style={{
                                     padding: '0.6rem 0', borderRadius: '8px', cursor: 'pointer',

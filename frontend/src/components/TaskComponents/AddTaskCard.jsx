@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar as CalendarIcon, Clock, RefreshCw, X, ArrowLeft, ChevronDown, Inbox, List, Flag, SendHorizontal } from 'lucide-react';
+import { Calendar as CalendarIcon, Bell, RefreshCw, X, ArrowLeft, ChevronDown, Inbox, List, Flag, SendHorizontal } from 'lucide-react';
 import SmartInput from '../SmartInput';
 import DatePickerDropdown from '../DatePickerDropdown';
 import TimePickerDropdown from '../TimePickerDropdown';
@@ -221,8 +221,18 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                             userSelect: 'none'
                         }} onClick={(e) => { e.stopPropagation(); setShowDateDropdown(true); }}>
                             {(() => {
-                                const { text } = getDateDisplayInfo(newItemDate);
-                                return <>{text} {time ? time : ''}</>;
+                                 const { text } = getDateDisplayInfo(newItemDate);
+                                let timeDisplay = time;
+                                if (time && duration && duration > 0) {
+                                    try {
+                                        const [hours, mins] = time.trim().split(':').map(Number);
+                                        const d = new Date();
+                                        d.setHours(hours, mins, 0);
+                                        const end = new Date(d.getTime() + duration * 60000);
+                                        timeDisplay = `${time.trim()} - ${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+                                    } catch (e) {}
+                                }
+                                return <>{text} {time ? timeDisplay : ''}</>;
                             })()}
                         </div>
                     )}
@@ -524,13 +534,16 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                 setShowProjectSelector(false);
                             }}
                             style={{
-                                ...pillStyle(reminderMinutes !== null, null),
+                                ...pillStyle(reminderMinutes !== null, 'var(--reminder-color)'),
                                 transition: 'var(--transition)'
                             }}
                             onMouseEnter={e => !showReminderMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
-                            onMouseLeave={e => !showReminderMenu && (e.currentTarget.style.background = reminderMinutes !== null ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
+                            onMouseLeave={e => !showReminderMenu && (e.currentTarget.style.background = reminderMinutes !== null ? 'color-mix(in srgb, var(--reminder-color) 8%, transparent)' : 'var(--bg-color)')}
                         >
-                            <Clock size={14} style={{ opacity: reminderMinutes !== null ? 1 : 0.8 }} />
+                            <Bell size={14} style={{ 
+                                opacity: reminderMinutes !== null ? 1 : 0.8,
+                                color: reminderMinutes !== null ? 'var(--reminder-color)' : 'inherit'
+                            }} />
                             {reminderMinutes === null ? 'תזכורת' : reminderOptions.find(o => o.value === reminderMinutes)?.label}
                         </button>
 
@@ -571,7 +584,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                             else e.currentTarget.style.background = 'var(--dropdown-selected)';
                                         }}
                                     >
-                                        <Clock size={14} style={{ color: reminderMinutes === opt.value ? 'var(--primary-color)' : 'var(--text-secondary)' }} />
+                                        <Bell size={14} style={{ color: reminderMinutes === opt.value ? 'var(--reminder-color)' : 'var(--text-secondary)' }} />
                                         <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
                                     </button>
                                 ))}

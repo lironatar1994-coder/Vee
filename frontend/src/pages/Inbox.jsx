@@ -247,12 +247,14 @@ const Inbox = () => {
         if (e) e.preventDefault();
         const contentToSave = explicitContent !== null ? explicitContent : newItemContent;
         if (!contentToSave || !contentToSave.trim()) return;
-
+        
         const dateInput = window.globalNewItemDate || null;
         const timeInput = window.globalNewItemTime || null;
         const durationInput = window.globalNewItemDuration || 15;
         const descriptionInput = window.globalNewItemDescription || null;
         const repeatRuleInput = window.globalNewItemRepeatRule || null;
+        const reminderMinutesInput = window.globalNewItemReminderMinutes;
+        const priorityInput = window.globalNewItemPriority || 4;
 
         // 1. Optimistic Update
         const tempId = `temp-${Date.now()}`;
@@ -264,6 +266,8 @@ const Inbox = () => {
             target_date: dateInput,
             time: timeInput,
             duration: durationInput,
+            priority: priorityInput,
+            reminder_minutes: reminderMinutesInput,
             description: descriptionInput,
             repeat_rule: repeatRuleInput,
             is_temp: true
@@ -294,6 +298,8 @@ const Inbox = () => {
         window.globalNewItemDuration = 15;
         window.globalNewItemDescription = null;
         window.globalNewItemRepeatRule = null;
+        window.globalNewItemPriority = 4;
+        window.globalNewItemReminderMinutes = null;
 
         try {
             const res = await fetch(`${API_URL}/checklists/${_checklistId}/items`, {
@@ -305,6 +311,8 @@ const Inbox = () => {
                     target_date: dateInput,
                     time: timeInput,
                     duration: durationInput,
+                    priority: priorityInput,
+                    reminder_minutes: reminderMinutesInput,
                     description: descriptionInput,
                     repeat_rule: repeatRuleInput,
                     prepend: currentAddingAtIndex === 0

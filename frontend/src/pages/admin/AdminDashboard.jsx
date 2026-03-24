@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, ListTodo, CheckSquare, Activity, PieChart } from 'lucide-react';
+import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode, Smartphone, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
 
@@ -12,10 +12,34 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [whatsappStatus, setWhatsappStatus] = useState('INITIALIZING');
+    const [whatsappQr, setWhatsappQr] = useState(null);
 
     useEffect(() => {
         fetchAdminData();
+        fetchWhatsappStatus();
+        
+        // Poll WhatsApp status every 5 seconds
+        const interval = setInterval(fetchWhatsappStatus, 5000);
+        return () => clearInterval(interval);
     }, []);
+
+    const fetchWhatsappStatus = async () => {
+        const token = localStorage.getItem('adminToken');
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_URL}/admin/whatsapp/status`, {
+                headers: { 'Admin-Token': token }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setWhatsappStatus(data.status);
+                setWhatsappQr(data.qr);
+            }
+        } catch (e) {
+            console.error('Error fetching WA status', e);
+        }
+    };
 
     const fetchAdminData = async () => {
         const token = localStorage.getItem('adminToken');
@@ -128,14 +152,48 @@ const AdminDashboard = () => {
                         </p>
                     </div>
 
-                    <div className="card" style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', border: '1px dashed var(--border-color)', background: 'transparent' }}>
-                        <div style={{ color: 'var(--text-secondary)', padding: '1.25rem', borderRadius: '50%', marginBottom: '1.25rem', background: 'var(--bg-secondary)' }}>
-                            <PieChart size={32} />
+                    <div className="card" style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', background: 'var(--bg-secondary)', border: `1px solid ${whatsappStatus === 'READY' ? 'var(--success-color)' : 'var(--border-color)'}` }}>
+                        <div style={{ padding: '1rem', borderRadius: '50%', marginBottom: '1rem', background: whatsappStatus === 'READY' ? 'var(--success-color)20' : 'var(--primary-color)10', color: whatsappStatus === 'READY' ? 'var(--success-color)' : 'var(--primary-color)' }}>
+                            <MessageCircle size={32} />
                         </div>
-                        <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>תצוגה עתידית</h2>
-                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '300px', fontSize: '0.95rem', margin: 0 }}>
-                            גרפים ופילוח שעות וימים ישולבו כאן בעדכון הבא.
-                        </p>
+                        <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>חיבור ל-WhatsApp סנטר</h2>
+                        
+                        {whatsappStatus === 'INITIALIZING' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+                                <Loader2 size={24} className="spin" style={{ color: 'var(--text-secondary)' }} />
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>מאתחל את שרת הווסטאפ...</span>
+                            </div>
+                        )}
+
+                        {whatsappStatus === 'NEEDS_SCAN' && whatsappQr && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+                                <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                                    <img src={whatsappQr} alt="WhatsApp QR Code" style={{ width: '200px', height: '200px' }} />
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                                    <Smartphone size={18} />
+                                    <span>סרוק את הברקוד דרך "מכשירים מקושרים" בוואטסאפ</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {whatsappStatus === 'READY' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success-color)', background: 'var(--success-color)10', padding: '0.5rem 1rem', borderRadius: '20px', fontWeight: 600 }}>
+                                    <CheckCircle2 size={18} />
+                                    <span>הבוט מחובר ופעיל</span>
+                                </div>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textAlign: 'center', maxWidth: '300px' }}>
+                                    הודעות תזכורת ישלחו למשתמשים שהגדירו מספר פלאפון בהגדרות האישיות.
+                                </span>
+                            </div>
+                        )}
+                        
+                        {whatsappStatus === 'ERROR' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', color: 'var(--danger-color)' }}>
+                                <span>שגיאת התחברות לבוט. בדוק את השרת.</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

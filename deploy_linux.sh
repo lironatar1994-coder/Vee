@@ -11,6 +11,13 @@ NC='\033[0m'
 
 echo -e "${BLUE}Starting deployment process for Vee...${NC}"
 
+# 0. Check for Puppeteer/Chromium dependencies (Common issue on headless servers)
+if command -v apt-get &> /dev/null; then
+    echo -e "${BLUE}Checking for system dependencies (Chromium)...${NC}"
+    # Minimal set for headless chrome
+    sudo apt-get update -y && sudo apt-get install -y libnss3 libatk-bridge2.0-0 libx11-xcb1 libxcb-dri3-0 libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxi6 libxrandr2 libxrender1 libxtst6 libcups2 libdrm2 libgbm1 libasound2 libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0
+fi
+
 # Source NVM to ensure we use the correct Node version
 if [ -f "$HOME/.nvm/nvm.sh" ]; then
     source "$HOME/.nvm/nvm.sh"
@@ -63,6 +70,17 @@ if pm2 list | grep -q "$APP_NAME"; then
 else
     echo -e "${BLUE}Starting new process '$APP_NAME'...${NC}"
     pm2 start "$ENTRY_POINT" --name "$APP_NAME"
+fi
+
+WORKER_APP_NAME="vee-whatsapp-worker"
+WORKER_ENTRY_POINT="backend/whatsapp-worker.js"
+
+if pm2 list | grep -q "$WORKER_APP_NAME"; then
+    echo -e "${BLUE}Restarting existing worker process '$WORKER_APP_NAME'...${NC}"
+    pm2 restart "$WORKER_APP_NAME"
+else
+    echo -e "${BLUE}Starting new worker process '$WORKER_APP_NAME'...${NC}"
+    pm2 start "$WORKER_ENTRY_POINT" --name "$WORKER_APP_NAME"
 fi
 
 # 6. Final Sync

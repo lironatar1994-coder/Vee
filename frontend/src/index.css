@@ -1092,6 +1092,7 @@ h2.react-datepicker__current-month {
   /* Todoist Priority 3: Low (Blue) */
   --priority-4: #94A3B8;
   /* Todoist Priority 4: Default (Gray - text-secondary) */
+  --reminder-color: #f59e0b;
 
   --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
   /* Stronger depth for white cards */

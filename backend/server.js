@@ -11,7 +11,7 @@ const { Server } = require('socket.io');
 const nodemailer = require('nodemailer');
 const webpush = require('web-push');
 const cron = require('node-cron');
-
+const whatsapp = require('./whatsapp');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
@@ -286,7 +286,7 @@ app.post('/api/auth/login', (req, res) => {
     const potentialUser = db.prepare('SELECT id FROM users WHERE email = ? OR phone = ? OR username = ?').get(identifier, identifier, identifier);
 
     const user = db.prepare(
-        `SELECT id, username, email, phone, profile_image, invited_by FROM users
+        `SELECT id, username, email, phone, profile_image, invited_by, whatsapp_enabled FROM users
          WHERE password_hash = ? AND (email = ? OR phone = ? OR username = ?)`
     ).get(hash, identifier, identifier, identifier);
 
@@ -426,6 +426,22 @@ const adminAuth = (req, res, next) => {
     }
 };
 
+app.get('/api/admin/whatsapp/status', adminAuth, (req, res) => {
+    try {
+        const STATUS_FILE = path.join(__dirname, 'whatsapp_status.json');
+        if (fs.existsSync(STATUS_FILE)) {
+            const data = fs.readFileSync(STATUS_FILE, 'utf8');
+            res.setHeader('Content-Type', 'application/json');
+            return res.send(data);
+        } else {
+            return res.json({ status: 'INITIALIZING', qr: null });
+        }
+    } catch (err) {
+        console.error('Error reading whatsapp status:', err);
+        return res.status(500).json({ error: 'Server error reading status' });
+    }
+});
+
 app.get('/api/users/:id', (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -441,7 +457,7 @@ app.get('/api/users/:id', (req, res) => {
 
 app.put('/api/users/:id', (req, res) => {
     const { id } = req.params;
-    const { username, profile_image, email, password } = req.body;
+    const { username, profile_image, email, password, phone, whatsapp_enabled } = req.body;
 
     if (!username || username.trim() === '') {
         return res.status(400).json({ error: 'Username is required' });
@@ -461,6 +477,16 @@ app.put('/api/users/:id', (req, res) => {
         if (email !== undefined) {
             updateQuery += ', email = ?';
             params.push(email);
+        }
+
+        if (phone !== undefined) {
+            updateQuery += ', phone = ?';
+            params.push(phone);
+        }
+
+        if (whatsapp_enabled !== undefined) {
+            updateQuery += ', whatsapp_enabled = ?';
+            params.push(whatsapp_enabled ? 1 : 0);
         }
 
         if (password) {
@@ -1451,7 +1477,8 @@ app.get('/api/users/:userId/tasks/by-date', (req, res) => {
         // Fetch items matching exact target_date OR recurring rules
         const tasksQuery = db.prepare(`
             SELECT 
-                ci.id, ci.checklist_id, ci.parent_item_id, ci.content, ci.order_index, ci.target_date, ci.repeat_rule, ci.created_at,
+                ci.id, ci.checklist_id, ci.parent_item_id, ci.content, ci.order_index, ci.target_date, 
+                ci.repeat_rule, ci.created_at, ci.time, ci.duration, ci.priority, ci.reminder_minutes,
                 (SELECT MAX(dp_last.date) FROM daily_progress dp_last WHERE dp_last.checklist_item_id = ci.id AND dp_last.completed = 1) as last_completed_date,
                 c.title as checklist_title, c.order_index as c_order,
                 p.title as project_title, p.id as project_id
@@ -1511,6 +1538,10 @@ app.get('/api/users/:userId/tasks/by-date', (req, res) => {
                 order_index: task.order_index,
                 target_date: task.target_date,
                 repeat_rule: task.repeat_rule,
+                time: task.time,
+                duration: task.duration,
+                priority: task.priority,
+                reminder_minutes: task.reminder_minutes,
                 last_completed_date: task.last_completed_date,
                 created_at: task.created_at,
                 completed: task.completed,
@@ -2024,9 +2055,11 @@ cron.schedule('* * * * *', async () => {
 
         // Items that have a reminder
         const itemsWithReminders = db.prepare(`
-            SELECT ci.id, ci.content, ci.target_date, ci.time, ci.reminder_minutes, c.user_id 
+            SELECT ci.id, ci.content, ci.target_date, ci.time, ci.reminder_minutes, ci.whatsapp_last_sent_date, 
+                   c.user_id, u.phone, u.whatsapp_enabled 
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
+            JOIN users u ON c.user_id = u.id
             WHERE ci.reminder_minutes IS NOT NULL AND ci.target_date IS NOT NULL AND ci.time IS NOT NULL AND ci.target_date >= ?
         `).all(currentDate);
 
@@ -2057,6 +2090,14 @@ cron.schedule('* * * * *', async () => {
                         if (error.statusCode === 410) {
                             db.prepare('DELETE FROM web_push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
                         }
+                    }
+                }
+
+                if (item.whatsapp_enabled && item.phone && item.whatsapp_last_sent_date !== currentDate) {
+                    const message = `היי! תזכורת ממערכת Vee:\n*${item.content}*\nמתוכננת להיום בשעה ${item.time}.`;
+                    const sent = await whatsapp.sendReminder(item.phone, message);
+                    if (sent) {
+                        db.prepare('UPDATE checklist_items SET whatsapp_last_sent_date = ? WHERE id = ?').run(currentDate, item.id);
                     }
                 }
             }

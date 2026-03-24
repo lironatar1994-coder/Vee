@@ -257,6 +257,9 @@ const Today = () => {
         const repeatRuleInput = window.globalNewItemRepeatRule || null;
         const dateInput = window.globalNewItemDate || todayDateStr;
 
+        const priorityInput = window.globalNewItemPriority || 4;
+        const reminderMinutesInput = window.globalNewItemReminderMinutes;
+
         // 1. Optimistic Update
         const tempId = `temp-${Date.now()}`;
         const tempItem = {
@@ -267,6 +270,8 @@ const Today = () => {
             target_date: dateInput,
             time: timeInput,
             duration: durationInput,
+            priority: priorityInput,
+            reminder_minutes: reminderMinutesInput,
             description: descriptionInput,
             repeat_rule: repeatRuleInput,
             is_temp: true
@@ -294,6 +299,8 @@ const Today = () => {
         window.globalNewItemDescription = null;
         window.globalNewItemRepeatRule = null;
         window.globalNewItemDate = null;
+        window.globalNewItemPriority = 4;
+        window.globalNewItemReminderMinutes = null;
 
         try {
             const res = await fetch(`${API_URL}/checklists/${targetId}/items`, {
@@ -305,6 +312,8 @@ const Today = () => {
                     target_date: dateInput,
                     time: timeInput,
                     duration: durationInput,
+                    priority: priorityInput,
+                    reminder_minutes: reminderMinutesInput,
                     description: descriptionInput,
                     repeat_rule: repeatRuleInput,
                     prepend: currentAddingAtIndex === 0
