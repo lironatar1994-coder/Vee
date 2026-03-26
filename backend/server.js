@@ -855,7 +855,7 @@ app.get('/api/projects/:id', (req, res) => {
 
         const checklists = db.prepare('SELECT * FROM checklists WHERE project_id = ? ORDER BY order_index ASC, created_at DESC').all(id);
         for (let c of checklists) {
-            c.items = db.prepare('SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY order_index ASC').all(c.id);
+            c.items = db.prepare('SELECT *, (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = checklist_items.id) AS comments_count FROM checklist_items WHERE checklist_id = ? ORDER BY order_index ASC').all(c.id);
         }
 
         const comments = db.prepare(`
@@ -1016,7 +1016,8 @@ app.get('/api/projects/:projectId/checklists', (req, res) => {
     for (let c of checklists) {
         c.items = db.prepare(`
             SELECT ci.*, 
-                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date
+                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date,
+                   (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count
             FROM checklist_items ci 
             WHERE ci.checklist_id = ? 
             ORDER BY order_index ASC
@@ -1056,7 +1057,8 @@ app.get('/api/users/:userId/checklists', (req, res) => {
     for (let c of checklists) {
         c.items = db.prepare(`
             SELECT ci.*, 
-                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date
+                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date,
+                   (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count
             FROM checklist_items ci 
             WHERE ci.checklist_id = ? 
             ORDER BY order_index ASC
@@ -1099,7 +1101,8 @@ app.get('/api/users/:userId/inbox', (req, res) => {
         for (let c of checklists) {
             c.items = db.prepare(`
                 SELECT ci.*, 
-                       (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date
+                       (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date,
+                       (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count
                 FROM checklist_items ci 
                 WHERE ci.checklist_id = ? 
                 ORDER BY order_index ASC
@@ -1136,7 +1139,8 @@ app.post('/api/users/:userId/checklists', (req, res) => {
         const c = db.prepare('SELECT * FROM checklists WHERE id = ?').get(newChecklistId);
         c.items = db.prepare(`
             SELECT ci.*, 
-                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date
+                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date,
+                   (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count
             FROM checklist_items ci 
             WHERE ci.checklist_id = ? 
             ORDER BY order_index ASC
@@ -1384,7 +1388,11 @@ app.put('/api/items/:itemId/datetime', (req, res) => {
         }
 
         // Fetch updated item to return
-        const updatedItem = db.prepare('SELECT * FROM checklist_items WHERE id = ?').get(req.params.itemId);
+        const updatedItem = db.prepare(`
+            SELECT *, (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = checklist_items.id) AS comments_count 
+            FROM checklist_items 
+            WHERE id = ?
+        `).get(req.params.itemId);
         res.json({ success: true, item: updatedItem });
     } catch (err) {
         console.error(err);
@@ -1417,6 +1425,7 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
         const targetedItemsQuery = db.prepare(`
             SELECT ci.*, 
                    (SELECT MAX(dp_last.date) FROM daily_progress dp_last WHERE dp_last.checklist_item_id = ci.id AND dp_last.completed = 1) as last_completed_date,
+                   (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count,
                    c.title as checklistTitle, p.title as projectTitle
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
@@ -1432,6 +1441,7 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
             SELECT dp.checklist_item_id, dp.date, dp.completed, 
                    ci.content, ci.checklist_id, ci.priority, ci.time, ci.repeat_rule,
                    (SELECT MAX(dp_last.date) FROM daily_progress dp_last WHERE dp_last.checklist_item_id = ci.id AND dp_last.completed = 1) as last_completed_date,
+                   (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count,
                    c.title as checklistTitle, p.id as project_id, p.title as projectTitle
             FROM daily_progress dp
             JOIN checklist_items ci ON dp.checklist_item_id = ci.id
@@ -1512,6 +1522,7 @@ app.get('/api/users/:userId/tasks/by-date', (req, res) => {
                 ci.id, ci.checklist_id, ci.parent_item_id, ci.content, ci.order_index, ci.target_date, 
                 ci.repeat_rule, ci.created_at, ci.time, ci.duration, ci.priority, ci.reminder_minutes,
                 (SELECT MAX(dp_last.date) FROM daily_progress dp_last WHERE dp_last.checklist_item_id = ci.id AND dp_last.completed = 1) as last_completed_date,
+                (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count,
                 c.title as checklist_title, c.order_index as c_order,
                 p.title as project_title, p.id as project_id
             FROM checklist_items ci
@@ -1575,6 +1586,7 @@ app.get('/api/users/:userId/tasks/by-date', (req, res) => {
                 priority: task.priority,
                 reminder_minutes: task.reminder_minutes,
                 last_completed_date: task.last_completed_date,
+                comments_count: task.comments_count,
                 created_at: task.created_at,
                 completed: task.completed,
                 children: []

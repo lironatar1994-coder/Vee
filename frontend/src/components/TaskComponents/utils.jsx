@@ -81,9 +81,8 @@ export const getDateDisplayInfo = (targetDate) => {
             isImportant = true;
         }
     } else if (diffDays < 0) {
-        // Overdue
         text = `${date.getDate()} ב${hebrewMonthNames[date.getMonth()]}`;
-        color = '#d1453b'; // Todoist Red for overdue
+        color = 'var(--danger-color)'; // Red for overdue
         isImportant = true;
     } else {
         text = `${date.getDate()} ב${hebrewMonthNames[date.getMonth()]}`;
@@ -110,7 +109,7 @@ export const getFullDateDisplay = (targetDate, repeatRule, time = null) => {
     return { text: combinedText, color, isImportant };
 };
 
-export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null, showRecentlyCompleted = false, duration = null) => {
+export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null, showRecentlyCompleted = false, duration = null, onReminderClick = null, reminderRef = null) => {
     if (!targetDate && (!repeatRule || repeatRule === 'none') && reminderMinutes === null) return null;
 
     const today = new Date().toISOString().split('T')[0];
@@ -171,8 +170,8 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
                     {showDateText && <span>{text}</span>}
                     {hasTime && (
                         <span style={{ 
-                            fontWeight: 600, 
-                            color: isToday ? color : 'var(--text-primary)',
+                            fontWeight: 400, 
+                            color: (isToday || diffDays < 0) ? color : 'var(--text-primary)',
                             background: 'transparent',
                             padding: '0',
                             borderRadius: '4px'
@@ -181,7 +180,7 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
                         </span>
                     )}
                     {isRecurring && <RefreshCw size={11} strokeWidth={3} style={{ opacity: 0.8 }} />}
-                    {hasAlarm && <ReminderBadge minutes={reminderMinutes} />}
+                    {hasAlarm && <ReminderBadge minutes={reminderMinutes} onClick={onReminderClick} ref={reminderRef} />}
                 </span>
             )}
             {showRecentlyCompleted && lastCompletedDate && !wasCompletedToday && (

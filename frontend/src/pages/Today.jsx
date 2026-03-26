@@ -690,6 +690,7 @@ const Today = () => {
                             activeDragItem={activeDragItem}
                             isSortable={false}
                             hideActionMenu={true}
+                            canEditTitle={false}
                         />
                     </div>
                 )}
@@ -734,6 +735,7 @@ const Today = () => {
                             isSortable={false}
                             hideToggle={true}
                             hideActionMenu={true}
+                            canEditTitle={false}
                         />
                     </SortableContext>
                 </div>

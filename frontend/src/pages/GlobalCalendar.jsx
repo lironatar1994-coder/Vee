@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import CalendarWrapper from '../components/CalendarWrapper';
-import { ChevronDown, Loader2, X, Check } from 'lucide-react';
+import { ChevronDown, Loader2, X, Check, CheckCircle } from 'lucide-react';
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
@@ -178,11 +178,18 @@ const GlobalCalendar = () => {
         // Smart flip: if button is too high in the screen, show popover below it
         const spawnBelow = rect.top < 350; 
 
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const clickedDate = new Date(date);
+        clickedDate.setHours(0, 0, 0, 0);
+        const isOverdue = clickedDate < now;
+
         setDayPopoverData({
             date: date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
             tasks,
             position: { x, y, rectTop: rect.top, rectBottom: rect.bottom },
-            spawnBelow
+            spawnBelow,
+            isOverdue
         });
         setShowDayPopover(true);
         return false;
@@ -660,7 +667,13 @@ const GlobalCalendar = () => {
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{dayPopoverData.date}</span>
+                        <span style={{ 
+                            fontWeight: 800, 
+                            fontSize: '1.2rem', 
+                            color: dayPopoverData.isOverdue ? 'var(--danger-color)' : 'var(--text-primary)' 
+                        }}>
+                            {dayPopoverData.date}
+                        </span>
                         <button onClick={() => setShowDayPopover(false)} className="btn-icon-soft" style={{ width: '28px', height: '28px', borderRadius: '50%' }}>
                             <X size={16} />
                         </button>
@@ -745,7 +758,16 @@ const GlobalCalendar = () => {
                                     }}>
                                         {task.content}
                                     </span>
-                                    {task.time && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: 'auto' }}>{task.time.substring(0, 5)}</span>}
+                                    {task.time && (
+                                        <span style={{ 
+                                            fontSize: '0.75rem', 
+                                            color: dayPopoverData.isOverdue ? 'var(--danger-color)' : 'var(--text-secondary)', 
+                                            marginLeft: 'auto',
+                                            fontWeight: dayPopoverData.isOverdue ? 600 : 500
+                                        }}>
+                                            {task.time.substring(0, 5)}
+                                        </span>
+                                    )}
                                 </div>
                             );
                         })}

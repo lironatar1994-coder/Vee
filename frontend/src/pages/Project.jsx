@@ -647,6 +647,7 @@ const Project = () => {
                 setExpandedChecklists(prev => ({ ...prev, [newList.id]: true }));
                 setNewListTitle('');
                 setIsCreatingList(null);
+                toast.success('רשימה חדשה נוצרה');
 
                 // Persist the new order
                 await fetch(`${API_URL}/projects/${projectId}/checklists/reorder`, {
@@ -1238,7 +1239,7 @@ const Project = () => {
                                             }}
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <Layout size={18} style={{ color: 'var(--primary-color)', opacity: 0.8 }} />
+                                                <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
                                                 <input
                                                     type="text"
                                                     className="add-section-input"
@@ -1299,7 +1300,7 @@ const Project = () => {
                                             }}
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <Layout size={18} style={{ color: 'var(--primary-color)', opacity: 0.8 }} />
+                                                <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
                                                 <input
                                                     type="text"
                                                     className="add-section-input"
@@ -1415,7 +1416,7 @@ const Project = () => {
                                                         }}
                                                     >
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            <Layout size={18} style={{ color: 'var(--primary-color)', opacity: 0.8 }} />
+                                                            <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
                                                             <input
                                                                 type="text"
                                                                 className="add-section-input"

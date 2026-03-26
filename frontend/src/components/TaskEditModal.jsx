@@ -74,6 +74,7 @@ export default function TaskEditModal({
     const [priority, setPriority] = useState(item?.priority || 4);
     const [showPriorityMenu, setShowPriorityMenu] = useState(false);
     const [reminderMinutes, setReminderMinutes] = useState(item?.reminder_minutes ?? null);
+    const [duration, setDuration] = useState(item?.duration || 0);
     const [showReminderMenu, setShowReminderMenu] = useState(false);
 
     // Comments State
@@ -94,6 +95,9 @@ export default function TaskEditModal({
     const priorityBtnRef = useRef(null);
     const contentRef = useRef(null);
     const panelRef = useRef(null);
+    const reminderBtnRef = useRef(null);
+    const reminderMenuRef = useRef(null);
+    const priorityMenuRef = useRef(null);
 
     const prevItemIdRef = useRef(null);
 
@@ -111,6 +115,7 @@ export default function TaskEditModal({
                 setRepeatRule(item.repeat_rule || null);
                 setPriority(item.priority || 4);
                 setReminderMinutes(item.reminder_minutes ?? null);
+                setDuration(item.duration || 0);
                 setSubtasks(item.children || []);
 
                 lastSavedContent.current = item.content || '';
@@ -140,6 +145,7 @@ export default function TaskEditModal({
                 setRepeatRule(item.repeat_rule || null);
                 setPriority(item.priority || 4);
                 setReminderMinutes(item.reminder_minutes ?? null);
+                setDuration(item.duration || 0);
             }
         } else if (!isOpen) {
             // When closing, reset editing flag to ensure fresh sync next time
@@ -148,6 +154,36 @@ export default function TaskEditModal({
         }
     }, [item, isOpen, isEditing]);
 
+    // Click outside handler for menus
+    useEffect(() => {
+        const handler = (e) => {
+            // Reminder menu
+            if (showReminderMenu) {
+                if (!(reminderMenuRef.current?.contains(e.target)) && !(reminderBtnRef.current?.contains(e.target))) {
+                    setShowReminderMenu(false);
+                }
+            }
+            // Priority menu
+            if (showPriorityMenu) {
+                if (!(priorityMenuRef.current?.contains(e.target)) && !(priorityBtnRef.current?.contains(e.target))) {
+                    setShowPriorityMenu(false);
+                }
+            }
+            // More menu
+            if (showMoreMenu) {
+                if (!(moreMenuRef.current?.contains(e.target))) {
+                    setShowMoreMenu(false);
+                }
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showReminderMenu, showPriorityMenu, showMoreMenu]);
+
+    const scrollToBottom = () => {
+        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
     const fetchTaskComments = async (itemId) => {
         setLoadingComments(true);
         try {
@@ -155,6 +191,7 @@ export default function TaskEditModal({
             if (res.ok) {
                 const data = await res.json();
                 setItemComments(data);
+                setTimeout(scrollToBottom, 150);
             }
         } catch (err) {
             console.error('Failed to fetch task comments', err);
@@ -686,10 +723,12 @@ export default function TaskEditModal({
                                     onClose={() => setShowTimeMenu(false)}
                                     anchorRef={timeBtnRef}
                                     initialTime={time}
+                                    initialDuration={duration}
                                     timeOptions={TIME_OPTIONS}
-                                    onSave={(val) => {
-                                        setTime(val);
-                                        if (onSave) onSave({ time: val });
+                                    onSave={(timeVal, durVal) => {
+                                        setTime(timeVal);
+                                        setDuration(durVal);
+                                        if (onSave) onSave({ time: timeVal, duration: durVal });
                                     }}
                                 />
                             </div>
@@ -763,7 +802,7 @@ export default function TaskEditModal({
                         </button>
 
                         {showPriorityMenu && (
-                            <div style={{
+                            <div ref={priorityMenuRef} style={{
                                 position: 'absolute', top: 'calc(100% - 4px)', left: '1.25rem', right: '1.25rem',
                                 background: 'var(--bg-color)', border: '1px solid var(--border-color)',
                                 borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
@@ -809,6 +848,7 @@ export default function TaskEditModal({
                     {/* Reminder Dropdown */}
                     <div style={{ position: 'relative' }}>
                         <button
+                            ref={reminderBtnRef}
                             onClick={() => setShowReminderMenu(!showReminderMenu)}
                             style={{
                                 ...actionRowStyle,
@@ -831,7 +871,7 @@ export default function TaskEditModal({
                         </button>
 
                         {showReminderMenu && (
-                            <div style={{
+                            <div ref={reminderMenuRef} style={{
                                 position: 'absolute', top: 'calc(100% - 4px)', left: '1.25rem', right: '1.25rem',
                                 background: 'var(--bg-color)', border: '1px solid var(--border-color)',
                                 borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',

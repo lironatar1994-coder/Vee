@@ -38,7 +38,7 @@ const TimelineSlot = ({
                 height: `${HOUR_HEIGHT / 4}px`, // 15 minute slots
                 borderTop: showLine ? '1px solid var(--border-color)' : 'none',
                 position: 'relative',
-                background: isOver ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                background: isOver ? 'rgba(0, 0, 0, 0.05)' : 'transparent',
                 cursor: 'pointer',
                 transition: 'background 0.2s'
             }}
@@ -50,7 +50,7 @@ const TimelineSlot = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--primary-color)',
+                    color: 'var(--text-secondary)',
                     fontSize: '0.7rem',
                     fontWeight: 600
                 }}>

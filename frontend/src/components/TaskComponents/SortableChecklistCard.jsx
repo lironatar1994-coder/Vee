@@ -226,7 +226,8 @@ const SortableChecklistCard = ({
     hideToday = false,
     isSortable = true,
     hideToggle = false,
-    hideActionMenu = false
+    hideActionMenu = false,
+    canEditTitle = true
 }) => {
 
     // Local update handler — calls PUT /api/items/:itemId and updates UI eventually via parent reload / socket
@@ -288,8 +289,8 @@ const SortableChecklistCard = ({
     const handleEditTitleSubmit = async () => {
         setIsEditingTitle(false);
         const finalTitle = tempTitle.trim();
-        // Skip if empty or unchanged from the *actual* starting point
-        if (!finalTitle || finalTitle === originalTitleRef.current) return;
+        // Skip if empty or unchanged from the *actual* starting point (trimmed)
+        if (!finalTitle || finalTitle === (originalTitleRef.current || '').trim()) return;
         
         try {
             const res = await fetch(`${API_URL}/checklists/${checklist.id}`, {
@@ -361,8 +362,9 @@ const SortableChecklistCard = ({
                     className="checklist-header"
                     {...(isSortable && !isOverlay ? { ...attributes, ...listeners } : {})}
                     onClick={() => {
-                        if (!isDragging && !isOverlay) {
+                        if (!isDragging && !isOverlay && canEditTitle) {
                             setTempTitle(checklist.title || '');
+                            originalTitleRef.current = checklist.title || '';
                             setIsEditingTitle(true);
                         }
                     }}
@@ -491,11 +493,11 @@ const SortableChecklistCard = ({
                                         if (onDeleteChecklist) onDeleteChecklist(e, checklist.id);
                                         else if (handleDeleteChecklist) handleDeleteChecklist(e, checklist.id);
                                     }}
-                                    onEdit={() => { 
+                                    onEdit={canEditTitle ? (() => { 
                                         setTempTitle(checklist.title);
                                         originalTitleRef.current = checklist.title;
                                         setIsEditingTitle(true); 
-                                    }}
+                                    }) : null}
                                     onComplete={handleCompleteAll}
                                     onSetDate={onSetDate}
                                     setDateLabel={setDateLabel}

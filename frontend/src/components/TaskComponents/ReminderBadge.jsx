@@ -1,27 +1,38 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Bell } from 'lucide-react';
 
-const ReminderBadge = ({ minutes, color = 'var(--text-secondary)', size = 12 }) => {
+const ReminderBadge = forwardRef(({ minutes, color = 'var(--text-secondary)', size = 12, onClick }, ref) => {
     if (minutes === undefined) return null;
     
     return (
         <div 
-            className="reminder-badge"
+            ref={ref}
+            className="reminder-badge interactive"
+            onClick={onClick}
             style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
                 color: color,
                 opacity: 1,
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer'
             }}
-            title={minutes ? `תזכורת ${minutes} דקות מראש` : 'תזכורת פעילה'}
+            onMouseEnter={e => {
+                e.currentTarget.style.opacity = 0.8;
+                e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.opacity = 1;
+                e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            title={minutes ? `תזכורת ${minutes} דקות מראש (לחץ לשינוי)` : 'תזכורת פעילה (לחץ לשינוי)'}
         >
             <Bell size={size} fill="none" style={{ strokeWidth: 2.5 }} />
-            {/* Optional: we could show the number of minutes here if desired, 
-                but for now we keep it minimalist as per user's style */}
         </div>
     );
-};
+});
+
+ReminderBadge.displayName = 'ReminderBadge';
 
 export default ReminderBadge;
