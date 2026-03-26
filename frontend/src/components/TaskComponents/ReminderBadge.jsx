@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bell } from 'lucide-react';
 
-const ReminderBadge = ({ minutes, color = 'var(--reminder-color)', size = 12 }) => {
+const ReminderBadge = ({ minutes, color = 'var(--text-secondary)', size = 12 }) => {
     if (minutes === undefined) return null;
     
     return (

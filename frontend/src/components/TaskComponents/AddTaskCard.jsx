@@ -534,15 +534,15 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                 setShowProjectSelector(false);
                             }}
                             style={{
-                                ...pillStyle(reminderMinutes !== null, 'var(--reminder-color)'),
+                                ...pillStyle(reminderMinutes !== null),
                                 transition: 'var(--transition)'
                             }}
                             onMouseEnter={e => !showReminderMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
-                            onMouseLeave={e => !showReminderMenu && (e.currentTarget.style.background = reminderMinutes !== null ? 'color-mix(in srgb, var(--reminder-color) 8%, transparent)' : 'var(--bg-color)')}
+                            onMouseLeave={e => !showReminderMenu && (e.currentTarget.style.background = reminderMinutes !== null ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
                         >
                             <Bell size={14} style={{ 
                                 opacity: reminderMinutes !== null ? 1 : 0.8,
-                                color: reminderMinutes !== null ? 'var(--reminder-color)' : 'inherit'
+                                color: reminderMinutes !== null ? 'var(--primary-color)' : 'inherit'
                             }} />
                             {reminderMinutes === null ? 'תזכורת' : reminderOptions.find(o => o.value === reminderMinutes)?.label}
                         </button>
@@ -584,7 +584,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                             else e.currentTarget.style.background = 'var(--dropdown-selected)';
                                         }}
                                     >
-                                        <Bell size={14} style={{ color: reminderMinutes === opt.value ? 'var(--reminder-color)' : 'var(--text-secondary)' }} />
+                                        <Bell size={14} style={{ color: reminderMinutes === opt.value ? 'var(--primary-color)' : 'var(--text-secondary)' }} />
                                         <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
                                     </button>
                                 ))}

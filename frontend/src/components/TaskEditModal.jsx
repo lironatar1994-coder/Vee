@@ -812,12 +812,12 @@ export default function TaskEditModal({
                             onClick={() => setShowReminderMenu(!showReminderMenu)}
                             style={{
                                 ...actionRowStyle,
-                                color: reminderMinutes !== null ? 'var(--reminder-color)' : 'var(--text-secondary)'
+                                color: reminderMinutes !== null ? 'var(--primary-color)' : 'var(--text-secondary)'
                             }}
                             onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
-                            <Bell size={18} />
+                            <Bell size={18} color={reminderMinutes !== null ? 'var(--primary-color)' : 'var(--text-secondary)'} />
                             <span>
                                 {reminderMinutes === null ? 'תזכורות' : (
                                     reminderMinutes === 0 ? 'בזמן האירוע' :
