@@ -1,0 +1,108 @@
+:root {
+  --app-bg: #FFFFFF;
+  --bg-color: #FFFFFF;
+  --bg-secondary: #FFFFFF;
+  /* Now pure white for elevation */
+  --bg-inset: #F8F9FA;
+  /* Keeping a very light gray for insets if needed elsewhere */
+  --sidebar-bg: #F8F9FA;
+  /* Keep sidebar same as before for light mode */
+  --text-primary: #000000;
+  /* Pure black for main content */
+  --text-secondary: #475569;
+  /* Darker slate gray for better readability */
+  --primary-color: #4F46E5;
+  --primary-rgb: 79, 70, 229;
+  --primary-hover: #4338CA;
+  --accent-color: #0EA5E9;
+  --border-color: #E2E8F0;
+  --hover-bg: #F1F5F9;
+  /* Adjusted hover slightly darker than secondary */
+  --sidebar-active-bg: #EEF2FF;
+  --sidebar-active-text: #4F46E5;
+  --sidebar-active-shadow: none;
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(226, 232, 240, 0.5);
+  --glass-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+
+  /* Semantic Colors & Priorities */
+  --success-color: #10B981;
+  --danger-color: #EF4444;
+  --priority-1: #D1453B;
+  /* Todoist Priority 1: High (Red) */
+  --priority-2: #EB8909;
+  /* Todoist Priority 2: Medium (Orange) */
+  --priority-3: #246FE0;
+  /* Todoist Priority 3: Low (Blue) */
+  --priority-4: #94A3B8;
+  /* Todoist Priority 4: Default (Gray - text-secondary) */
+  --reminder-color: #f59e0b;
+
+  --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+  /* Stronger depth for white cards */
+  --float-hover-shadow: 0 16px 48px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* Hover shadow for cards */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --transition: all 0.1s ease;
+  /* Bouncy transition */
+  --bg-gray-soft: #F8FAFC;
+  --btn-text-primary: #FFFFFF;
+  --sidebar-item-gap: 0.15rem;
+  --sidebar-link-py: 0.35rem;
+  --invert-icon: brightness(0) saturate(100%) invert(26%) sepia(87%) saturate(2250%) hue-rotate(238deg) brightness(97%) contrast(92%);
+
+  /* Dropdown specific */
+  --dropdown-hover: #F1F5F9;
+  --dropdown-selected: #EEF2FF;
+  --v-separator: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] {
+  --app-bg: #030712;
+  /* Deep black-blue for maximum depth */
+  --bg-color: #0F172A;
+  /* Main area background */
+  --bg-secondary: #1E293B;
+  /* Card background */
+  --sidebar-bg: #030712;
+  /* Sidebar background */
+  --text-primary: #F8FAFC;
+  /* Brighter white for dark mode contrast */
+  --text-secondary: #CBD5E1;
+  /* High contrast gray for readability */
+  --primary-color: #6366F1;
+  --primary-rgb: 99, 102, 241;
+  --primary-hover: #818CF8;
+  --accent-color: #38BDF8;
+  --border-color: #334155;
+  --hover-bg: #1E293B;
+  --sidebar-active-bg: rgba(99, 102, 241, 0.15);
+  --sidebar-active-text: #818CF8;
+  --sidebar-active-shadow: none;
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(51, 65, 85, 0.4);
+  --glass-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+
+  /* Semantic Colors & Priorities (Dark Mode Adjustments) */
+  --priority-1: #E0544C;
+  --priority-2: #F29A26;
+  --priority-3: #4088F2;
+  --priority-4: #94A3B8;
+
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+  --float-hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.15);
+  /* Hover shadow for cards */
+  --btn-text-primary: #FFFFFF;
+  --invert-icon: invert(1) brightness(1.5);
+
+  /* Dropdown specific */
+  --dropdown-hover: #1E293B;
+  --dropdown-selected: rgba(99, 102, 241, 0.2);
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Quintic ease-out - ultra smooth deceleration */
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}

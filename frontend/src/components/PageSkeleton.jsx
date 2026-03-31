@@ -8,7 +8,9 @@ const PageSkeleton = () => {
             margin: '0 auto', 
             padding: '20px 2.5rem 100px',
             marginTop: '56px', // Matches persistent header height
-            opacity: 0.6
+            background: 'var(--bg-color)',
+            minHeight: '100vh',
+            animation: 'fadeIn 0.2s ease-out forwards'
         }}>
             {/* Header / Title Area Skeleton */}
             <div style={{ padding: '20px 0 20px' }}>

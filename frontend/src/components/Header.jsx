@@ -4,18 +4,19 @@ import { useHeader, useHeaderScroll } from '../context/HeaderContext';
 
 const Header = ({
     hPadding,
-    breadcrumb,
-    title,
     isMobile,
-    isSidebarOpen,
-    headerActions,
-    onCompletedToggle,
-    isCompletedActive,
-    showCompletedToggle = false
+    isSidebarOpen
 }) => {
     const { scrollTop } = useHeaderScroll();
-    const config = useHeader();
-    const forceShowTitle = config.forceShowTitle || false;
+    const { 
+        title, 
+        breadcrumb, 
+        headerActions, 
+        onCompletedToggle, 
+        isCompletedActive, 
+        showCompletedToggle,
+        forceShowTitle
+    } = useHeader();
 
     return (
         <div

@@ -154,18 +154,12 @@ const Sidebar = ({ isOpen, onToggle }) => {
     }, []);
 
     const handleNav = (path) => {
-        // Start route transition first
+        // Start route transition
         startTransition(() => {
             navigate(path);
         });
 
-        // Slightly longer delay to ensure React has started the transition 
-        // before we trigger the sidebar close animation
-        if (window.innerWidth <= 992) {
-            setTimeout(() => {
-                onToggle();
-            }, 50);
-        }
+        // Sidebar close is now handled by Layout.jsx logic to wait for page load
     };
 
     const openTemplateModal = () => {

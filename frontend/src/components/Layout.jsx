@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import PageSkeleton from './PageSkeleton';
@@ -10,6 +10,7 @@ import { HeaderProvider, useHeader, useHeaderScroll } from '../context/HeaderCon
 const MemoizedHeader = React.memo(Header);
 
 const LayoutContent = () => {
+    const location = useLocation();
     // Initial state from localStorage or default to true on desktop
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
         // On mobile, the default is always closed
@@ -24,8 +25,8 @@ const LayoutContent = () => {
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
 
-    // Config values from HeaderContext
-    const { title, breadcrumb, headerActions, onCompletedToggle, isCompletedActive, showCompletedToggle } = useHeader();
+    // Config values from HeaderContext: No longer consumed here to avoid rerendering on header updates
+    // const { title, breadcrumb, headerActions, onCompletedToggle, isCompletedActive, showCompletedToggle } = useHeader();
 
     // LayoutContent no longer consumes useHeaderScroll directly to avoid rerendering on scroll
 
@@ -34,10 +35,24 @@ const LayoutContent = () => {
             document.body.style.overflow = 'hidden';
             document.body.style.touchAction = 'none';
         } else {
-            document.body.style.overflow = '';
-            document.body.style.touchAction = '';
+            // Delay cleanup slightly to avoid layout jump during the closing animation
+            const timer = setTimeout(() => {
+                document.body.style.overflow = '';
+                document.body.style.touchAction = '';
+            }, 300); // Matches sidebar transition duration
+            return () => clearTimeout(timer);
         }
     }, [isMobile, isSidebarOpen]);
+
+    // Close sidebar on mobile after navigation with a deliberate delay
+    useEffect(() => {
+        if (isMobile && isSidebarOpen) {
+            const timer = setTimeout(() => {
+                setIsSidebarOpen(false);
+            }, 400); // Delay until the page "loads" (or skeleton is visible)
+            return () => clearTimeout(timer);
+        }
+    }, [location.pathname, isMobile]); // Only trigger on navigation/resize
 
     useEffect(() => {
         const handleResize = () => {
@@ -86,8 +101,9 @@ const LayoutContent = () => {
     // Memoize context value for Outlet to prevent children rerendering on parent state changes
     const outletContextValue = useMemo(() => ({
         isSidebarOpen,
-        toggleSidebar
-    }), [isSidebarOpen, toggleSidebar]);
+        toggleSidebar,
+        isMobile
+    }), [isSidebarOpen, toggleSidebar, isMobile]);
 
     return (
         <div className={`app-layout ${!isSidebarOpen ? 'sidebar-closed' : 'sidebar-open'} ${isMobile ? 'is-mobile' : 'is-desktop'}`} style={{ overscrollBehavior: 'none' }}>
@@ -102,14 +118,8 @@ const LayoutContent = () => {
             <div className="content-wrapper">
                 <MemoizedHeader
                     hPadding={hPadding}
-                    breadcrumb={breadcrumb}
-                    title={title}
                     isMobile={isMobile}
                     isSidebarOpen={isSidebarOpen}
-                    headerActions={headerActions}
-                    onCompletedToggle={onCompletedToggle}
-                    isCompletedActive={isCompletedActive}
-                    showCompletedToggle={showCompletedToggle}
                 />
 
                 <button
@@ -152,7 +162,9 @@ const LayoutContent = () => {
 
                 <main className="main-content">
                     <Suspense fallback={<PageSkeleton />}>
-                        <Outlet context={outletContextValue} />
+                        <div key={location.pathname} className="fade-in">
+                            <Outlet context={outletContextValue} />
+                        </div>
                     </Suspense>
                 </main>
             </div>
