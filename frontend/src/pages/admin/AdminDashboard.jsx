@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode, Smartphone, Loader2, CheckCircle2 } from 'lucide-react';
+import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode, Smartphone, Loader2, CheckCircle2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { useHeaderScroll } from '../../context/HeaderContext';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
 import WhatsappTemplateEditor from '../../components/admin/WhatsappTemplateEditor';
+import WhatsappLogsModal from '../../components/admin/WhatsappLogsModal';
 
 const API_URL = '/api';
 
@@ -17,6 +18,7 @@ const AdminDashboard = () => {
     const [whatsappStatus, setWhatsappStatus] = useState('INITIALIZING');
     const [whatsappQr, setWhatsappQr] = useState(null);
     const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
+    const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
     const { setScrollTop: setGlobalScrollTop } = useHeaderScroll();
 
     useEffect(() => {
@@ -169,13 +171,23 @@ const AdminDashboard = () => {
                         </div>
                         <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>חיבור ל-WhatsApp סנטר</h2>
                         
-                        <button 
-                            className="btn-secondary" 
-                            style={{ margin: '0.5rem 0 1.5rem', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
-                            onClick={() => setIsTemplateEditorOpen(true)}
-                        >
-                            ערוך תבנית הודעה
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.75rem', margin: '0.5rem 0 1.5rem' }}>
+                            <button 
+                                className="btn-secondary" 
+                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                onClick={() => setIsTemplateEditorOpen(true)}
+                            >
+                                ערוך תבנית
+                            </button>
+                            <button 
+                                className="btn-secondary" 
+                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                onClick={() => setIsLogsModalOpen(true)}
+                            >
+                                <History size={14} />
+                                יומני שליחה
+                            </button>
+                        </div>
 
                         {whatsappStatus === 'INITIALIZING' && (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
@@ -229,6 +241,11 @@ const AdminDashboard = () => {
             <WhatsappTemplateEditor 
                 isOpen={isTemplateEditorOpen} 
                 onClose={() => setIsTemplateEditorOpen(false)} 
+            />
+
+            <WhatsappLogsModal 
+                isOpen={isLogsModalOpen} 
+                onClose={() => setIsLogsModalOpen(false)} 
             />
         </div>
     );

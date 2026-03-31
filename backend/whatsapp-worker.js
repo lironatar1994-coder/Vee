@@ -88,7 +88,7 @@ setInterval(() => {
         const query = `
             SELECT 
                 ci.id, ci.content, ci.time, ci.target_date, ci.reminder_minutes, ci.whatsapp_last_sent_date,
-                u.phone, u.username
+                u.id as user_id, u.phone, u.username
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
             JOIN users u ON c.user_id = u.id
@@ -110,7 +110,7 @@ setInterval(() => {
             const [hours, minutes] = task.time.split(':').map(Number);
             if (isNaN(hours) || isNaN(minutes)) continue;
 
-            const taskDateTime = new Date(); // It is today
+            const taskDateTime = new Date(); // In Israel Timezone now
             taskDateTime.setHours(hours, minutes, 0, 0);
 
             // Calculate when the reminder SHOULD fire
@@ -141,10 +141,18 @@ setInterval(() => {
 
                 client.sendMessage(chatId, reminderMsg).then(() => {
                     console.log(`[WhatsApp Worker] Sent reminder for task ${task.id} to ${phoneNum}`);
+                    // Log success
+                    db.prepare('INSERT INTO whatsapp_logs (user_id, phone, message, status) VALUES (?, ?, ?, ?)').run(
+                        task.user_id, phoneNum, reminderMsg, 'success'
+                    );
                     // Mark as sent for today
                     db.prepare('UPDATE checklist_items SET whatsapp_last_sent_date = ? WHERE id = ?').run(currentDateStr, task.id);
                 }).catch(err => {
                     console.error(`[WhatsApp Worker] Error sending message to ${phoneNum}:`, err);
+                    // Log failure
+                    db.prepare('INSERT INTO whatsapp_logs (user_id, phone, message, status, error) VALUES (?, ?, ?, ?, ?)').run(
+                        task.user_id, phoneNum, reminderMsg, 'failed', err.message
+                    );
                 });
             }
         }

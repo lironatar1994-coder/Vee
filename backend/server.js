@@ -441,6 +441,22 @@ app.get('/api/admin/whatsapp/status', adminAuth, (req, res) => {
     }
 });
 
+app.get('/api/admin/whatsapp/logs', adminAuth, (req, res) => {
+    try {
+        const logs = db.prepare(`
+            SELECT wl.*, u.username 
+            FROM whatsapp_logs wl
+            LEFT JOIN users u ON wl.user_id = u.id
+            ORDER BY wl.created_at DESC
+            LIMIT 100
+        `).all();
+        res.json(logs);
+    } catch (err) {
+        console.error('Error fetching WA logs', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 app.get('/api/admin/settings/:key', adminAuth, (req, res) => {
     try {
         const setting = db.prepare('SELECT value FROM settings WHERE key = ?').get(req.params.key);

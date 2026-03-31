@@ -166,19 +166,20 @@ const initDb = () => {
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS invitations (
+    CREATE TABLE IF NOT EXISTS whatsapp_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      inviter_id INTEGER NOT NULL,
-      email TEXT NOT NULL,
-      token TEXT UNIQUE NOT NULL,
-      expires_at DATETIME NOT NULL,
-      used_at DATETIME,
+      user_id INTEGER,
+      phone TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL, -- 'success' or 'failed'
+      error TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (inviter_id) REFERENCES users (id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
     );
 
     -- Performance Indexes
     CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
+    CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_created ON whatsapp_logs(created_at);
     CREATE INDEX IF NOT EXISTS idx_checklists_project_id ON checklists(project_id);
     CREATE INDEX IF NOT EXISTS idx_checklist_items_checklist_id ON checklist_items(checklist_id);
     CREATE INDEX IF NOT EXISTS idx_daily_progress_date ON daily_progress(date);
