@@ -81,7 +81,7 @@ setInterval(() => {
 
     try {
         const now = new Date();
-        const currentDateStr = now.toISOString().split('T')[0];
+        const currentDateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
         // 1. Get all incomplete tasks with a valid time and a specified reminder, joined with users who have WhatsApp enabled
         // Also checking ci.whatsapp_last_sent_date != currentDateStr to ensure we only send ONE reminder per day for recurring tasks (or single tasks).
