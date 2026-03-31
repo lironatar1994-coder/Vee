@@ -82,8 +82,6 @@ setInterval(() => {
     try {
         const now = new Date();
         const currentDateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-        
-        console.log(`[WhatsApp Worker] Checked at ${now.toLocaleTimeString()}: Searching tasks for ${currentDateStr}`);
 
         // 1. Get all incomplete tasks with a valid time and a specified reminder, joined with users who have WhatsApp enabled
         // Also checking ci.whatsapp_last_sent_date != currentDateStr to ensure we only send ONE reminder per day for recurring tasks (or single tasks).
@@ -106,9 +104,6 @@ setInterval(() => {
         `;
 
         const tasks = db.prepare(query).all(currentDateStr, currentDateStr);
-        if (tasks.length > 0) {
-            console.log(`[WhatsApp Worker] Found ${tasks.length} tasks scheduled for ${currentDateStr}`);
-        }
 
         for (const task of tasks) {
             // Task time string is typically "HH:MM"
