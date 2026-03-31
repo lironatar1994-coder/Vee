@@ -21,7 +21,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const [showTimeMenu, setShowTimeMenu] = useState(false);
     const [repeatRule, setRepeatRule] = useState(null);
     const [time, setTime] = useState(initialTime || '');
-    const [duration, setDuration] = useState(15);
+    const [duration, setDuration] = useState(0);
     const [dynamicPlaceholder, setDynamicPlaceholder] = useState(() => getRandomTaskPlaceholder());
     const [selectedChecklist, setSelectedChecklist] = useState(checklist);
     const [selectedProject, setSelectedProject] = useState(defaultProject || null);
@@ -113,7 +113,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         window.globalNewItemDate = newItemDate || null;
         window.globalNewItemRepeatRule = repeatRule || null;
         window.globalNewItemTime = time || null;
-        window.globalNewItemDuration = duration || 15;
+        window.globalNewItemDuration = duration || 0;
         window.globalNewItemPriority = priority || 4;
         window.globalNewItemReminderMinutes = reminderMinutes;
 
@@ -154,7 +154,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         setNewItemContent('');
         setDescription('');
         setTime('');
-        setDuration(15);
+        setDuration(0);
         setNewItemDate('');
         setRepeatRule(null);
         setPriority(4);

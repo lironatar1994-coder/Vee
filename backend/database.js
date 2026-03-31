@@ -73,7 +73,7 @@ const initDb = () => {
       description TEXT,
       repeat_rule TEXT,
       time TEXT,
-      duration INTEGER DEFAULT 15,
+      duration INTEGER DEFAULT 0,
       order_index INTEGER DEFAULT 0,
       target_date TEXT,
       reminder_minutes INTEGER,
@@ -293,7 +293,7 @@ const initDb = () => {
   // Migration: Add duration to checklist_items if missing
   const hasDuration = tableInfoItems.some(col => col.name === 'duration');
   if (!hasDuration) {
-    db.exec('ALTER TABLE checklist_items ADD COLUMN duration INTEGER DEFAULT 15');
+    db.exec('ALTER TABLE checklist_items ADD COLUMN duration INTEGER DEFAULT 0');
   }
 
   // Migration: Add priority to checklist_items if missing
