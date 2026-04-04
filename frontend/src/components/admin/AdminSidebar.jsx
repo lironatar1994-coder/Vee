@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PieChart, Users, Settings, LogOut, Activity, SidebarClose } from 'lucide-react';
+import { PieChart, Users, Settings, LogOut, Activity, SidebarClose, MessageCircle } from 'lucide-react';
 
 const AdminSidebar = ({ isOpen, onToggle }) => {
     const navigate = useNavigate();
@@ -46,6 +46,12 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
                             <NavLink to="/admin/users" end className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', borderRadius: '1rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 500, fontSize: '1.05rem' }}>
                                 <Users size={22} />
                                 <span>ניהול משתמשים</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to="/admin/whatsapp" end className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', borderRadius: '1rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 500, fontSize: '1.05rem' }}>
+                                <MessageCircle size={22} />
+                                <span>מרכז WhatsApp</span>
                             </NavLink>
                         </li>
                     </ul>

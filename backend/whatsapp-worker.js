@@ -260,6 +260,25 @@ setInterval(() => {
                 });
             }
         }
+
+        // --- Process Outbox (Broadcasts) ---
+        const outboxItems = db.prepare("SELECT * FROM whatsapp_outbox WHERE status = 'pending' LIMIT 50").all();
+        for (const outboxMsg of outboxItems) {
+            let phoneNum = outboxMsg.to_phone;
+            if (phoneNum.startsWith('0')) {
+                phoneNum = '972' + phoneNum.substring(1);
+            }
+            const chatId = phoneNum + '@c.us';
+            
+            client.sendMessage(chatId, outboxMsg.message).then(() => {
+                console.log(`[WhatsApp Worker] Sent broadcast ${outboxMsg.id} to ${phoneNum}`);
+                db.prepare("UPDATE whatsapp_outbox SET status = 'sent' WHERE id = ?").run(outboxMsg.id);
+            }).catch(err => {
+                console.error(`[WhatsApp Worker] Failed broadcast ${outboxMsg.id} to ${phoneNum}:`, err);
+                db.prepare("UPDATE whatsapp_outbox SET status = 'failed' WHERE id = ?").run(outboxMsg.id);
+            });
+        }
+
     } catch (err) {
         console.error('[WhatsApp Worker] Cron interval error:', err);
     }

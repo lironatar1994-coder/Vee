@@ -2019,6 +2019,46 @@ app.get('/api/admin/users/:id/login-logs', adminAuth, (req, res) => {
     }
 });
 
+// --- WhatsApp Admin Features ---
+app.get('/api/admin/whatsapp/analytics', adminAuth, (req, res) => {
+    try {
+        const totalRemindersSent = db.prepare("SELECT COUNT(*) as count FROM whatsapp_logs WHERE status = 'SENT'").get().count;
+        const totalRemindersFailed = db.prepare("SELECT COUNT(*) as count FROM whatsapp_logs WHERE status = 'FAILED'").get().count;
+        const enabledUsers = db.prepare("SELECT COUNT(*) as count FROM users WHERE whatsapp_enabled = 1 AND phone IS NOT NULL").get().count;
+        
+        // Count tasks added by whatsapp (proxy by measuring items dynamically inserted within last X days, not directly tracked easily so we skip for now)
+        // Future tracking can log 'WHATSAPP_TASK_ADDED' into user_logs.
+        
+        res.json({ totalRemindersSent, totalRemindersFailed, enabledUsers });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch WhatsApp analytics' });
+    }
+});
+
+app.post('/api/admin/whatsapp/broadcast', adminAuth, (req, res) => {
+    const { message } = req.body;
+    if (!message || message.trim() === '') return res.status(400).json({ error: 'Message cannot be empty' });
+
+    try {
+        const users = db.prepare('SELECT phone FROM users WHERE whatsapp_enabled = 1 AND phone IS NOT NULL AND phone != ""').all();
+        const insertOutbox = db.prepare('INSERT INTO whatsapp_outbox (to_phone, message) VALUES (?, ?)');
+        
+        let count = 0;
+        db.transaction(() => {
+            for (const user of users) {
+                insertOutbox.run(user.phone, message);
+                count++;
+            }
+        })();
+        
+        res.json({ success: true, count });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to queue broadcast' });
+    }
+});
+
 app.post('/api/admin/users/:id/reset-password', adminAuth, (req, res) => {
     try {
         const userId = req.params.id;

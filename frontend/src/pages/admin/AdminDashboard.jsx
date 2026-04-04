@@ -3,8 +3,7 @@ import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode
 import { toast } from 'sonner';
 import { useHeaderScroll } from '../../context/HeaderContext';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
-import WhatsappTemplateEditor from '../../components/admin/WhatsappTemplateEditor';
-import WhatsappLogsModal from '../../components/admin/WhatsappLogsModal';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = '/api';
 
@@ -16,11 +15,8 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState(null);
     const [whatsappStatus, setWhatsappStatus] = useState('INITIALIZING');
-    const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
-    const [isDisableMsgEditorOpen, setIsDisableMsgEditorOpen] = useState(false);
-    const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
-    const [isTaskAdderEnabled, setIsTaskAdderEnabled] = useState(true);
     const { setScrollTop: setGlobalScrollTop } = useHeaderScroll();
+    const navigate = useNavigate();
 
     useEffect(() => {
         setGlobalScrollTop(0);
@@ -48,7 +44,6 @@ const AdminDashboard = () => {
             if (res.ok) {
                 const data = await res.json();
                 setWhatsappStatus(data.status);
-                setWhatsappQr(data.qr);
             }
         } catch (e) {
             console.error('Error fetching WA status', e);
@@ -74,14 +69,8 @@ const AdminDashboard = () => {
                 // Will be handled by layout redirect optionally, or explicit logic
                 return;
             }
-
             const statsData = await statsRes.json();
             const usersData = await usersRes.json();
-            
-            if (settingsRes.ok) {
-                const settingsData = await settingsRes.json();
-                setIsTaskAdderEnabled(settingsData.value !== 'false');
-            }
 
             setStats(statsData);
             setUsers(usersData);
@@ -93,28 +82,6 @@ const AdminDashboard = () => {
     };
 
     const [scrollTop, setScrollTop] = useState(0);
-
-    const toggleTaskAdder = async () => {
-        const token = localStorage.getItem('adminToken');
-        const newVal = !isTaskAdderEnabled;
-        try {
-            const res = await fetch(`${API_URL}/admin/settings`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Admin-Token': token },
-                body: JSON.stringify({ key: 'whatsapp_task_adder_enabled', value: newVal.toString() })
-            });
-
-            if (res.ok) {
-                setIsTaskAdderEnabled(newVal);
-                toast.success(newVal ? 'יצירת משימות מוואטסאפ הופעלה' : 'יצירת משימות מוואטסאפ הושבתה');
-            } else {
-                toast.error('שגיאה בעדכון ההגדרה');
-            }
-        } catch (err) {
-            toast.error('שגיאה בשמירת שינויים');
-        }
-    };
-
     if (loading || !stats) return <div style={{ textAlign: 'center', padding: '3rem' }}>טוען נתונים...</div>;
 
     const statCards = [
@@ -193,86 +160,16 @@ const AdminDashboard = () => {
                         </p>
                     </div>
 
-                    <div className="card" style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', background: 'var(--bg-secondary)', border: `1px solid ${whatsappStatus === 'READY' ? 'var(--success-color)' : 'var(--border-color)'}` }}>
+                    <div className="card" onClick={() => navigate('/admin/whatsapp')} style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', background: 'var(--bg-secondary)', border: `1px solid ${whatsappStatus === 'READY' ? 'var(--success-color)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                         <div style={{ padding: '1rem', borderRadius: '50%', marginBottom: '1rem', background: whatsappStatus === 'READY' ? 'var(--success-color)20' : 'var(--primary-color)10', color: whatsappStatus === 'READY' ? 'var(--success-color)' : 'var(--primary-color)' }}>
                             <MessageCircle size={32} />
                         </div>
-                        <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>חיבור ל-WhatsApp סנטר</h2>
-                        
-                        <div style={{ display: 'flex', gap: '0.5rem', margin: '0.5rem 0 1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                            <button 
-                                className={isTaskAdderEnabled ? "btn-primary" : "btn-secondary"} 
-                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: isTaskAdderEnabled ? 'var(--success-color)' : '', border: isTaskAdderEnabled ? 'none' : '' }}
-                                onClick={toggleTaskAdder}
-                                title="הפעל או השבת יצירת משימות נכנסות מוואטסאפ"
-                            >
-                                {isTaskAdderEnabled ? 'בוט משימות: פעיל' : 'בוט משימות: כבוי'}
-                            </button>
-                            
-                            {isTaskAdderEnabled ? (
-                                <button 
-                                    className="btn-secondary" 
-                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                    onClick={() => setIsTemplateEditorOpen(true)}
-                                >
-                                    תבנית תזכורות
-                                </button>
-                            ) : (
-                                <button 
-                                    className="btn-secondary" 
-                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--danger-color)', color: 'var(--danger-color)' }}
-                                    onClick={() => setIsDisableMsgEditorOpen(true)}
-                                >
-                                    הודעת השבתה
-                                </button>
-                            )}
-                            
-                            <button 
-                                className="btn-secondary" 
-                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                onClick={() => setIsLogsModalOpen(true)}
-                            >
-                                <History size={14} />
-                                יומני שליחה
-                            </button>
+                        <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>מרכז WhatsApp</h2>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>ניהול הודעות המוניות, תבניות ואנליטיקות</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', borderRadius: '20px', background: whatsappStatus === 'READY' ? 'var(--success-color)10' : 'var(--border-color)', color: whatsappStatus === 'READY' ? 'var(--success-color)' : 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: whatsappStatus === 'READY' ? 'var(--success-color)' : 'var(--text-secondary)' }} />
+                            {whatsappStatus === 'READY' ? 'פעיל' : 'דרוש טיפול'}
                         </div>
-
-                        {whatsappStatus === 'INITIALIZING' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
-                                <Loader2 size={24} className="spin" style={{ color: 'var(--text-secondary)' }} />
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>מאתחל את שרת הווסטאפ...</span>
-                            </div>
-                        )}
-
-                        {whatsappStatus === 'NEEDS_SCAN' && whatsappQr && (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
-                                <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                                    <img src={whatsappQr} alt="WhatsApp QR Code" style={{ width: '200px', height: '200px' }} />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                                    <Smartphone size={18} />
-                                    <span>סרוק את הברקוד דרך "מכשירים מקושרים" בוואטסאפ</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {whatsappStatus === 'READY' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success-color)', background: 'var(--success-color)10', padding: '0.5rem 1rem', borderRadius: '20px', fontWeight: 600 }}>
-                                    <CheckCircle2 size={18} />
-                                    <span>הבוט מחובר ופעיל</span>
-                                </div>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textAlign: 'center', maxWidth: '300px' }}>
-                                    הודעות תזכורת ישלחו למשתמשים שהגדירו מספר פלאפון בהגדרות האישיות.
-                                </span>
-                            </div>
-                        )}
-                        
-                        {whatsappStatus === 'ERROR' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', color: 'var(--danger-color)' }}>
-                                <span>שגיאת התחברות לבוט. בדוק את השרת.</span>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
@@ -285,25 +182,6 @@ const AdminDashboard = () => {
                     onUserUpdated={fetchAdminData}
                 />
             )}
-
-            <WhatsappTemplateEditor 
-                isOpen={isTemplateEditorOpen} 
-                onClose={() => setIsTemplateEditorOpen(false)} 
-            />
-
-            <WhatsappTemplateEditor 
-                isOpen={isDisableMsgEditorOpen} 
-                onClose={() => setIsDisableMsgEditorOpen(false)} 
-                settingKey="whatsapp_task_adder_disabled_msg"
-                title="עריכת הודעת השבתה"
-                fallbackTemplate="יצירת משימות דרך וואטסאפ מושבתת כרגע."
-                variables={[]}
-            />
-
-            <WhatsappLogsModal 
-                isOpen={isLogsModalOpen} 
-                onClose={() => setIsLogsModalOpen(false)} 
-            />
         </div>
     );
 };

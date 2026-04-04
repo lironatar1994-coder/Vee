@@ -20,6 +20,14 @@ const initDb = () => {
       value TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS whatsapp_outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      to_phone TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS admins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,

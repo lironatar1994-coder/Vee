@@ -13,6 +13,7 @@ const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const WhatsappAdmin = lazy(() => import('./pages/admin/WhatsappAdmin'));
 
 // Lazy-loaded App pages
 const Home = lazy(() => import('./pages/Home'));
@@ -62,6 +63,7 @@ function App() {
         <Route path="/admin" element={<Suspense fallback={<></>}><AdminLayout /></Suspense>}>
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
+          <Route path="whatsapp" element={<WhatsappAdmin />} />
         </Route>
 
         {/* Normal App Routes */}
