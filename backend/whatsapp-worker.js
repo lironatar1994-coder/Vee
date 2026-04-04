@@ -2,9 +2,36 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+const nodemailer = require('nodemailer');
+
 const db = require('./database');
+const geminiService = require('./gemini-service');
 
 const STATUS_FILE = path.join(__dirname, 'whatsapp_status.json');
+
+// Admin Alert Service setup
+const transporter = nodemailer.createTransport({
+    host: 'smtp.resend.com',
+    port: 465,
+    secure: true,
+    auth: {
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY || 'fake_key' // Don't crash if loading config separately, it handles gracefully below
+    }
+});
+
+function sendAdminAlert(subject, text) {
+    if (!process.env.RESEND_API_KEY) {
+        console.warn('RESEND_API_KEY not set. Cannot send admin alert.');
+        return;
+    }
+    transporter.sendMail({
+        from: process.env.EMAIL_FROM || 'Vee Alerts <onboarding@resend.dev>',
+        to: 'lironatar94@gmail.com',
+        subject: subject,
+        text: text
+    }).catch(err => console.error('[WhatsApp Worker] Failed to send admin alert', err));
+}
 
 // Helper to write status to JSON for the main server.js to read
 function updateStatus(status, qrDataUrl = null) {
@@ -31,6 +58,7 @@ client.on('qr', async (qr) => {
     try {
         const qrDataUrl = await qrcode.toDataURL(qr, { errorCorrectionLevel: 'H' });
         updateStatus('NEEDS_SCAN', qrDataUrl);
+        sendAdminAlert('Vee Alert: WhatsApp Disconnected', 'The Vee WhatsApp integration was disconnected and requires a new QR code scan. Please visit the admin dashboard to scan it.');
     } catch (err) {
         console.error('Failed to generate QR Data URL', err);
     }
@@ -53,6 +81,7 @@ client.on('auth_failure', (msg) => {
 client.on('disconnected', (reason) => {
     console.log('[WhatsApp Worker] Client was logged out or disconnected:', reason);
     updateStatus('NEEDS_SCAN');
+    sendAdminAlert('Vee Alert: WhatsApp Logged Out', `The WhatsApp client disconnected. Reason: ${reason}`);
 });
 
 // helper to clean up puppeteer locks on linux
@@ -68,6 +97,66 @@ try {
 } catch (err) {
     console.warn('[WhatsApp Worker] Failed to clean up SingletonLock (might not exist):', err.message);
 }
+
+// --- Incoming Message Handler ---
+client.on('message', async msg => {
+    // 1. Ignore system/group messages
+    if (msg.from.includes('@g.us') || msg.isStatus) return;
+
+    // 2. Format phone number & lookup user
+    let phoneNum = msg.from.split('@')[0];
+    if (phoneNum.startsWith('972')) phoneNum = '0' + phoneNum.substring(3);
+    
+    // Look for user with this phone AND whatsapp_enabled
+    const user = db.prepare('SELECT id, username FROM users WHERE phone = ? AND whatsapp_enabled = 1').get(phoneNum);
+    if (!user) return; // Unregistered or disabled user
+
+    try {
+        // 3. Call Gemini Service
+        const taskData = await geminiService.parseTaskMessage(msg.body);
+
+        // 4. Find Inbox (project_id IS NULL)
+        let inbox = db.prepare('SELECT id FROM checklists WHERE user_id = ? AND project_id IS NULL LIMIT 1').get(user.id);
+        if (!inbox) {
+            const res = db.prepare("INSERT INTO checklists (title, user_id, project_id) VALUES ('Inbox', ?, NULL)").run(user.id);
+            inbox = { id: res.lastInsertRowid };
+        }
+
+        // 5. Calculate Order Index
+        const maxOrder = db.prepare('SELECT MAX(order_index) as maxIdx FROM checklist_items WHERE checklist_id = ?').get(inbox.id);
+        const order_index = (maxOrder && maxOrder.maxIdx !== null) ? maxOrder.maxIdx + 1 : 0;
+
+        // 6. DB Insertion
+        db.prepare(`
+            INSERT INTO checklist_items 
+            (checklist_id, content, order_index, target_date, time, duration) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).run(inbox.id, taskData.content, order_index, taskData.target_date || null, taskData.time || null, taskData.duration || 15);
+
+        // 7. Construct Server-Side Confirmation Message (Hebrew)
+        let replyMsg = `המשימה הבאה נוצרה: *${taskData.content}*`;
+        
+        if (taskData.target_date && taskData.target_date !== 'null') {
+            const dateObj = new Date(taskData.target_date);
+            const hebrewDay = new Intl.DateTimeFormat('he-IL', { weekday: 'long' }).format(dateObj);
+            const formattedDate = new Intl.DateTimeFormat('he-IL').format(dateObj);
+            replyMsg += `\nמתי: ${hebrewDay} (${formattedDate})`;
+        }
+        
+        if (taskData.time && taskData.time !== 'null') {
+            replyMsg += `\nשעה: ${taskData.time}`;
+        }
+
+        if (taskData.duration && taskData.duration !== 15) { 
+            replyMsg += `\nמשך זמן: ${taskData.duration} דקות`;
+        }
+
+        // 8. Reply
+        await msg.reply(replyMsg);
+    } catch (e) {
+        console.error("[WhatsApp Worker] Error creating task via WhatsApp", e);
+    }
+});
 
 client.initialize();
 
