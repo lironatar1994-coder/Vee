@@ -111,6 +111,21 @@ client.on('message', async msg => {
     const user = db.prepare('SELECT id, username FROM users WHERE phone = ? AND whatsapp_enabled = 1').get(phoneNum);
     if (!user) return; // Unregistered or disabled user
 
+    // Check if task adder globally enabled
+    const enabledSetting = db.prepare("SELECT value FROM settings WHERE key = 'whatsapp_task_adder_enabled'").get();
+    const isEnabled = enabledSetting ? enabledSetting.value !== 'false' : true;
+    
+    if (!isEnabled) {
+        try {
+            const msgSetting = db.prepare("SELECT value FROM settings WHERE key = 'whatsapp_task_adder_disabled_msg'").get();
+            const disabledMsg = msgSetting ? msgSetting.value.replace(/\\n/g, '\n') : 'יצירת משימות דרך וואטסאפ מושבתת כרגע.';
+            await msg.reply(disabledMsg);
+        } catch(e) {
+            console.error('[WhatsApp Worker] Failed to send disabled msg', e);
+        }
+        return;
+    }
+
     try {
         // 3. Call Gemini Service
         const taskData = await geminiService.parseTaskMessage(msg.body);

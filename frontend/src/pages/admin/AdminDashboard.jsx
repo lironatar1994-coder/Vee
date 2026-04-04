@@ -16,9 +16,10 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState(null);
     const [whatsappStatus, setWhatsappStatus] = useState('INITIALIZING');
-    const [whatsappQr, setWhatsappQr] = useState(null);
     const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
+    const [isDisableMsgEditorOpen, setIsDisableMsgEditorOpen] = useState(false);
     const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+    const [isTaskAdderEnabled, setIsTaskAdderEnabled] = useState(true);
     const { setScrollTop: setGlobalScrollTop } = useHeaderScroll();
 
     useEffect(() => {
@@ -62,9 +63,10 @@ const AdminDashboard = () => {
         };
 
         try {
-            const [statsRes, usersRes] = await Promise.all([
+            const [statsRes, usersRes, settingsRes] = await Promise.all([
                 fetch(`${API_URL}/admin/stats`, { headers }),
-                fetch(`${API_URL}/admin/users`, { headers })
+                fetch(`${API_URL}/admin/users`, { headers }),
+                fetch(`${API_URL}/admin/settings/whatsapp_task_adder_enabled`, { headers })
             ]);
 
             if (statsRes.status === 401 || usersRes.status === 401) {
@@ -75,6 +77,11 @@ const AdminDashboard = () => {
 
             const statsData = await statsRes.json();
             const usersData = await usersRes.json();
+            
+            if (settingsRes.ok) {
+                const settingsData = await settingsRes.json();
+                setIsTaskAdderEnabled(settingsData.value !== 'false');
+            }
 
             setStats(statsData);
             setUsers(usersData);
@@ -86,6 +93,27 @@ const AdminDashboard = () => {
     };
 
     const [scrollTop, setScrollTop] = useState(0);
+
+    const toggleTaskAdder = async () => {
+        const token = localStorage.getItem('adminToken');
+        const newVal = !isTaskAdderEnabled;
+        try {
+            const res = await fetch(`${API_URL}/admin/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Admin-Token': token },
+                body: JSON.stringify({ key: 'whatsapp_task_adder_enabled', value: newVal.toString() })
+            });
+
+            if (res.ok) {
+                setIsTaskAdderEnabled(newVal);
+                toast.success(newVal ? 'יצירת משימות מוואטסאפ הופעלה' : 'יצירת משימות מוואטסאפ הושבתה');
+            } else {
+                toast.error('שגיאה בעדכון ההגדרה');
+            }
+        } catch (err) {
+            toast.error('שגיאה בשמירת שינויים');
+        }
+    };
 
     if (loading || !stats) return <div style={{ textAlign: 'center', padding: '3rem' }}>טוען נתונים...</div>;
 
@@ -171,14 +199,34 @@ const AdminDashboard = () => {
                         </div>
                         <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>חיבור ל-WhatsApp סנטר</h2>
                         
-                        <div style={{ display: 'flex', gap: '0.75rem', margin: '0.5rem 0 1.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', margin: '0.5rem 0 1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                             <button 
-                                className="btn-secondary" 
-                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                onClick={() => setIsTemplateEditorOpen(true)}
+                                className={isTaskAdderEnabled ? "btn-primary" : "btn-secondary"} 
+                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: isTaskAdderEnabled ? 'var(--success-color)' : '', border: isTaskAdderEnabled ? 'none' : '' }}
+                                onClick={toggleTaskAdder}
+                                title="הפעל או השבת יצירת משימות נכנסות מוואטסאפ"
                             >
-                                ערוך תבנית
+                                {isTaskAdderEnabled ? 'בוט משימות: פעיל' : 'בוט משימות: כבוי'}
                             </button>
+                            
+                            {isTaskAdderEnabled ? (
+                                <button 
+                                    className="btn-secondary" 
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                    onClick={() => setIsTemplateEditorOpen(true)}
+                                >
+                                    תבנית תזכורות
+                                </button>
+                            ) : (
+                                <button 
+                                    className="btn-secondary" 
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--danger-color)', color: 'var(--danger-color)' }}
+                                    onClick={() => setIsDisableMsgEditorOpen(true)}
+                                >
+                                    הודעת השבתה
+                                </button>
+                            )}
+                            
                             <button 
                                 className="btn-secondary" 
                                 style={{ fontSize: '0.85rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -241,6 +289,15 @@ const AdminDashboard = () => {
             <WhatsappTemplateEditor 
                 isOpen={isTemplateEditorOpen} 
                 onClose={() => setIsTemplateEditorOpen(false)} 
+            />
+
+            <WhatsappTemplateEditor 
+                isOpen={isDisableMsgEditorOpen} 
+                onClose={() => setIsDisableMsgEditorOpen(false)} 
+                settingKey="whatsapp_task_adder_disabled_msg"
+                title="עריכת הודעת השבתה"
+                fallbackTemplate="יצירת משימות דרך וואטסאפ מושבתת כרגע."
+                variables={[]}
             />
 
             <WhatsappLogsModal 

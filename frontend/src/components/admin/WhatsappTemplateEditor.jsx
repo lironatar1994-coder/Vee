@@ -4,18 +4,23 @@ import { toast } from 'sonner';
 
 const API_URL = '/api';
 
-const WhatsappTemplateEditor = ({ isOpen, onClose }) => {
+const WhatsappTemplateEditor = ({ 
+    isOpen, 
+    onClose, 
+    settingKey = 'whatsapp_template',
+    title = 'עריכת תבנית הודעה',
+    fallbackTemplate = '*_Vee Reminder_*\nשלום {user_name},\n\nתזכורת למשימה: *{task_name}*\nנקבע לשעה: {task_time}\n\nבהצלחה!',
+    variables = [
+        { key: '{user_name}', label: 'שם המשתמש', example: 'לירון' },
+        { key: '{task_name}', label: 'שם המשימה', example: 'פגישת צוות' },
+        { key: '{task_time}', label: 'שעת המשימה', example: '14:30' }
+    ]
+}) => {
     const [template, setTemplate] = useState('');
     const [originalTemplate, setOriginalTemplate] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const textareaRef = useRef(null);
-
-    const availableVariables = [
-        { key: '{user_name}', label: 'שם המשתמש', example: 'לירון' },
-        { key: '{task_name}', label: 'שם המשימה', example: 'פגישת צוות' },
-        { key: '{task_time}', label: 'שעת המשימה', example: '14:30' }
-    ];
 
     useEffect(() => {
         if (isOpen) {
@@ -27,21 +32,18 @@ const WhatsappTemplateEditor = ({ isOpen, onClose }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${API_URL}/admin/settings/whatsapp_template`, {
+            const res = await fetch(`${API_URL}/admin/settings/${settingKey}`, {
                 headers: { 'Admin-Token': token }
             });
             
             if (res.ok) {
                 const data = await res.json();
-                // Replace escaped newlines from DB with actual newlines for textarea
                 const formattedValue = data.value ? data.value.replace(/\\n/g, '\n') : '';
                 setTemplate(formattedValue);
                 setOriginalTemplate(formattedValue);
             } else if (res.status === 404) {
-                // If not found, use a fallback
-                const fallback = "*_Vee Reminder_*\nשלום {user_name},\n\nתזכורת למשימה: *{task_name}*\nנקבע לשעה: {task_time}\n\nבהצלחה!";
-                setTemplate(fallback);
-                setOriginalTemplate(fallback);
+                setTemplate(fallbackTemplate);
+                setOriginalTemplate(fallbackTemplate);
             } else {
                 toast.error('שגיאה בטעינת התבנית');
             }
@@ -69,7 +71,7 @@ const WhatsappTemplateEditor = ({ isOpen, onClose }) => {
                     'Content-Type': 'application/json',
                     'Admin-Token': token
                 },
-                body: JSON.stringify({ key: 'whatsapp_template', value: valueToSave })
+                body: JSON.stringify({ key: settingKey, value: valueToSave })
             });
 
             if (res.ok) {
@@ -105,10 +107,12 @@ const WhatsappTemplateEditor = ({ isOpen, onClose }) => {
     // Calculate dynamic preview
     const getPreviewText = () => {
         let preview = template;
-        availableVariables.forEach(v => {
-            const regex = new RegExp(v.key.replace(/[{}]/g, '\\$&'), 'g');
-            preview = preview.replace(regex, v.example);
-        });
+        if (variables && variables.length > 0) {
+            variables.forEach(v => {
+                const regex = new RegExp(v.key.replace(/[{}]/g, '\\$&'), 'g');
+                preview = preview.replace(regex, v.example);
+            });
+        }
         return preview;
     };
 
@@ -128,7 +132,7 @@ const WhatsappTemplateEditor = ({ isOpen, onClose }) => {
                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e' }}>
                             <MessageCircle size={18} />
                         </div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>עריכת תבנית הודעה</h2>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{title}</h2>
                     </div>
                     <button onClick={onClose} className="btn-icon-soft" style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>
                         <X size={20} />
@@ -144,32 +148,34 @@ const WhatsappTemplateEditor = ({ isOpen, onClose }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, overflowY: 'auto', paddingRight: '5px' }}>
                         
                         {/* Variables Section */}
-                        <div>
-                            <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>משתנים דינמיים הניתנים לשימוש (לחץ להוספה):</p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                {availableVariables.map(variable => (
-                                    <button 
-                                        key={variable.key}
-                                        onClick={() => insertVariable(variable.key)}
-                                        className="btn-pill"
-                                        style={{ 
-                                            background: 'var(--bg-secondary)', 
-                                            border: '1px solid var(--border-color)', 
-                                            padding: '0.4rem 0.75rem', 
-                                            fontSize: '0.85rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.4rem',
-                                            cursor: 'pointer'
-                                        }}
-                                        title={`דוגמה: ${variable.example}`}
-                                    >
-                                        <span style={{ fontFamily: 'monospace', color: 'var(--primary-color)', fontWeight: 600, direction: 'ltr' }}>{variable.key}</span>
-                                        <span style={{ color: 'var(--text-secondary)' }}>- {variable.label}</span>
-                                    </button>
-                                ))}
+                        {variables && variables.length > 0 && (
+                            <div>
+                                <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>משתנים דינמיים הניתנים לשימוש (לחץ להוספה):</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {variables.map(variable => (
+                                        <button 
+                                            key={variable.key}
+                                            onClick={() => insertVariable(variable.key)}
+                                            className="btn-pill"
+                                            style={{ 
+                                                background: 'var(--bg-secondary)', 
+                                                border: '1px solid var(--border-color)', 
+                                                padding: '0.4rem 0.75rem', 
+                                                fontSize: '0.85rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.4rem',
+                                                cursor: 'pointer'
+                                            }}
+                                            title={`דוגמה: ${variable.example}`}
+                                        >
+                                            <span style={{ fontFamily: 'monospace', color: 'var(--primary-color)', fontWeight: 600, direction: 'ltr' }}>{variable.key}</span>
+                                            <span style={{ color: 'var(--text-secondary)' }}>- {variable.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Editor Section */}
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '200px' }}>
