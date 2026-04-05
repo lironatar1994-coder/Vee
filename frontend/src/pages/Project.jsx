@@ -829,13 +829,14 @@ const Project = () => {
                     const updatedItem = await res.json();
                     if (updates.checklist_id !== undefined) {
                         fetchProjectData();
+                        toast.success('המשימה הועברה בהצלחה');
                     } else {
                         setChecklists(prev => prev.map(c => ({
                             ...c,
                             items: c.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
                         })));
+                        toast.success('משימה אחת נערכה');
                     }
-                    toast.success('משימה אחת נערכה');
                     window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
                 }
         } catch (err) {

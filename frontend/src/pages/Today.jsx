@@ -422,6 +422,7 @@ const Today = () => {
                 const updatedItem = await res.json();
                 if (updates.checklist_id !== undefined) {
                     fetchTodayTasks();
+                    toast.success('המשימה הועברה בהצלחה');
                 } else {
                     // Update with server truth
                     setProjectGroups(prev => prev.map(proj => ({
@@ -436,8 +437,8 @@ const Today = () => {
                             return { ...list, items: mapDeep(list.items || []) };
                         })
                     })));
+                    toast.success('משימה אחת נערכה');
                 }
-                toast.success('משימה אחת נערכה');
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             } else {
                 throw new Error("Failed to update");

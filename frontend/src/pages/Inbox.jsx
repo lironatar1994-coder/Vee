@@ -450,6 +450,7 @@ const Inbox = () => {
                 const updatedItem = await res.json();
                 if (updates.checklist_id !== undefined) {
                     fetchInbox();
+                    toast.success('המשימה הועברה בהצלחה');
                 } else {
                     // Update with actual server response just in case
                     setChecklists(prev => prev.map(c => {
@@ -463,8 +464,8 @@ const Inbox = () => {
                         };
                         return { ...c, items: mapDeep(c.items || []) };
                     }));
+                    toast.success('משימה אחת נערכה');
                 }
-                toast.success('משימה אחת נערכה');
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             } else {
                 throw new Error("Failed to update");

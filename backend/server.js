@@ -1293,7 +1293,7 @@ app.delete('/api/items/:itemId', (req, res) => {
     }
 });
 app.put('/api/items/:itemId', (req, res) => {
-    const { content, target_date, checklist_id, description, repeat_rule, time, duration, priority, reminder_minutes } = req.body;
+    let { content, target_date, checklist_id, description, repeat_rule, time, duration, priority, reminder_minutes } = req.body;
     try {
         const updates = [];
         const params = [];
@@ -1307,8 +1307,46 @@ app.put('/api/items/:itemId', (req, res) => {
             params.push(target_date);
         }
         if (checklist_id !== undefined) {
+            // Check for special string IDs from ProjectSelectorDropdown
+            let actualChecklistId = checklist_id;
+            
+            if (typeof checklist_id === 'string' && (checklist_id === 'INBOX' || String(checklist_id).startsWith('NEW_INBOX_'))) {
+                // We need more info to resolve these
+                const itemContext = db.prepare(`
+                    SELECT ci.checklist_id, c.user_id, c.project_id 
+                    FROM checklist_items ci 
+                    JOIN checklists c ON ci.checklist_id = c.id 
+                    WHERE ci.id = ?
+                `).get(req.params.itemId);
+                
+                if (itemContext) {
+                    if (checklist_id === 'INBOX') {
+                        // Find user's primary inbox list (project_id IS NULL)
+                        let inbox = db.prepare(`SELECT id FROM checklists WHERE user_id = ? AND project_id IS NULL AND (title = '' OR title = 'תיבת המשימות' OR title = 'Inbox') ORDER BY order_index ASC`).get(itemContext.user_id);
+                        if (!inbox) {
+                            // Create headless inbox
+                            const result = db.prepare('INSERT INTO checklists (user_id, title) VALUES (?, ?)').run(itemContext.user_id, '');
+                            actualChecklistId = result.lastInsertRowid;
+                        } else {
+                            actualChecklistId = inbox.id;
+                        }
+                    } else if (String(checklist_id).startsWith('NEW_INBOX_')) {
+                        const targetProjectId = String(checklist_id).replace('NEW_INBOX_', '');
+                        // Find project's header list
+                        let projectInbox = db.prepare(`SELECT id FROM checklists WHERE project_id = ? AND (title = '' OR title = 'כללי' OR title = 'General') ORDER BY order_index ASC`).get(targetProjectId);
+                        if (!projectInbox) {
+                            // Create headless project inbox
+                            const result = db.prepare('INSERT INTO checklists (user_id, title, project_id) VALUES (?, ?, ?)').run(itemContext.user_id, '', targetProjectId);
+                            actualChecklistId = result.lastInsertRowid;
+                        } else {
+                            actualChecklistId = projectInbox.id;
+                        }
+                    }
+                }
+            }
+
             updates.push('checklist_id = ?');
-            params.push(checklist_id);
+            params.push(actualChecklistId);
         }
         if (description !== undefined) {
             updates.push('description = ?');
@@ -1341,7 +1379,7 @@ app.put('/api/items/:itemId', (req, res) => {
         }
         res.json({ success: true });
     } catch (err) {
-        console.error(err);
+        console.error('Update item failed:', err);
         res.status(500).json({ error: 'Update item failed' });
     }
 });

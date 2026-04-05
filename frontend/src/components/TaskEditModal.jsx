@@ -662,6 +662,7 @@ export default function TaskEditModal({
                         onSelect={(checklist, _project) => {
                             if (checklist && checklist.id !== item.checklist_id) {
                                 if (onSave) onSave({ checklist_id: checklist.id });
+                                onClose();
                             }
                         }}
                     />
