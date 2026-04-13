@@ -54,6 +54,12 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
                                 <span>מרכז WhatsApp</span>
                             </NavLink>
                         </li>
+                        <li>
+                            <NavLink to="/admin/onboarding" end className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', borderRadius: '1rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 500, fontSize: '1.05rem' }}>
+                                <span style={{fontSize: '1.4rem', lineHeight: 1}}>✨</span>
+                                <span>הגדרות קליטה (Onboarding)</span>
+                            </NavLink>
+                        </li>
                     </ul>
                 </div>
 

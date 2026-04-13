@@ -384,6 +384,54 @@ const initDb = () => {
       );
     })();
   }
+
+  // Migration: Add is_onboarded to users if missing
+  const hasIsOnboarded = tableInfoUsers.some(col => col.name === 'is_onboarded');
+  if (!hasIsOnboarded) {
+    db.exec('ALTER TABLE users ADD COLUMN is_onboarded BOOLEAN DEFAULT 0');
+    db.exec('UPDATE users SET is_onboarded = 1'); // Set existing users to onboarded
+  }
+
+  // Seed default Onboarding Config
+  const defaultOnboardingConfig = JSON.stringify({
+    welcome_title: "ברוכים הבאים",
+    name_prompt: "בואו נכיר קצת יותר טוב. איך קוראים לך?",
+    min_selections: 3,
+    options: [
+      {
+        id: "opt_1",
+        label: "פינות וחברה",
+        icon: "👫",
+        operations: [{ type: "CREATE_PROJECT", projectName: "מפגשים חברתיים" }]
+      },
+      {
+        id: "opt_2",
+        label: "100 ברכות ביום",
+        icon: "🙏",
+        operations: [{ type: "APPLY_TEMPLATE", templateId: 1 }]
+      },
+      {
+        id: "opt_3",
+        label: "שגרת בוקר בריאה",
+        icon: "🌅",
+        operations: [{ type: "APPLY_TEMPLATE", templateId: 2 }]
+      },
+      {
+        id: "opt_4",
+        label: "הכנה לשבת",
+        icon: "🕯️",
+        operations: [{ type: "APPLY_TEMPLATE", templateId: 3 }]
+      },
+      {
+        id: "opt_5",
+        label: "ניהול משימות אישיות",
+        icon: "✅",
+        operations: [{ type: "CREATE_TASK", taskName: "תכנון שבועי - יום ראשון", repeatRule: "weekly", time: "10:00" }]
+      }
+    ]
+  });
+  db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
+    .run('onboarding_config', defaultOnboardingConfig);
 };
 
 initDb();

@@ -201,7 +201,8 @@ app.post('/api/users', (req, res) => {
         const newUserId = result.lastInsertRowid;
         // Create default inbox
         db.prepare("INSERT INTO checklists (title, user_id, project_id) VALUES ('', ?, NULL)").run(newUserId);
-        res.json({ id: newUserId, username: username.trim() });
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(newUserId);
+        res.json(user);
     } catch (error) {
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
             const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim());
@@ -262,7 +263,7 @@ app.post('/api/auth/register', (req, res) => {
             console.error('Failed to log account creation', e);
         }
 
-        const user = db.prepare('SELECT id, username, email, phone, profile_image FROM users WHERE id = ?').get(newUserId);
+        const user = db.prepare('SELECT id, username, email, phone, profile_image, is_onboarded FROM users WHERE id = ?').get(newUserId);
         user.invited_users = [];
         res.json({ success: true, user });
     } catch (err) {
@@ -285,7 +286,7 @@ app.post('/api/auth/login', (req, res) => {
     const potentialUser = db.prepare('SELECT id FROM users WHERE email = ? OR phone = ? OR username = ?').get(identifier, identifier, identifier);
 
     const user = db.prepare(
-        `SELECT id, username, email, phone, profile_image, invited_by, whatsapp_enabled FROM users
+        `SELECT id, username, email, phone, profile_image, invited_by, whatsapp_enabled, is_onboarded FROM users
          WHERE password_hash = ? AND (email = ? OR phone = ? OR username = ?)`
     ).get(hash, identifier, identifier, identifier);
 
@@ -487,6 +488,103 @@ app.post('/api/admin/settings', adminAuth, (req, res) => {
     } catch (err) {
         console.error('Error updating setting:', err);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/api/settings/:key', (req, res) => {
+    try {
+        const setting = db.prepare('SELECT value FROM settings WHERE key = ?').get(req.params.key);
+        if (!setting) {
+            return res.status(404).json({ error: 'Setting not found' });
+        }
+        res.json({ key: req.params.key, value: setting.value });
+    } catch (err) {
+        console.error('Error fetching setting:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/users/:id/onboard', (req, res) => {
+    const { id } = req.params;
+    const { username, operations } = req.body;
+
+    if (!username || username.trim() === '') {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+    if (!Array.isArray(operations)) {
+         return res.status(400).json({ error: 'Operations must be an array' });
+    }
+
+    try {
+        db.transaction(() => {
+            // Update username and set is_onboarded to 1
+            db.prepare('UPDATE users SET username = ?, is_onboarded = 1 WHERE id = ?').run(username.trim(), id);
+
+            // Execute selected operations
+            for (const op of operations) {
+                if (op.type === 'CREATE_PROJECT' && op.projectName) {
+                    const result = db.prepare('INSERT INTO projects (user_id, title) VALUES (?, ?)').run(id, op.projectName);
+                    const newProjectId = result.lastInsertRowid;
+                    db.prepare('INSERT INTO checklists (user_id, project_id, title) VALUES (?, ?, ?)')
+                      .run(id, newProjectId, ''); // Default checklist for the project
+                    db.prepare("INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, 'owner')")
+                      .run(newProjectId, id);
+
+                } else if (op.type === 'APPLY_TEMPLATE' && op.templateId) {
+                    const template = db.prepare('SELECT * FROM templates WHERE id = ?').get(op.templateId);
+                    if (template) {
+                        const result = db.prepare('INSERT INTO projects (user_id, title, description) VALUES (?, ?, ?)')
+                            .run(id, template.title, template.description);
+                        const newProjectId = result.lastInsertRowid;
+                        db.prepare("INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, 'owner')")
+                            .run(newProjectId, id);
+                        
+                        const checklistResult = db.prepare('INSERT INTO checklists (user_id, project_id, title) VALUES (?, ?, ?)')
+                            .run(id, newProjectId, '');
+                        const newChecklistId = checklistResult.lastInsertRowid;
+
+                        const items = db.prepare('SELECT content FROM template_items WHERE template_id = ?').all(op.templateId);
+                        const insertItem = db.prepare('INSERT INTO checklist_items (checklist_id, content) VALUES (?, ?)');
+                        for (const item of items) {
+                            insertItem.run(newChecklistId, item.content);
+                        }
+                    }
+
+                } else if (op.type === 'CREATE_TASK' && op.taskName) {
+                    // Try to find a default Inbox checklist for the user (no project assigned)
+                    let inboxId = null;
+                    const defaultChecklist = db.prepare('SELECT id FROM checklists WHERE user_id = ? AND project_id IS NULL ORDER BY created_at ASC LIMIT 1').get(id);
+                    if (defaultChecklist) {
+                         inboxId = defaultChecklist.id;
+                    } else {
+                         const createInbox = db.prepare("INSERT INTO checklists (title, user_id, project_id) VALUES ('', ?, NULL)").run(id);
+                         inboxId = createInbox.lastInsertRowid;
+                    }
+                    
+                    const repeatRule = op.repeatRule || 'none';
+                    const time = op.time || null;
+                    const duration = op.duration || 0;
+                    const targetDate = op.targetDate || null;
+                    const reminderMinutes = op.reminderMinutes || null;
+
+                    db.prepare('INSERT INTO checklist_items (checklist_id, content, repeat_rule, time, duration, target_date, reminder_minutes) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                      .run(inboxId, op.taskName, repeatRule, time, duration, targetDate, reminderMinutes);
+                }
+            }
+        })();
+
+        try {
+            db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
+                id, null, 'ONBOARDING_COMPLETED', 'המשתמש סיים את תהליך הקליטה וקיבל תבניות'
+            );
+        } catch(e) {}
+
+        const updatedUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        res.json({ success: true, user: updatedUser });
+
+    } catch (err) {
+        console.error('Onboarding failed:', err);
+        res.status(500).json({ error: 'Internal Server Error during onboarding' });
     }
 });
 

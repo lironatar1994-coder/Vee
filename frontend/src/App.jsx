@@ -14,6 +14,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const WhatsappAdmin = lazy(() => import('./pages/admin/WhatsappAdmin'));
+const AdminOnboarding = lazy(() => import('./pages/admin/AdminOnboarding'));
 
 // Lazy-loaded App pages
 const Home = lazy(() => import('./pages/Home'));
@@ -22,6 +23,8 @@ const GlobalCalendar = lazy(() => import('./pages/GlobalCalendar'));
 const Inbox = lazy(() => import('./pages/Inbox'));
 const Today = lazy(() => import('./pages/Today'));
 const History = lazy(() => import('./pages/History'));
+
+import OnboardingWizard from './components/OnboardingWizard';
 
 function App() {
   const { user } = useUser();
@@ -57,6 +60,8 @@ function App() {
       <div className="bg-orb bg-orb-2"></div>
 
       <DynamicTitle />
+      {user && (user.is_onboarded === 0 || user.is_onboarded === false) && <OnboardingWizard />}
+      
       <Routes>
         {/* Admin Routes - independent of normal user Auth */}
         <Route path="/admin/login" element={<Suspense fallback={<></>}><AdminLogin /></Suspense>} />
@@ -64,6 +69,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="whatsapp" element={<WhatsappAdmin />} />
+          <Route path="onboarding" element={<AdminOnboarding />} />
         </Route>
 
         {/* Normal App Routes */}
