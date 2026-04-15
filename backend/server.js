@@ -105,6 +105,22 @@ cron.schedule('* * * * *', async () => {
     }
 });
 
+// --- Serve Frontend ---
+
+// Handle static files from the built React app
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// The "catch-all" handler: for any request that doesn't 
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    // If it's an API request that didn't match any route, don't serve index.html
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'API route not found' });
+    }
+    // Otherwise serve the main SPA index.html
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
+
 // --- Start Server ---
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
