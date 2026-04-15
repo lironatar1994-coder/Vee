@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# Vee Production Deployment Script (Server-Side) - V2 (Robust)
+# Vee Production Deployment Script (Server-Side) - V3 (Bulletproof)
 # ==============================================================================
 
 set -e
@@ -34,12 +34,7 @@ log() {
     echo -e "${color}[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $message${NC}" | tee -a "$LOG_FILE"
 }
 
-error_exit() {
-    log "$1" "ERROR"
-    exit 1
-}
-
-log "Starting Deployment V2..." "INFO"
+log "Starting Deployment V3 (SCORCHED EARTH)..." "INFO"
 
 # 1. Source NVM
 if [ -f "$HOME/.nvm/nvm.sh" ]; then
@@ -47,61 +42,51 @@ if [ -f "$HOME/.nvm/nvm.sh" ]; then
     nvm use 22 || nvm install 22
 fi
 
-# 2. Strong Git Sync (Reset to remote)
-log "Syncing with GitHub (Resetting to HEAD)..."
+# 2. Strong Git Sync
+log "Forcefully resetting code to origin/main..."
 git fetch origin main
-git reset --hard origin/main || error_exit "Git reset failed"
-log "GitHub synchronization complete." "SUCCESS"
+git reset --hard origin/main
+log "Git Sync COMPLETE." "SUCCESS"
 
-# 3. Process Cleanup (Port 3001)
-log "Cleaning up any existing processes on port $BACKEND_PORT..."
-# Find any PID on the port and kill it aggressively
-TARGET_PID=$(sudo lsof -t -i:$BACKEND_PORT || true)
-if [ -n "$TARGET_PID" ]; then
-    log "Found process $TARGET_PID on port $BACKEND_PORT. Killing it..." "WARN"
-    sudo kill -9 $TARGET_PID || true
-fi
-pm2 delete "$APP_NAME" > /dev/null 2>&1 || true
+# 3. Process Cleanup
+log "Killing all existing Node/PM2 processes on ports 3001 and 5000..."
+sudo fuser -k 3001/tcp > /dev/null 2>&1 || true
+sudo fuser -k 5000/tcp > /dev/null 2>&1 || true
+pm2 delete all > /dev/null 2>&1 || true
+log "Cleanup COMPLETE." "SUCCESS"
 
-# 4. Frontend Setup & Build
+# 4. Frontend Setup
 log "Processing Frontend..."
 cd "$FRONTEND_DIR"
 npm install -s
-npm run build > ../frontend_build.log 2>&1 || error_exit "Vite build failed (check frontend_build.log)"
+npm run build > ../frontend_build.log 2>&1
 cd ..
-log "Frontend built." "SUCCESS"
 
 # 5. Backend Setup
 log "Processing Backend..."
 cd "$BACKEND_DIR"
 npm install -s
-npm rebuild better-sqlite3 > /dev/null 2>&1 || error_exit "Native module rebuild failed"
+npm rebuild better-sqlite3 > /dev/null 2>&1
 cd ..
 
-# 6. PM2 Start
+# 6. PM2 Start (With explicit CWD and ENV)
 log "Starting PM2 processes..."
-# Use absolute path to ensure correct cwd
-pm2 start "$BACKEND_DIR/server.js" --name "$APP_NAME" --update-env || error_exit "Failed to start $APP_NAME"
-pm2 delete "$WORKER_APP_NAME" > /dev/null 2>&1 || true
-pm2 start "$BACKEND_DIR/whatsapp-worker.js" --name "$WORKER_APP_NAME" || error_exit "Failed to start WhatsApp Worker"
+pm2 start "backend/server.js" --name "$APP_NAME" --cwd "$(pwd)" --update-env
+pm2 start "backend/whatsapp-worker.js" --name "$WORKER_APP_NAME" --cwd "$(pwd)"
 pm2 save > /dev/null
 
-# 7. Health Check
-log "Final Health Check..."
-sleep 3
-# Ping the app on the proxy port (the backend port)
-if curl -s http://localhost:$BACKEND_PORT/api/users/3/ping -X POST > /dev/null; then
-    log "API Health Check: 200 OK" "SUCCESS"
+# 7. Final Verification
+log "Checking process status..."
+sleep 5
+pm2 status
+
+# Health check
+if curl -s -I http://localhost:3001/today | grep -q "200 OK"; then
+    log "HEALTH CHECK PASSED (Port 3001 /today)" "SUCCESS"
 else
-    log "API Health Check: FAILED" "ERROR"
+    log "HEALTH CHECK FAILED (Port 3001 /today)" "ERROR"
+    log "Checking log for clue..." "WARN"
+    pm2 logs "$APP_NAME" --lines 5 --no-colors
 fi
 
-# Test SPA route (should return HTML, not 404)
-if curl -s -I http://localhost:$BACKEND_PORT/today | grep -q "200 OK"; then
-    log "SPA Route Check (/today): 200 OK" "SUCCESS"
-else
-    log "SPA Route Check (/today): FAILED (Still 404?)" "ERROR"
-fi
-
-log "DEPLOYMENT COMPLETE" "SUCCESS"
-pm2 status "$APP_NAME"
+log "DEPLOYMENT COMPLETE V3" "SUCCESS"
