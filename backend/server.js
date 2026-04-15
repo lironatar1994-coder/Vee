@@ -28,18 +28,31 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 // --- Transporter & WebPush Config ---
-const transporter = nodemailer.createTransport({
-    host: 'smtp.resend.com',
-    port: 465,
-    secure: true,
-    auth: { user: 'resend', pass: process.env.RESEND_API_KEY }
-});
+let transporter;
+try {
+    transporter = nodemailer.createTransport({
+        host: 'smtp.resend.com',
+        port: 465,
+        secure: true,
+        auth: { user: 'resend', pass: process.env.RESEND_API_KEY }
+    });
+} catch (error) {
+    console.error('[Config Error] Failed to initialize Nodemailer:', error.message);
+}
 
-webpush.setVapidDetails(
-    `mailto:${process.env.EMAIL_FROM_ADDRESS || 'admin@vee.com'}`,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+try {
+    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+        webpush.setVapidDetails(
+            `mailto:${process.env.EMAIL_FROM_ADDRESS || 'admin@vee.com'}`,
+            process.env.VAPID_PUBLIC_KEY,
+            process.env.VAPID_PRIVATE_KEY
+        );
+    } else {
+        console.warn('[Config Warn] VAPID keys missing. WebPush will not be functional.');
+    }
+} catch (error) {
+    console.error('[Config Error] Failed to set VAPID details:', error.message);
+}
 
 // --- Middleware ---
 app.use(cors());

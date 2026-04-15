@@ -3,12 +3,28 @@
 # ==============================================================================
 
 param (
-    [string]$Message = ""
+    [string]$Message = "",
+    [switch]$SyncEnv
 )
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "--- Starting Vee Deployment ---" -ForegroundColor Blue
+
+# 0. Sync .env (Securely move secrets via SCP)
+if ($SyncEnv) {
+    Write-Host "Syncing .env file to server via secure copy (SCP)..." -ForegroundColor Yellow
+    $ENV_SOURCE = "./backend/.env"
+    $ENV_DEST = "root@vee-app.co.il:/root/Vee/backend/.env"
+    
+    if (Test-Path $ENV_SOURCE) {
+        scp $ENV_SOURCE $ENV_DEST
+        Write-Host "Secrets successfully synchronized." -ForegroundColor Green
+    } else {
+        Write-Host "Error: Local .env file not found at $ENV_SOURCE" -ForegroundColor Red
+        exit 1
+    }
+}
 
 # 1. Check Git Status
 $status = git status --porcelain
