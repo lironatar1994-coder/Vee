@@ -55,8 +55,12 @@ log "GitHub synchronization complete." "SUCCESS"
 
 # 3. Process Cleanup (Port 3001)
 log "Cleaning up any existing processes on port $BACKEND_PORT..."
-# Kill any node process using the backend port, even if not managed by PM2
-sudo fuser -k $BACKEND_PORT/tcp > /dev/null 2>&1 || log "No process found on port $BACKEND_PORT, skipping kill." "WARN"
+# Find any PID on the port and kill it aggressively
+TARGET_PID=$(sudo lsof -t -i:$BACKEND_PORT || true)
+if [ -n "$TARGET_PID" ]; then
+    log "Found process $TARGET_PID on port $BACKEND_PORT. Killing it..." "WARN"
+    sudo kill -9 $TARGET_PID || true
+fi
 pm2 delete "$APP_NAME" > /dev/null 2>&1 || true
 
 # 4. Frontend Setup & Build
