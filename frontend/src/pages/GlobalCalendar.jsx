@@ -222,37 +222,46 @@ const GlobalCalendar = () => {
             setLoading(true);
         }
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/tasks/by-month?month=${monthSearch}`);
-            if (res.ok) {
-                const summary = await res.json();
+            // Initiate both requests in parallel
+            const veeTaskPromise = fetch(`${API_URL}/users/${user.id}/tasks/by-month?month=${monthSearch}`).then(res => res.ok ? res.json() : {});
+            
+            // Calculate rough time boundaries for Google API (the entire month)
+            const [y, m] = monthSearch.split('-');
+            const timeMin = new Date(y, m - 1, 1).toISOString();
+            const timeMax = new Date(y, parseInt(m), 0, 23, 59, 59).toISOString();
+            const googlePromise = fetch(`${API_URL}/users/${user.id}/google/events?timeMin=${timeMin}&timeMax=${timeMax}`).then(res => res.ok ? res.json() : []);
 
-                // Parse summary into fullcalendar events array
-                const eventList = [];
-                for (const [dateStr, data] of Object.entries(summary)) {
-                    if (data.tasks) {
-                        data.tasks.forEach(task => {
-                            const startVal = task.time ? `${dateStr}T${task.time}` : dateStr;
-                            eventList.push({
-                                id: task.id,
-                                title: task.content,
-                                start: startVal,
-                                allDay: !task.time,
-                                extendedProps: {
-                                    completed: task.completed,
-                                    priority: task.priority
-                                },
-                                originalTask: task // ADDED: Keep raw task for UpcomingDayView
-                            });
+            const [summary, googleEvents] = await Promise.all([veeTaskPromise, googlePromise]);
+
+            // Parse summary into fullcalendar events array
+            const eventList = [];
+            for (const [dateStr, data] of Object.entries(summary)) {
+                if (data.tasks) {
+                    data.tasks.forEach(task => {
+                        const startVal = task.time ? `${dateStr}T${task.time}` : dateStr;
+                        eventList.push({
+                            id: task.id,
+                            title: task.content,
+                            start: startVal,
+                            allDay: !task.time,
+                            extendedProps: {
+                                completed: task.completed,
+                                priority: task.priority
+                            },
+                            originalTask: task // ADDED: Keep raw task for UpcomingDayView
                         });
-                    }
+                    });
                 }
-
-                // Filter recurring tasks if needed
-                const filteredEventList = filterRecurringTasks(eventList);
-
-                setEvents(filteredEventList);
-                cache.set(`calendar_events_monthly_${user.id}`, filteredEventList);
             }
+
+            // Filter recurring tasks if needed
+            const filteredEventList = filterRecurringTasks(eventList);
+
+            // Merge safely with Google Events (which are already formatted for FullCalendar)
+            const combinedList = [...filteredEventList, ...(Array.isArray(googleEvents) ? googleEvents : [])];
+
+            setEvents(combinedList);
+            cache.set(`calendar_events_monthly_${user.id}`, combinedList);
         } catch (error) {
             console.error('Error fetching calendar events', error);
             toast.error('שגיאה בטעינת נתוני לוח שנה');
@@ -504,30 +513,71 @@ const GlobalCalendar = () => {
             activeDragItem={activeDragItem}
             externalScrollTop={scrollTop}
             onScroll={setScrollTop}
-
             headerActions={
-                <div ref={viewDropdownRef} style={{ position: 'relative', marginTop: '4px' }}>
-                    <button
-                        onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
-                        className="btn-icon-soft"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.4rem 0.8rem',
-                            borderRadius: 'var(--radius-md)',
-                            background: isViewDropdownOpen ? 'var(--dropdown-hover)' : 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: isViewDropdownOpen ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
-                        }}
-                    >
-                        <span>{viewMode === 'daily' ? 'יומי' : viewMode === 'weekly' ? 'שבועי' : 'חודשי'}</span>
-                        <ChevronDown size={14} style={{ opacity: 0.6, transform: isViewDropdownOpen ? 'rotate(180deg)' : 'none', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)' }} />
-                    </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {user?.google_calendar_email ? (
+                        <button
+                            onClick={async () => {
+                                if(window.confirm('האם תרצה לנתק את גוגל קלנדר?')) {
+                                    try {
+                                        await fetch(`${API_URL}/users/${user.id}/google`, { method: 'DELETE' });
+                                        toast.success('גוגל קלנדר נותק בהצלחה! רענן את העמוד.');
+                                    } catch(e) {}
+                                }
+                            }}
+                            className="btn-icon-soft"
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                padding: '0.4rem 0.8rem', borderRadius: 'var(--radius-md)',
+                                background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4',
+                                fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap',
+                                border: '1px solid rgba(66, 133, 244, 0.2)'
+                            }}
+                            title={`מחובר כ-\n${user.google_calendar_email}`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                            <span style={{ display: isMobile ? 'none' : 'block' }}>מחובר</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => window.location.href = `${API_URL}/google/auth-url?userId=${user.id}`}
+                            className="btn-icon-soft"
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                padding: '0.4rem 0.8rem', borderRadius: 'var(--radius-md)',
+                                background: 'transparent', color: 'var(--text-secondary)',
+                                fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap',
+                                border: '1px solid var(--border-color)', transition: '0.2s'
+                            }}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                            <span style={{ display: isMobile ? 'none' : 'block' }}>חבר גוגל קלנדר</span>
+                        </button>
+                    )}
+
+                    <div ref={viewDropdownRef} style={{ position: 'relative', marginTop: '4px' }}>
+                        <button
+                            onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
+                            className="btn-icon-soft"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.4rem 0.8rem',
+                                borderRadius: 'var(--radius-md)',
+                                background: isViewDropdownOpen ? 'var(--dropdown-hover)' : 'var(--bg-secondary)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-primary)',
+                                fontWeight: 700,
+                                fontSize: '0.85rem',
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                boxShadow: isViewDropdownOpen ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
+                            }}
+                        >
+                            <span>{viewMode === 'daily' ? 'יומי' : viewMode === 'weekly' ? 'שבועי' : 'חודשי'}</span>
+                            <ChevronDown size={14} style={{ opacity: 0.6, transform: isViewDropdownOpen ? 'rotate(180deg)' : 'none', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                        </button>
+
 
                     {isViewDropdownOpen && (
                         <div className="action-menu-dropdown fade-in slide-down" style={{
@@ -576,6 +626,7 @@ const GlobalCalendar = () => {
                             ))}
                         </div>
                     )}
+                    </div>
                 </div>
             }
         >

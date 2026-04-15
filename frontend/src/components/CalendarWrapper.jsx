@@ -208,12 +208,14 @@ const CalendarWrapper = ({
                 eventContent={(arg) => {
                     const { event, timeText, view } = arg;
                     const isCompleted = event.extendedProps.completed;
+                    const isGoogle = event.extendedProps.isGoogleEvent;
+                    const googleClass = isGoogle ? 'is-google-event' : '';
 
                     // Month Grid view: Minimalist themed pill based on priority
                     if (view.type === 'dayGridMonth') {
                         const priority = event.extendedProps.priority || 4;
                         return (
-                            <div className={`fc-custom-event-month priority-${priority} ${isCompleted ? 'is-completed' : ''}`}>
+                            <div className={`fc-custom-event-month priority-${priority} ${isCompleted ? 'is-completed' : ''} ${googleClass}`}>
                                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{event.title}</span>
                                 {timeText && <span className="event-time">{timeText}</span>}
                             </div>
@@ -223,7 +225,7 @@ const CalendarWrapper = ({
                     // All Day event in Daily/Weekly views (Solid Block)
                     if (event.allDay) {
                         return (
-                            <div className={`fc-custom-event-allday-block ${isCompleted ? 'is-completed' : ''}`}>
+                            <div className={`fc-custom-event-allday-block ${isCompleted ? 'is-completed' : ''} ${googleClass}`}>
                                 <span className="event-title">{event.title}</span>
                             </div>
                         );
@@ -231,7 +233,7 @@ const CalendarWrapper = ({
 
                     // Timed view (Weekly/Daily slots) -> Solid Block, no checkbox
                     return (
-                        <div className={`fc-custom-event-timed ${isCompleted ? 'is-completed' : ''}`}>
+                        <div className={`fc-custom-event-timed ${isCompleted ? 'is-completed' : ''} ${googleClass}`}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
                                 <span className="event-title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</span>
                                 {timeText && <span className="event-time">{timeText}</span>}

@@ -324,3 +324,33 @@
     pointer-events: none !important;
     visibility: hidden !important;
 }
+
+/* --- Google Calendar Specific Styles --- */
+
+.is-google-event {
+    background-color: rgba(66, 133, 244, 0.1) !important;
+    border-color: rgba(66, 133, 244, 0.3) !important;
+    color: #4285F4 !important;
+    border-right-color: #4285F4 !important; 
+    border-radius: 8px !important;
+    border-width: 1px !important;
+}
+
+.is-google-event:hover {
+    background-color: rgba(66, 133, 244, 0.15) !important;
+}
+
+.is-google-event .event-title, .is-google-event .event-time, .is-google-event span {
+    color: #4285F4 !important;
+}
+
+.dark .is-google-event {
+    background-color: rgba(66, 133, 244, 0.15) !important;
+    color: #8ab4f8 !important;
+    border-right-color: #8ab4f8 !important;
+    border-color: rgba(66, 133, 244, 0.4) !important;
+}
+
+.dark .is-google-event .event-title, .dark .is-google-event .event-time, .dark .is-google-event span {
+    color: #8ab4f8 !important;
+}

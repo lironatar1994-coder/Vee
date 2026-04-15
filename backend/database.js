@@ -262,6 +262,24 @@ const initDb = () => {
     db.exec('ALTER TABLE checklists ADD COLUMN order_index INTEGER DEFAULT 0');
   }
 
+  // Migration: Add Google Calendar fields to users if missing
+  const hasGoogleAccessToken = tableInfoUsers.some(col => col.name === 'google_access_token');
+  if (!hasGoogleAccessToken) {
+    db.exec('ALTER TABLE users ADD COLUMN google_access_token TEXT');
+  }
+  const hasGoogleRefreshToken = tableInfoUsers.some(col => col.name === 'google_refresh_token');
+  if (!hasGoogleRefreshToken) {
+    db.exec('ALTER TABLE users ADD COLUMN google_refresh_token TEXT');
+  }
+  const hasGoogleTokenExpiry = tableInfoUsers.some(col => col.name === 'google_token_expiry');
+  if (!hasGoogleTokenExpiry) {
+    db.exec('ALTER TABLE users ADD COLUMN google_token_expiry INTEGER');
+  }
+  const hasGoogleCalendarEmail = tableInfoUsers.some(col => col.name === 'google_calendar_email');
+  if (!hasGoogleCalendarEmail) {
+    db.exec('ALTER TABLE users ADD COLUMN google_calendar_email TEXT');
+  }
+
   // Seed default WhatsApp Template
   const defaultTemplate = "*_Vee Reminder_*\\nשלום {user_name},\\n\\nתזכורת למשימה: *{task_name}*\\nנקבע לשעה: {task_time}\\n\\nבהצלחה!";
   db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
