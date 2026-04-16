@@ -37,7 +37,7 @@ const Header = ({
                 boxShadow: 'none',
                 transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                 height: '56px',
-                borderBottom: (scrollTop > 30 || forceShowTitle) ? '1px solid var(--border-color)' : 'none'
+                borderBottom: (scrollTop > 30 || forceShowTitle) ? 'var(--v-separator)' : 'none'
             }}>
             <div style={{
                 display: 'flex',
@@ -67,21 +67,28 @@ const Header = ({
                         </div>
                     )}
                     <div style={{
+                        position: 'absolute',
+                        left: '50%',
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         opacity: forceShowTitle ? 1 : Math.min(1, Math.max(0, (scrollTop - 32) / 25)),
-                        transform: forceShowTitle ? 'translateY(0)' : `translateY(${Math.max(0, 8 - (scrollTop - 32) / 2)}px)`,
+                        transform: forceShowTitle 
+                            ? 'translate(-50%, 0)' 
+                            : `translate(-50%, ${Math.max(0, 8 - (scrollTop - 32) / 2)}px)`,
                         pointerEvents: (scrollTop > 25 || forceShowTitle) ? 'auto' : 'none',
                         transition: 'opacity 0.2s ease, transform 0.1s linear',
-                        paddingRight: (!breadcrumb && (isMobile || !isSidebarOpen)) ? '42px' : '0'
+                        textAlign: 'center',
+                        width: 'auto'
                     }}>
                         <h1 style={{
                             margin: 0,
                             fontSize: '16.5px',
                             fontWeight: 700,
-                            color: 'var(--text-primary)',
+                            color: 'var(--header-scrolled-title)',
                             lineHeight: 1.2,
-                            letterSpacing: '-0.2px'
+                            letterSpacing: '-0.2px',
+                            whiteSpace: 'nowrap'
                         }}>{title}</h1>
                     </div>
                 </div>

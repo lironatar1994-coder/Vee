@@ -60,6 +60,7 @@
   --v-separator: 1px solid rgba(0, 0, 0, 0.05);
   --add-task-btn-color: #64748b;
   --add-task-btn-hover: #475569;
+  --header-scrolled-title: var(--text-primary);
 }
 
 [data-theme="dark"] {
@@ -109,4 +110,6 @@
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --add-task-btn-color: #94a3b8;
   --add-task-btn-hover: #cbd5e1;
+  --v-separator: 1px solid rgba(255, 255, 255, 0.05);
+  --header-scrolled-title: var(--text-primary);
 }
