@@ -58,6 +58,8 @@
   --dropdown-hover: #F1F5F9;
   --dropdown-selected: #EEF2FF;
   --v-separator: 1px solid rgba(0, 0, 0, 0.05);
+  --add-task-btn-color: #64748b;
+  --add-task-btn-hover: #475569;
 }
 
 [data-theme="dark"] {
@@ -105,4 +107,6 @@
   /* Quintic ease-out - ultra smooth deceleration */
   --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --add-task-btn-color: #94a3b8;
+  --add-task-btn-hover: #cbd5e1;
 }
