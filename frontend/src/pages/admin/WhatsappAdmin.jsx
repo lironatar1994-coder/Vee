@@ -3,6 +3,7 @@ import { MessageCircle, Settings, Send, History, CheckCircle2, Smartphone, Loade
 import { toast } from 'sonner';
 import { useHeaderScroll } from '../../context/HeaderContext';
 import Header from '../../components/Header';
+import { adminAuthFetch } from '../../services/adminAuthService';
 import WhatsappTemplateEditor from '../../components/admin/WhatsappTemplateEditor';
 import WhatsappLogsModal from '../../components/admin/WhatsappLogsModal';
 
@@ -43,12 +44,8 @@ const WhatsappAdmin = () => {
     };
 
     const fetchWhatsappStatus = async () => {
-        const token = localStorage.getItem('adminToken');
-        if (!token) return;
         try {
-            const res = await fetch(`${API_URL}/admin/whatsapp/status`, {
-                headers: { 'Admin-Token': token }
-            });
+            const res = await adminAuthFetch(`${API_URL}/admin/whatsapp/status`);
             if (res.ok) {
                 const data = await res.json();
                 setWhatsappStatus(data.status);
@@ -60,11 +57,8 @@ const WhatsappAdmin = () => {
     };
 
     const fetchSettings = async () => {
-        const token = localStorage.getItem('adminToken');
         try {
-            const settingsRes = await fetch(`${API_URL}/admin/settings/whatsapp_task_adder_enabled`, {
-                headers: { 'Admin-Token': token }
-            });
+            const settingsRes = await adminAuthFetch(`${API_URL}/admin/settings/whatsapp_task_adder_enabled`);
             if (settingsRes.ok) {
                 const settingsData = await settingsRes.json();
                 setIsTaskAdderEnabled(settingsData.value !== 'false');
@@ -75,11 +69,8 @@ const WhatsappAdmin = () => {
     };
 
     const fetchAnalytics = async () => {
-        const token = localStorage.getItem('adminToken');
         try {
-            const res = await fetch(`${API_URL}/admin/whatsapp/analytics`, {
-                headers: { 'Admin-Token': token }
-            });
+            const res = await adminAuthFetch(`${API_URL}/admin/whatsapp/analytics`);
             if (res.ok) {
                 const data = await res.json();
                 setAnalytics(data);
@@ -90,12 +81,10 @@ const WhatsappAdmin = () => {
     };
 
     const toggleTaskAdder = async () => {
-        const token = localStorage.getItem('adminToken');
         const newVal = !isTaskAdderEnabled;
         try {
-            const res = await fetch(`${API_URL}/admin/settings`, {
+            const res = await adminAuthFetch(`${API_URL}/admin/settings`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Admin-Token': token },
                 body: JSON.stringify({ key: 'whatsapp_task_adder_enabled', value: newVal.toString() })
             });
 
@@ -120,11 +109,9 @@ const WhatsappAdmin = () => {
         }
 
         setIsBroadcasting(true);
-        const token = localStorage.getItem('adminToken');
         try {
-            const res = await fetch(`${API_URL}/admin/whatsapp/broadcast`, {
+            const res = await adminAuthFetch(`${API_URL}/admin/whatsapp/broadcast`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Admin-Token': token },
                 body: JSON.stringify({ message: broadcastMsg })
             });
             const data = await res.json();

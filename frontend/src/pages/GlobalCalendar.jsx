@@ -77,7 +77,7 @@ const filterRecurringTasks = (tasks) => {
 const API_URL = '/api';
 
 const GlobalCalendar = () => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState(() => localStorage.getItem('calendarViewMode') || 'weekly');
     const [events, setEvents] = useState(() => (user && cache.get(`calendar_events_monthly_${user.id}`)) || []);
@@ -223,13 +223,13 @@ const GlobalCalendar = () => {
         }
         try {
             // Initiate both requests in parallel
-            const veeTaskPromise = fetch(`${API_URL}/users/${user.id}/tasks/by-month?month=${monthSearch}`).then(res => res.ok ? res.json() : {});
+            const veeTaskPromise = authFetch(`${API_URL}/users/current/tasks/by-month?month=${monthSearch}`).then(res => res.ok ? res.json() : {});
             
             // Calculate rough time boundaries for Google API (the entire month)
             const [y, m] = monthSearch.split('-');
             const timeMin = new Date(y, m - 1, 1).toISOString();
             const timeMax = new Date(y, parseInt(m), 0, 23, 59, 59).toISOString();
-            const googlePromise = fetch(`${API_URL}/users/${user.id}/google/events?timeMin=${timeMin}&timeMax=${timeMax}`).then(res => res.ok ? res.json() : []);
+            const googlePromise = authFetch(`${API_URL}/users/current/google/events?timeMin=${timeMin}&timeMax=${timeMax}`).then(res => res.ok ? res.json() : []);
 
             const [summary, googleEvents] = await Promise.all([veeTaskPromise, googlePromise]);
 
@@ -283,7 +283,7 @@ const GlobalCalendar = () => {
             setCurrentRange({ month: monthStr });
             fetchCalendarEvents(monthStr);
         }
-    };
+    }, [currentRange.month, authFetch, fetchCalendarEvents]);
 
     useEffect(() => {
         const handleRefresh = () => {
@@ -331,16 +331,15 @@ const GlobalCalendar = () => {
             let targetChecklistId = _checklistId;
             // If it's undefined or the dummy 'inbox' id, fetch the actual inbox ID.
             if (!targetChecklistId || targetChecklistId === 'inbox') {
-                const clRes = await fetch(`${API_URL}/users/${user.id}/checklists`);
+                const clRes = await authFetch(`${API_URL}/users/current/checklists`);
                 if (!clRes.ok) throw new Error('Failed to fetch lists');
                 const lists = await clRes.json();
                 let inbox = lists.find(c => c.project_id === null);
 
                 if (!inbox) {
                     // Create an inbox checklist if it doesn't exist
-                    const createRes = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                    const createRes = await authFetch(`${API_URL}/users/current/checklists`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             title: '',
                             project_id: null,
@@ -353,9 +352,8 @@ const GlobalCalendar = () => {
                 targetChecklistId = inbox.id;
             }
 
-            const res = await fetch(`${API_URL}/checklists/${targetChecklistId}/items`, {
+            const res = await authFetch(`${API_URL}/checklists/${targetChecklistId}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: contentToSave.trim(),
                     target_date: dateInput,
@@ -403,9 +401,8 @@ const GlobalCalendar = () => {
         }
 
         try {
-            const res = await fetch(`${API_URL}/items/${event.id}/datetime`, {
+            const res = await authFetch(`${API_URL}/items/${event.id}/datetime`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     target_date: newDate,
                     time: newTime
@@ -451,9 +448,8 @@ const GlobalCalendar = () => {
 
         try {
             // 2. Perform network request
-            const res = await fetch(`${API_URL}/items/${taskId}`, {
+            const res = await authFetch(`${API_URL}/items/${taskId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ completed: newStatus })
             });
 
@@ -470,7 +466,7 @@ const GlobalCalendar = () => {
 
     const handleUpcomingTaskDelete = async (stub, taskId, checklistId) => {
         try {
-            const res = await fetch(`${API_URL}/items/${taskId}`, { method: 'DELETE' });
+            const res = await authFetch(`${API_URL}/items/${taskId}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success('משימה נמחקה');
                 setEvents(prev => prev.filter(e => e.id !== taskId));
@@ -483,9 +479,8 @@ const GlobalCalendar = () => {
 
     const handleUpcomingTaskUpdate = async (taskId, updatedFields) => {
         try {
-            const res = await fetch(`${API_URL}/items/${taskId}`, {
+            const res = await authFetch(`${API_URL}/items/${taskId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedFields)
             });
             if (res.ok) {
@@ -520,7 +515,7 @@ const GlobalCalendar = () => {
                             onClick={async () => {
                                 if(window.confirm('האם תרצה לנתק את גוגל קלנדר?')) {
                                     try {
-                                        await fetch(`${API_URL}/users/${user.id}/google`, { method: 'DELETE' });
+                                        await authFetch(`${API_URL}/users/current/google`, { method: 'DELETE' });
                                         toast.success('גוגל קלנדר נותק בהצלחה! רענן את העמוד.');
                                     } catch(e) {}
                                 }

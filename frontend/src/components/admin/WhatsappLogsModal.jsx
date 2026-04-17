@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, MessageSquare, Clock, Phone, User, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { adminAuthFetch } from '../../services/adminAuthService';
 
 const WhatsappLogsModal = ({ isOpen, onClose }) => {
     const [logs, setLogs] = useState([]);
@@ -15,11 +16,8 @@ const WhatsappLogsModal = ({ isOpen, onClose }) => {
 
     const fetchLogs = async () => {
         setLoading(true);
-        const token = localStorage.getItem('adminToken');
         try {
-            const res = await fetch('/api/admin/whatsapp/logs', {
-                headers: { 'Admin-Token': token }
-            });
+            const res = await adminAuthFetch('/api/admin/whatsapp/logs');
             if (res.ok) {
                 const data = await res.json();
                 setLogs(data);

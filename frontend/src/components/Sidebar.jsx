@@ -35,7 +35,7 @@ const API_URL = '/api';
 
 const Sidebar = ({ isOpen, onToggle }) => {
     const { theme, toggleTheme } = useTheme();
-    const { user, logout } = useUser();
+    const { user, logout, authFetch } = useUser();
     const navigate = useNavigate();
     const location = useLocation();
     const [, startTransition] = useTransition();
@@ -87,7 +87,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
     const fetchProjects = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/projects`);
+            const res = await authFetch(`${API_URL}/users/current/projects`);
             if (res.ok) setProjects(await res.json());
         } catch (error) {
             console.error('Error fetching projects:', error);
@@ -97,7 +97,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     const fetchCounts = useCallback(async () => {
         try {
             const todayStr = new Date().toLocaleDateString('en-CA');
-            const res = await fetch(`${API_URL}/users/${user.id}/sidebar-counts?date=${todayStr}`);
+            const res = await authFetch(`${API_URL}/users/current/sidebar-counts?date=${todayStr}`);
             if (res.ok) {
                 const data = await res.json();
                 setCounts(data);
@@ -406,9 +406,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                         setProjects(newProjects);
 
                                         try {
-                                            await fetch(`${API_URL}/users/${user.id}/projects/reorder`, {
+                                            await authFetch(`${API_URL}/users/current/projects/reorder`, {
                                                 method: 'PUT',
-                                                headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({ projectIds: newProjects.map(p => p.id) })
                                             });
                                         } catch (err) {
@@ -430,7 +429,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                                 <div
                                                     key={proj.id}
                                                     onMouseEnter={() => {
-                                                        cache.prefetch(`project_data_${proj.id}`, `${API_URL}/projects/${proj.id}?userId=${user?.id}`);
+                                                        cache.prefetch(`project_data_${proj.id}`, `${API_URL}/projects/${proj.id}`, authFetch);
                                                     }}
                                                 >
                                                     <SortableProjectItem

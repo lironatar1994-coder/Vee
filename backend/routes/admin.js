@@ -118,14 +118,14 @@ router.post('/whatsapp/broadcast', (req, res) => {
 });
 
 // POST /api/admin/users/:id/reset-password
-router.post('/users/:id/reset-password', (req, res) => {
+router.post('/users/:id/reset-password', async (req, res) => {
     try {
         const userId = req.params.id;
         const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const newPassword = crypto.randomBytes(4).toString('hex');
-        const hash = hashPassword(newPassword);
+        const hash = await hashPassword(newPassword);
 
         db.transaction(() => {
             db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId);
@@ -135,7 +135,7 @@ router.post('/users/:id/reset-password', (req, res) => {
 
         res.json({ success: true, newPassword });
     } catch (err) {
-        console.error(err);
+        console.error('Admin password reset error:', err);
         res.status(500).json({ error: 'Failed to reset password' });
     }
 });

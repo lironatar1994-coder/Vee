@@ -12,7 +12,7 @@ const TemplateStoreModal = lazy(() => import('../components/TemplateStoreModal')
 const API_URL = '/api';
 
 const Home = () => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const navigate = useNavigate();
     const [projects, setProjects] = useState(() => cache.get('home_projects') || []);
     const [loading, setLoading] = useState(!cache.get('home_projects'));
@@ -27,7 +27,7 @@ const Home = () => {
     const fetchProjects = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/projects`);
+            const res = await authFetch(`${API_URL}/users/current/projects`);
             if (res.ok) {
                 const data = await res.json();
                 setProjects(data);
@@ -62,7 +62,7 @@ const Home = () => {
 
         if (!window.confirm('האם אתה בטוח שברצונך למחוק פרויקט זה ואת כל התבניות שבתוכו?')) return;
         try {
-            await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
+            await authFetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
             setProjects(projects.filter(p => p.id !== id));
         } catch (err) {
             console.error('Error deleting project:', err);
@@ -241,7 +241,7 @@ const Home = () => {
                                         e.currentTarget.querySelector('.project-icon').style.background = 'var(--sidebar-active-bg)';
                                         
                                         // Intelligent Pre-fetching
-                                        cache.prefetch(`project_data_${project.id}`, `${API_URL}/projects/${project.id}?userId=${user?.id}`);
+                                        cache.prefetch(`project_data_${project.id}`, `${API_URL}/users/current/projects/${project.id}`, authFetch);
                                     }}
                                     onMouseLeave={e => {
                                         e.currentTarget.style.transform = 'translateY(0)';

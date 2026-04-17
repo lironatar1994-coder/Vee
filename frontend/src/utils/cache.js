@@ -37,7 +37,7 @@ const cache = {
         }
     },
     // Intelligent Pre-fetching Helper
-    async prefetch(key, url) {
+    async prefetch(key, url, authFetch) {
         // Don't prefetch if we recently fetched it (within 30 seconds)
         if (this.data[key] && (Date.now() - this.data[key].timestamp < 30000)) {
             return;
@@ -47,7 +47,8 @@ const cache = {
         this.data[key] = { ...this.data[key], timestamp: Date.now(), prefetching: true };
         
         try {
-            const res = await fetch(url);
+            if (!authFetch) return;
+            const res = await authFetch(url);
             if (res.ok) {
                 const data = await res.json();
                 this.set(key, data);

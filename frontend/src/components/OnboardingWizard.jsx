@@ -4,7 +4,7 @@ import { Loader2, Check, ArrowLeft, ArrowRight, LayoutGrid, Rocket } from 'lucid
 import { toast } from 'sonner';
 
 const OnboardingWizard = () => {
-    const { user, updateUser } = useUser();
+    const { user, updateUser, authFetch } = useUser();
     const [config, setConfig] = useState(null);
     const [step, setStep] = useState(1);
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
@@ -21,7 +21,7 @@ const OnboardingWizard = () => {
         
         const fetchConfig = async () => {
             try {
-                const res = await fetch('/api/settings/onboarding_config');
+                const res = await authFetch('/api/settings/onboarding_config');
                 if (res.ok) {
                     const data = await res.json();
                     setConfig(JSON.parse(data.value));
@@ -81,9 +81,8 @@ const OnboardingWizard = () => {
         });
 
         try {
-            const res = await fetch(`/api/users/${user.id}/onboard`, {
+            const res = await authFetch(`/api/users/current/onboard`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: name,
                     operations: operationsToRun

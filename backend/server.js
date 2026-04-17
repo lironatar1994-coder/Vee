@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 const nodemailer = require('nodemailer');
 const webpush = require('web-push');
 const cron = require('node-cron');
+const helmet = require('helmet');
 
 const db = require('./database');
 const injectGlobals = require('./middleware/globals');
@@ -55,7 +56,14 @@ try {
 }
 
 // --- Middleware ---
-app.use(cors());
+app.use(helmet({
+    contentSecurityPolicy: false, // Disabled for now to ensure SPA compatibility, follow-up task
+    crossOriginEmbedderPolicy: false
+}));
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+}));
 app.use(express.json());
 app.use(injectGlobals(io, transporter, webpush));
 
@@ -76,14 +84,11 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/google', googleRouter);
 app.use('/api/admin', adminRouter);
-app.use('/api/checklists', checklistsRouter);
-app.use('/api', authRouter);
-app.use('/api', googleRouter); 
-app.use('/api', projectsRouter);
-app.use('/api', friendsRouter);
-app.use('/api', invitationsRouter);
-app.use('/api', miscRouter);
+app.use('/api/projects', projectsRouter);
+app.use('/api/friends', friendsRouter);
+app.use('/api/invitations', invitationsRouter);
 app.use('/api', checklistsRouter);
+app.use('/api', miscRouter);
 
 // --- Cron Job (Reminders) ---
 cron.schedule('* * * * *', async () => {

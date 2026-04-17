@@ -19,7 +19,7 @@ import cache from '../utils/cache';
 const API_URL = '/api';
 
 const Inbox = () => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const [checklists, setChecklists] = useState(() => (user && cache.get(`inbox_data_${user.id}`)) || []);
     const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
     const [loading, setLoading] = useState(user ? !cache.get(`inbox_data_${user.id}`) : true);
@@ -61,6 +61,7 @@ const Inbox = () => {
         setChecklists,
         API_URL,
         user,
+        authFetch,
         fetchData: () => fetchInbox()
     });
 
@@ -89,9 +90,8 @@ const Inbox = () => {
                 let targetChecklistId = checklistId === 'inbox' ? checklists[0]?.id : checklistId;
                 if (checklistId === 'inbox' && !targetChecklistId) {
                     try {
-                        const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                        const res = await authFetch(`${API_URL}/users/current/checklists`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 title: '',
                                 project_id: null,
@@ -164,9 +164,8 @@ const Inbox = () => {
             if (!targetList) {
                 // Create inbox list if none exists, then open it
                 try {
-                    const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                    const res = await authFetch(`${API_URL}/users/current/checklists`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ title: '', project_id: null, active_days: '0,1,2,3,4,5,6' })
                     });
                     if (res.ok) {
@@ -204,8 +203,8 @@ const Inbox = () => {
         }
         try {
             const [inboxRes, progressRes] = await Promise.all([
-                fetch(`${API_URL}/users/${user.id}/inbox`),
-                fetch(`${API_URL}/users/${user.id}/progress?date=${selectedDate}`)
+                authFetch(`${API_URL}/users/current/inbox`),
+                authFetch(`${API_URL}/users/current/progress?date=${selectedDate}`)
             ]);
 
             if (inboxRes.ok) {
@@ -304,9 +303,8 @@ const Inbox = () => {
         window.globalNewItemReminderMinutes = null;
 
         try {
-            const res = await fetch(`${API_URL}/checklists/${_checklistId}/items`, {
+            const res = await authFetch(`${API_URL}/checklists/${_checklistId}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: contentToSave,
                     parent_item_id: parentId,
@@ -376,7 +374,7 @@ const Inbox = () => {
         window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
 
         try {
-            const res = await fetch(`${API_URL}/checklist_items/${itemId}`, { method: 'DELETE' });
+            const res = await authFetch(`${API_URL}/checklist_items/${itemId}`, { method: 'DELETE' });
             if (!res.ok) {
                 throw new Error('Failed to delete');
             }
@@ -402,9 +400,8 @@ const Inbox = () => {
                 });
             }
 
-            const res = await fetch(`${API_URL}/users/${user.id}/progress`, {
+            const res = await authFetch(`${API_URL}/users/current/progress`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ checklist_item_id: itemId, date: selectedDate, completed: newStatus })
             });
 
@@ -441,9 +438,8 @@ const Inbox = () => {
         }));
 
         try {
-            const res = await fetch(`${API_URL}/items/${itemId}`, {
+            const res = await authFetch(`${API_URL}/items/${itemId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
             });
             if (res.ok) {
@@ -481,7 +477,7 @@ const Inbox = () => {
         if (e) e.stopPropagation();
         if (!window.confirm("האם למחוק את הרשימה?")) return;
         try {
-            const res = await fetch(`${API_URL}/checklists/${checklistId}`, { method: 'DELETE' });
+            const res = await authFetch(`${API_URL}/checklists/${checklistId}`, { method: 'DELETE' });
             if (res.ok) {
                 setChecklists(prev => prev.filter(c => c.id !== checklistId));
                 toast.success("הרשימה נמחקה");
@@ -496,9 +492,8 @@ const Inbox = () => {
         if (!newListTitle.trim()) return;
 
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+            const res = await authFetch(`${API_URL}/users/current/checklists`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: newListTitle,
                     active_days: '0,1,2,3,4,5,6',
@@ -535,9 +530,8 @@ const Inbox = () => {
         }
 
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+            const res = await authFetch(`${API_URL}/users/current/checklists`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: '',
                     project_id: null,
@@ -595,7 +589,7 @@ const Inbox = () => {
     const handleClearInboxCompleted = async () => {
         if (!window.confirm("האם אתה בטוח שברצונך למחוק את כל המשימות שהושלמו?")) return;
         try {
-            await Promise.all(completedTasks.map(item => fetch(`${API_URL}/items/${item.id}`, { method: 'DELETE' })));
+            await Promise.all(completedTasks.map(item => authFetch(`${API_URL}/items/${item.id}`, { method: 'DELETE' })));
             toast.success("המשימות שהושלמו נמחקו בהצלחה");
             fetchInbox();
             window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));

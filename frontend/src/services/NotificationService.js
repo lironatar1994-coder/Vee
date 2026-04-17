@@ -13,7 +13,7 @@ const urlBase64ToUint8Array = (base64String) => {
     return outputArray;
 };
 
-export const subscribeToPushNotifications = async (userId) => {
+export const subscribeToPushNotifications = async (authFetch) => {
     if (!('serviceWorker' in navigator) || (!('PushManager' in window))) {
         return { success: false, error: 'Push messaging is not supported' };
     }
@@ -29,7 +29,7 @@ export const subscribeToPushNotifications = async (userId) => {
         const registration = await navigator.serviceWorker.register('/service-worker.js');
 
         // 3. Get Public Key
-        const response = await fetch('/api/notifications/public-key');
+        const response = await authFetch('/api/notifications/public-key');
         if (!response.ok) {
             throw new Error('Failed to fetch public key');
         }
@@ -43,12 +43,9 @@ export const subscribeToPushNotifications = async (userId) => {
             applicationServerKey: convertedVapidKey
         });
 
-        await fetch('/api/notifications/subscribe', {
+        await authFetch('/api/notifications/subscribe', {
             method: 'POST',
-            body: JSON.stringify({ user_id: userId, subscription }),
-            headers: {
-                'content-type': 'application/json'
-            }
+            body: JSON.stringify({ subscription })
         });
 
         return { success: true };
@@ -58,7 +55,7 @@ export const subscribeToPushNotifications = async (userId) => {
     }
 };
 
-export const unsubscribeFromPushNotifications = async () => {
+export const unsubscribeFromPushNotifications = async (authFetch) => {
     try {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
@@ -66,12 +63,9 @@ export const unsubscribeFromPushNotifications = async () => {
         if (subscription) {
             await subscription.unsubscribe();
 
-            await fetch('/api/notifications/unsubscribe', {
+            await authFetch('/api/notifications/unsubscribe', {
                 method: 'POST',
-                body: JSON.stringify({ endpoint: subscription.endpoint }),
-                headers: {
-                    'content-type': 'application/json'
-                }
+                body: JSON.stringify({ endpoint: subscription.endpoint })
             });
             return { success: true };
         }

@@ -7,7 +7,7 @@ import { AddTaskCard } from './TaskComponents/index.jsx';
 const API_URL = '/api';
 
 const GlobalAddTaskModal = ({ isOpen, onClose }) => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const [newItemContent, setNewItemContent] = useState('');
     const [newItemDate, setNewItemDate] = useState(() => new Date().toLocaleDateString('en-CA'));
     const [newItemTime, setNewItemTime] = useState('');
@@ -29,8 +29,8 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         const fetchData = async () => {
             try {
                 const [checkRes, projRes] = await Promise.all([
-                    fetch(`${API_URL}/users/${user.id}/checklists`),
-                    fetch(`${API_URL}/users/${user.id}/projects`)
+                    authFetch(`${API_URL}/users/current/checklists`),
+                    authFetch(`${API_URL}/users/current/projects`)
                 ]);
                 if (checkRes.ok && projRes.ok) {
                     const cData = await checkRes.json();
@@ -87,9 +87,8 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
             const targetProjectId = isProjectInbox ? parseInt(finalChecklistId.split('_')[2]) : null;
 
             try {
-                const listRes = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                const listRes = await authFetch(`${API_URL}/users/current/checklists`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         title: '',
                         active_days: '0,1,2,3,4,5,6',
@@ -111,9 +110,8 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         }
 
         try {
-            const res = await fetch(`${API_URL}/checklists/${finalChecklistId}/items`, {
+            const res = await authFetch(`${API_URL}/checklists/${finalChecklistId}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content,
                     description: description || null,

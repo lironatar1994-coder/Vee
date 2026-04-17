@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Search, Mail, Phone, Calendar, ArrowUpRight, MoreVertical } from 'lucide-react';
 import { useHeaderScroll } from '../../context/HeaderContext';
+import { adminAuthFetch } from '../../services/adminAuthService';
 
 const API_URL = '/api';
 
@@ -27,14 +28,8 @@ const AdminUsers = () => {
     };
 
     const fetchUsers = async () => {
-        const token = localStorage.getItem('adminToken');
         try {
-            const res = await fetch(`${API_URL}/admin/users`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Admin-Token': token
-                }
-            });
+            const res = await adminAuthFetch(`${API_URL}/admin/users`);
 
             if (res.status === 401) {
                 toast.error('פג תוקף ההתחברות. אנא התחבר מחדש.');

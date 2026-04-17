@@ -9,7 +9,7 @@ import { subscribeToPushNotifications, unsubscribeFromPushNotifications } from '
 const API_URL = '/api';
 
 const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
-    const { user, updateUser, logout } = useUser();
+    const { user, updateUser, logout, authFetch } = useUser();
     const { theme, changeTheme } = useTheme();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -62,7 +62,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
 
     const fetchFriends = async () => {
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/friends`);
+            const res = await authFetch(`${API_URL}/users/current/friends`);
             if (res.ok) setFriends(await res.json());
         } catch (e) { console.error('Error fetching friends', e); }
     };
@@ -75,7 +75,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
         }
         setIsSearching(true);
         try {
-            const res = await fetch(`${API_URL}/users/search?q=${e.target.value}&excludeUserId=${user.id}`);
+            const res = await authFetch(`${API_URL}/users/search?q=${e.target.value}&excludeUserId=current`);
             if (res.ok) setSearchResults(await res.json());
         } catch (error) {
             console.error('Search error', error);
@@ -85,9 +85,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
 
     const sendFriendRequest = async (receiver_id) => {
         try {
-            const res = await fetch(`${API_URL}/friends/request`, {
+            const res = await authFetch(`${API_URL}/friends/request`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ requester_id: user.id, receiver_id })
             });
             if (res.ok) {
@@ -105,7 +104,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
 
     const acceptFriendRequest = async (requestId) => {
         try {
-            const res = await fetch(`${API_URL}/friends/accept/${requestId}`, { method: 'PUT' });
+            const res = await authFetch(`${API_URL}/friends/accept/${requestId}`, { method: 'PUT' });
             if (res.ok) {
                 toast.success('בקשת חברות אושרה!');
                 fetchFriends();
@@ -117,7 +116,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
 
     const handleTogglePushNotifications = async () => {
         if (pushEnabled) {
-            const result = await unsubscribeFromPushNotifications();
+            const result = await unsubscribeFromPushNotifications(authFetch);
             if (result.success) {
                 setPushEnabled(false);
                 toast.success('קבלת התראות הופסקה');
@@ -125,7 +124,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                 toast.error('שגיאה בהפסקת התראות: ' + result.error);
             }
         } else {
-            const result = await subscribeToPushNotifications(user.id);
+            const result = await subscribeToPushNotifications(authFetch);
             if (result.success) {
                 setPushEnabled(true);
                 toast.success('קבלת התראות הופעלה בהצלחה');
@@ -147,7 +146,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
         formData.append('image', file);
 
         try {
-            const res = await fetch(`${API_URL}/upload`, {
+            const res = await authFetch(`${API_URL}/upload`, {
                 method: 'POST',
                 body: formData
             });
@@ -206,9 +205,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                 bodyData.whatsapp_enabled = whatsappEnabled;
             }
 
-            const res = await fetch(`${API_URL}/users/${user.id}`, {
+            const res = await authFetch(`${API_URL}/users/current`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bodyData)
             });
 

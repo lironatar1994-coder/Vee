@@ -7,6 +7,7 @@ export const useTaskDnD = ({
     setChecklists,
     API_URL,
     user,
+    authFetch,
     fetchData // optional callback to refresh data on failure or undo
 }) => {
     const [activeDragItem, setActiveDragItem] = useState(null);
@@ -174,11 +175,10 @@ export const useTaskDnD = ({
                     // API Call
                     const endpoint = currentProjectId
                         ? `${API_URL}/projects/${currentProjectId}/checklists/reorder`
-                        : `${API_URL}/users/${user.id}/checklists/reorder`;
+                        : `${API_URL}/users/current/checklists/reorder`;
 
-                    fetch(endpoint, {
+                    authFetch(endpoint, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ checklistIds })
                     }).then(res => {
                         if (res.ok) toast.success("סדר הרשימות עודכן בהצלחה", { duration: 2500 });
@@ -221,9 +221,8 @@ export const useTaskDnD = ({
 
                     // API Call for persistence (using the new order)
                     const itemIds = newItems.map(i => i.id);
-                    fetch(`${API_URL}/checklists/${activeContainerId}/reorder`, {
+                    authFetch(`${API_URL}/checklists/${activeContainerId}/reorder`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ itemIds })
                     }).then(res => {
                         if (res.ok) toast.success('סדר המשימות עודכן בהצלחה', { duration: 2500 });
@@ -249,9 +248,8 @@ export const useTaskDnD = ({
             // In API we need to PUT the item to update its checklist_id
             try {
                 // 1. Update checklist ID of item
-                await fetch(`${API_URL}/items/${active.id}`, {
+                await authFetch(`${API_URL}/items/${active.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ checklist_id: overContainerId })
                 });
 
@@ -259,20 +257,18 @@ export const useTaskDnD = ({
                 const targetList = checklists.find(c => c.id === overContainerId);
                 if (targetList) {
                     const targetItemIds = targetList.items.map(i => i.id);
-                    await fetch(`${API_URL}/checklists/${overContainerId}/reorder`, {
+                    await authFetch(`${API_URL}/checklists/${overContainerId}/reorder`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ itemIds: targetItemIds })
                     });
                 }
 
-                // Show Undo Toast
+                // Re-find the list since UI jumped list
                 const undoAction = async () => {
                     toast.dismiss();
                     try {
-                        await fetch(`${API_URL}/items/${active.id}`, {
+                        await authFetch(`${API_URL}/items/${active.id}`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ checklist_id: originalChecklistId })
                         });
                         if (fetchData) fetchData();

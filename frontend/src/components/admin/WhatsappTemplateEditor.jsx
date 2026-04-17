@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { adminAuthFetch } from '../../services/adminAuthService';
 
 const API_URL = '/api';
 
@@ -31,10 +32,7 @@ const WhatsappTemplateEditor = ({
     const fetchTemplate = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${API_URL}/admin/settings/${settingKey}`, {
-                headers: { 'Admin-Token': token }
-            });
+            const res = await adminAuthFetch(`${API_URL}/admin/settings/${settingKey}`);
             
             if (res.ok) {
                 const data = await res.json();
@@ -62,15 +60,10 @@ const WhatsappTemplateEditor = ({
 
         setSaving(true);
         try {
-            const token = localStorage.getItem('adminToken');
             // Escape newlines before sending to DB so they are stored safely as \n literal string
             const valueToSave = template.replace(/\n/g, '\\n');
-            const res = await fetch(`${API_URL}/admin/settings`, {
+            const res = await adminAuthFetch(`${API_URL}/admin/settings`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Admin-Token': token
-                },
                 body: JSON.stringify({ key: settingKey, value: valueToSave })
             });
 

@@ -27,7 +27,7 @@ import PageSkeleton from '../components/PageSkeleton';
 const API_URL = '/api';
 
 const Today = () => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const [projectGroups, setProjectGroups] = useState(() => (user && cache.get(`today_tasks_${user.id}`)) || []);
     const [todayProgress, setTodayProgress] = useState(() => (user && cache.get(`today_progress_${user.id}`)) || []);
     const [loading, setLoading] = useState(user ? !cache.get(`today_tasks_${user.id}`) : true);
@@ -72,7 +72,7 @@ const Today = () => {
 
     const fetchTodayTasks = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/tasks/by-date?date=${todayDateStr}`);
+            const res = await authFetch(`${API_URL}/users/current/tasks/by-date?date=${todayDateStr}`);
             if (res.ok) {
                 const data = await res.json();
                 setProjectGroups(data);
@@ -81,15 +81,11 @@ const Today = () => {
         } catch (err) {
             console.error('Error fetching today tasks:', err);
         }
-    }, [user.id, todayDateStr]);
+    }, [user.id, todayDateStr, authFetch]);
 
     const fetchTodayProgress = useCallback(async () => {
         try {
-            // We can fetch progress for all projects for this date
-            // However, the tasks/by-date endpoint already includes 'completed' status in the structured result
-            // But we need a flat todayProgress array for SortableChecklistCard to work with toggleItem logic
-            // Let's fetch it from a generic progress endpoint if available, or extract it from projectGroups
-            const res = await fetch(`${API_URL}/users/${user.id}/progress?date=${todayDateStr}`);
+            const res = await authFetch(`${API_URL}/users/current/progress?date=${todayDateStr}`);
             if (res.ok) {
                 const data = await res.json();
                 setTodayProgress(data);
@@ -98,7 +94,7 @@ const Today = () => {
         } catch (err) {
             console.error('Error fetching today progress:', err);
         }
-    }, [user.id, todayDateStr]);
+    }, [user.id, todayDateStr, authFetch]);
 
     useEffect(() => {
         if (user) {
@@ -176,9 +172,8 @@ const Today = () => {
 
         try {
             // 2. Perform network request
-            const res = await fetch(`${API_URL}/users/${user.id}/progress`, {
+            const res = await authFetch(`${API_URL}/users/current/progress`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     checklist_item_id: itemId,
                     date: todayDateStr,
@@ -226,16 +221,15 @@ const Today = () => {
         if (!targetId) {
             try {
                 // If it's undefined or the dummy 'inbox' id, fetch the actual inbox ID.
-                const clRes = await fetch(`${API_URL}/users/${user.id}/checklists`);
+                const clRes = await authFetch(`${API_URL}/users/current/checklists`);
                 if (!clRes.ok) throw new Error('Failed to fetch lists');
                 const lists = await clRes.json();
                 let inbox = lists.find(c => c.project_id === null || !c.project_id);
 
                 if (!inbox) {
                     // Create an inbox checklist if it doesn't exist
-                    const createRes = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                    const createRes = await authFetch(`${API_URL}/users/current/checklists`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             title: '',
                             project_id: null,
@@ -305,9 +299,8 @@ const Today = () => {
         window.globalNewItemReminderMinutes = null;
 
         try {
-            const res = await fetch(`${API_URL}/checklists/${targetId}/items`, {
+            const res = await authFetch(`${API_URL}/checklists/${targetId}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: contentToSave,
                     parent_item_id: parentItemId,
@@ -382,7 +375,7 @@ const Today = () => {
         window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
 
         try {
-            const res = await fetch(`${API_URL}/items/${itemId}`, { method: 'DELETE' });
+            const res = await authFetch(`${API_URL}/items/${itemId}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success("המשימה נמחקה");
             } else {
@@ -412,9 +405,8 @@ const Today = () => {
         })));
 
         try {
-            const res = await fetch(`${API_URL}/items/${itemId}`, {
+            const res = await authFetch(`${API_URL}/items/${itemId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
             });
 
@@ -473,9 +465,8 @@ const Today = () => {
         const itemIds = overdueTasks.map(t => t.id);
 
         try {
-            const res = await fetch(`${API_URL}/items/bulk/datetime`, {
+            const res = await authFetch(`${API_URL}/items/bulk/datetime`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ itemIds, target_date: newDate })
             });
 
@@ -595,7 +586,7 @@ const Today = () => {
     const handleClearTodayCompleted = async () => {
         if (!window.confirm("האם אתה בטוח שברצונך למחוק את כל המשימות שהושלמו?")) return;
         try {
-            await Promise.all(completedTasks.map(item => fetch(`${API_URL}/items/${item.id}`, { method: 'DELETE' })));
+            await Promise.all(completedTasks.map(item => authFetch(`${API_URL}/items/${item.id}`, { method: 'DELETE' })));
             toast.success("המשימות שהושלמו נמחקו בהצלחה");
             fetchTodayTasks();
             window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));

@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const userAuth = require('../middleware/userAuth');
+
+router.use(userAuth);
 
 // GET /api/users/search
 router.get('/users/search', (req, res) => {

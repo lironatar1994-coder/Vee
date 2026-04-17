@@ -47,7 +47,7 @@ export default function TaskEditModal({
     onToggleComplete,
     onAddSubtask,
 }) {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [time, setTime] = useState(item.time || '');
     const [showTimeMenu, setShowTimeMenu] = useState(false);
@@ -187,7 +187,7 @@ export default function TaskEditModal({
     const fetchTaskComments = async (itemId) => {
         setLoadingComments(true);
         try {
-            const res = await fetch(`/api/checklist-items/${itemId}/comments`);
+            const res = await authFetch(`/api/checklist-items/${itemId}/comments`);
             if (res.ok) {
                 const data = await res.json();
                 setItemComments(data);
@@ -203,9 +203,8 @@ export default function TaskEditModal({
     const handlePostComment = async () => {
         if (!newCommentText.trim()) return;
         try {
-            const res = await fetch(`/api/checklist-items/${item.id}/comments`, {
+            const res = await authFetch(`/api/checklist-items/${item.id}/comments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: user.id,
                     content: newCommentText.trim()
@@ -225,7 +224,7 @@ export default function TaskEditModal({
 
     const handleDeleteComment = async (commentId) => {
         try {
-            const res = await fetch(`/api/checklist-item-comments/${commentId}`, { method: 'DELETE' });
+            const res = await authFetch(`/api/checklist-item-comments/${commentId}`, { method: 'DELETE' });
             if (res.ok) {
                 setItemComments(prev => prev.filter(c => c.id !== commentId));
                 toast.success('התגובה נמחקה');
@@ -239,9 +238,8 @@ export default function TaskEditModal({
     const handleUpdateComment = async (commentId) => {
         if (!editCommentText.trim()) return;
         try {
-            const res = await fetch(`/api/checklist-item-comments/${commentId}`, {
+            const res = await authFetch(`/api/checklist-item-comments/${commentId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: editCommentText.trim() })
             });
             if (res.ok) {
@@ -276,9 +274,8 @@ export default function TaskEditModal({
 
         const itemIds = newSubtasks.map((s) => s.id);
         try {
-            await fetch(`/api/items/reorder`, {
+            await authFetch(`/api/items/reorder`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ itemIds })
             });
             window.dispatchEvent(new CustomEvent('refreshTasks'));
@@ -290,9 +287,8 @@ export default function TaskEditModal({
     const handleCreateSubtask = async (e, checklistId, projectId, content) => {
         if (e) e.preventDefault();
         try {
-            const res = await fetch(`/api/checklists/${item.checklist_id}/items`, {
+            const res = await authFetch(`/api/checklists/${item.checklist_id}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content,
                     parent_item_id: item.id,
@@ -318,9 +314,8 @@ export default function TaskEditModal({
 
     const handleToggleSubtask = async (subId, checklistId, completed) => {
         try {
-            const res = await fetch(`/api/items/${subId}`, {
+            const res = await authFetch(`/api/items/${subId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ completed })
             });
             if (res.ok) {
@@ -335,7 +330,7 @@ export default function TaskEditModal({
 
     const handleDeleteSubtask = async (subId) => {
         try {
-            const res = await fetch(`/api/items/${subId}`, { method: 'DELETE' });
+            const res = await authFetch(`/api/items/${subId}`, { method: 'DELETE' });
             if (res.ok) {
                 setSubtasks(prev => prev.filter(s => s.id !== subId));
                 window.dispatchEvent(new CustomEvent('refreshTasks'));
@@ -348,9 +343,8 @@ export default function TaskEditModal({
 
     const handleUpdateSubtask = async (subId, updates) => {
         try {
-            const res = await fetch(`/api/items/${subId}`, {
+            const res = await authFetch(`/api/items/${subId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
             });
             if (res.ok) {

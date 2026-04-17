@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 const API_URL = '/api';
 
 const FriendsModal = ({ isOpen, onClose }) => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const [isVisible, setIsVisible] = useState(false);
     const [friends, setFriends] = useState([]);
 
@@ -27,7 +27,7 @@ const FriendsModal = ({ isOpen, onClose }) => {
 
     const fetchFriends = async () => {
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/friends`);
+            const res = await authFetch(`${API_URL}/users/current/friends`);
             if (res.ok) setFriends(await res.json());
         } catch (e) {
             console.error('Error fetching friends', e);
@@ -36,7 +36,7 @@ const FriendsModal = ({ isOpen, onClose }) => {
 
     const acceptFriendRequest = async (requestId) => {
         try {
-            const res = await fetch(`${API_URL}/friends/accept/${requestId}`, { method: 'PUT' });
+            const res = await authFetch(`${API_URL}/friends/accept/${requestId}`, { method: 'PUT' });
             if (res.ok) {
                 toast.success('בקשת חברות אושרה!');
                 fetchFriends();
@@ -117,9 +117,8 @@ const FriendsModal = ({ isOpen, onClose }) => {
 
             setIsSending(true);
             try {
-                const res = await fetch(`${API_URL}/invitations`, {
+                const res = await authFetch(`${API_URL}/invitations`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         inviter_id: user.id,
                         emails: targetsToSend

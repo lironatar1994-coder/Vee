@@ -17,7 +17,7 @@ import {
 import { he } from 'date-fns/locale';
 import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CheckCircle } from 'lucide-react';
 
-const ProjectCalendar = ({ projectId, API_URL, onDayClick }) => {
+const ProjectCalendar = ({ projectId, API_URL, onDayClick, authFetch }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState('month'); // 'month' or 'week'
     const [historyData, setHistoryData] = useState({});
@@ -39,7 +39,7 @@ const ProjectCalendar = ({ projectId, API_URL, onDayClick }) => {
                 end = format(endOfWeek(currentDate, { weekStartsOn: 0 }), 'yyyy-MM-dd');
             }
 
-            const res = await fetch(`${API_URL}/projects/${projectId}/history?startDate=${start}&endDate=${end}`);
+            const res = await authFetch(`${API_URL}/projects/${projectId}/history?startDate=${start}&endDate=${end}`);
             if (res.ok) {
                 const data = await res.json();
                 const historyMap = {};

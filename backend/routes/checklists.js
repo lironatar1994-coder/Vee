@@ -2,132 +2,25 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { calculateNextOccurrence, isOccurrenceOnDate } = require('../utils/dateUtils');
+const userAuth = require('../middleware/userAuth');
+
+// All routes in this router require user authentication
+router.use(userAuth);
 
 // --- Checklists API ---
-
-// GET /api/users/:userId/checklists
-router.get('/users/:userId/checklists', (req, res) => {
-    const { userId } = req.params;
-    try {
-        const checklists = db.prepare('SELECT * FROM checklists WHERE user_id = ? ORDER BY order_index ASC, created_at DESC').all(userId);
-        for (let c of checklists) {
-            c.items = db.prepare(`
-                SELECT ci.*, 
-                       (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date,
-                       (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count
-                FROM checklist_items ci 
-                WHERE ci.checklist_id = ? 
-                ORDER BY order_index ASC
-            `).all(c.id);
-        }
-        res.json(checklists);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to fetch checklists' });
-    }
-});
-
-// GET /api/users/:userId/inbox
-router.get('/users/:userId/inbox', (req, res) => {
-    const { userId } = req.params;
-    try {
-        let checklists = db.prepare('SELECT * FROM checklists WHERE user_id = ? AND project_id IS NULL ORDER BY order_index ASC, created_at DESC').all(userId);
-        for (let c of checklists) {
-            c.items = db.prepare(`
-                SELECT ci.*, 
-                       (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date,
-                       (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count
-                FROM checklist_items ci 
-                WHERE ci.checklist_id = ? 
-                ORDER BY order_index ASC
-            `).all(c.id);
-        }
-        res.json(checklists);
-    } catch (err) {
-        console.error('Failed to fetch inbox', err);
-        res.status(500).json({ error: 'Failed to fetch inbox' });
-    }
-});
-
-// POST /api/users/:userId/checklists
-router.post('/users/:userId/checklists', (req, res) => {
-    const { userId } = req.params;
-    const { title, items, project_id } = req.body;
-    if (title === undefined) return res.status(400).json({ error: 'Title is required' });
-
-    try {
-        let newChecklistId;
-        db.transaction(() => {
-            const insertList = db.prepare('INSERT INTO checklists (user_id, title, project_id) VALUES (?, ?, ?)');
-            const result = insertList.run(userId, title, project_id || null);
-            newChecklistId = result.lastInsertRowid;
-
-            if (items && Array.isArray(items)) {
-                const insertItem = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index) VALUES (?, ?, ?)');
-                items.forEach((itemContent, index) => {
-                    insertItem.run(newChecklistId, itemContent, index);
-                });
-            }
-        })();
-
-        const c = db.prepare('SELECT * FROM checklists WHERE id = ?').get(newChecklistId);
-        c.items = db.prepare(`
-            SELECT ci.*, 
-                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date,
-                   (SELECT COUNT(*) FROM checklist_item_comments WHERE checklist_item_id = ci.id) as comments_count
-            FROM checklist_items ci 
-            WHERE ci.checklist_id = ? 
-            ORDER BY order_index ASC
-        `).all(newChecklistId);
-        res.json(c);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to create checklist' });
-    }
-});
-
-// POST /api/users/:userId/checklists/from-template
-router.post('/users/:userId/checklists/from-template', (req, res) => {
-    const { userId } = req.params;
-    const { templateId, project_id } = req.body;
-    try {
-        const template = db.prepare('SELECT * FROM templates WHERE id = ?').get(templateId);
-        if (!template) return res.status(404).json({ error: 'Template not found' });
-
-        const items = db.prepare('SELECT content FROM template_items WHERE template_id = ?').all(templateId);
-
-        let newChecklistId;
-        db.transaction(() => {
-            const insertList = db.prepare('INSERT INTO checklists (user_id, title, project_id) VALUES (?, ?, ?)');
-            const result = insertList.run(userId, template.title, project_id || null);
-            newChecklistId = result.lastInsertRowid;
-
-            const insertItem = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index) VALUES (?, ?, ?)');
-            items.forEach((item, index) => {
-                insertItem.run(newChecklistId, item.content, index);
-            });
-        })();
-
-        const c = db.prepare('SELECT * FROM checklists WHERE id = ?').get(newChecklistId);
-        c.items = db.prepare(`
-            SELECT ci.*, 
-                   (SELECT MAX(dp.date) FROM daily_progress dp WHERE dp.checklist_item_id = ci.id AND dp.completed = 1) as last_completed_date
-            FROM checklist_items ci 
-            WHERE ci.checklist_id = ? 
-            ORDER BY order_index ASC
-        `).all(newChecklistId);
-        res.json(c);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to instantiate template' });
-    }
-});
+// (Specific user-level checklist routes moved to users.js)
 
 // PUT /api/checklists/:id
 router.put('/checklists/:id', (req, res) => {
     const { id } = req.params;
     const { title } = req.body;
     try {
+        // Enforce ownership check
+        const checklist = db.prepare('SELECT user_id FROM checklists WHERE id = ?').get(id);
+        if (!checklist || checklist.user_id !== req.user.id) {
+            return res.status(403).json({ error: 'Forbidden: You do not own this checklist' });
+        }
+
         if (title !== undefined) {
             db.prepare('UPDATE checklists SET title = ? WHERE id = ?').run(title, id);
         }
@@ -140,6 +33,11 @@ router.put('/checklists/:id', (req, res) => {
 // DELETE /api/checklists/:id
 router.delete('/checklists/:id', (req, res) => {
     try {
+        const checklist = db.prepare('SELECT user_id FROM checklists WHERE id = ?').get(req.params.id);
+        if (!checklist || checklist.user_id !== req.user.id) {
+            return res.status(403).json({ error: 'Forbidden: You do not own this checklist' });
+        }
+
         db.prepare('DELETE FROM checklists WHERE id = ?').run(req.params.id);
         res.json({ success: true });
     } catch (err) {

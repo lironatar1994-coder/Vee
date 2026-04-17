@@ -6,7 +6,7 @@ import { useUser } from '../../context/UserContext';
 const API_URL = '/api';
 
 const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selectedChecklistId, selectedProject, selectedChecklist }) => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const [projects, setProjects] = useState([]);
     const [checklists, setChecklists] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -17,8 +17,8 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
         const fetchData = async () => {
             try {
                 const [projRes, checkRes] = await Promise.all([
-                    fetch(`${API_URL}/users/${user.id}/projects`),
-                    fetch(`${API_URL}/users/${user.id}/checklists`)
+                    authFetch(`${API_URL}/users/current/projects`),
+                    authFetch(`${API_URL}/users/current/checklists`)
                 ]);
                 if (projRes.ok) setProjects(await projRes.json());
                 if (checkRes.ok) setChecklists(await checkRes.json());

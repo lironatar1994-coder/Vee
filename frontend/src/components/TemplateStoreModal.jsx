@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Layers, ListChecks, ArrowRight, Repeat, Target, Folder } from 'lucide-react';
+import { useUser } from '../context/UserContext';
+import { toast } from 'sonner';
 
 export default function TemplateStoreModal({ isOpen, onClose, onCreated, userId, apiUrl }) {
+    const { authFetch } = useUser();
     const [templates, setTemplates] = useState([]);
     const [fetching, setFetching] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -12,7 +15,7 @@ export default function TemplateStoreModal({ isOpen, onClose, onCreated, userId,
     useEffect(() => {
         if (isOpen && templates.length === 0) {
             setFetching(true);
-            fetch(`${apiUrl}/templates`)
+            authFetch(`${apiUrl}/templates`)
                 .then(r => r.json())
                 .then(data => setTemplates(data))
                 .catch(e => console.error('Failed to load templates:', e))
@@ -32,17 +35,15 @@ export default function TemplateStoreModal({ isOpen, onClose, onCreated, userId,
         setLoading(true);
 
         try {
-            const pRes = await fetch(`${apiUrl}/users/${userId}/projects`, {
+            const pRes = await authFetch(`${apiUrl}/users/current/projects`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: title.trim() })
             });
 
             if (pRes.ok) {
                 const newProj = await pRes.json();
-                await fetch(`${apiUrl}/users/${userId}/checklists/from-template`, {
+                await authFetch(`${apiUrl}/users/current/checklists/from-template`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         templateId: selectedTemplate.id,
                         project_id: newProj.id
@@ -50,6 +51,7 @@ export default function TemplateStoreModal({ isOpen, onClose, onCreated, userId,
                 });
 
                 onCreated({ ...newProj, _fromTemplateMagic: true });
+                toast.success('הפרויקט התווסף בהצלחה');
                 onClose();
             }
         } catch (err) {

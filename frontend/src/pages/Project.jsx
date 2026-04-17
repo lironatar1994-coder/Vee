@@ -41,7 +41,7 @@ import PageSkeleton from '../components/PageSkeleton';
 const Project = () => {
     const { projectId } = useParams();
     const location = useLocation();
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const { theme } = useTheme();
     const navigate = useNavigate();
 
@@ -232,7 +232,7 @@ const Project = () => {
             setLoadingComments(true);
         }
         try {
-            const res = await fetch(`${API_URL}/projects/${projectId}/comments`);
+            const res = await authFetch(`${API_URL}/projects/${projectId}/comments`);
             if (res.ok) {
                 const data = await res.json();
                 setComments(data);
@@ -254,9 +254,8 @@ const Project = () => {
         if (!newComment.trim()) return;
 
         try {
-            const res = await fetch(`${API_URL}/projects/${projectId}/comments`, {
+            const res = await authFetch(`${API_URL}/projects/${projectId}/comments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: user.id,
                     content: newComment.trim()
@@ -304,56 +303,51 @@ const Project = () => {
     const fetchProjectData = async () => {
         setLoading(true);
         try {
-            const projectsRes = await fetch(`${API_URL}/users/${user.id}/projects`);
-            const projectsData = await projectsRes.json();
-            const currentProj = projectsData.find(p => p.id === parseInt(projectId));
-            setProject(currentProj);
+            const res = await authFetch(`${API_URL}/projects/${projectId}`);
+            if (!res.ok) throw new Error('Failed to fetch project');
+            
+            const data = await res.json();
+            const { project: projectData, checklists: checklistsData, comments: commentsData, members: membersData } = data;
 
-            if (currentProj) {
-                setTempDescription(currentProj.description || '');
+            setProject(projectData);
+            setChecklists(checklistsData || []);
+            setComments(commentsData || []);
+            setProjectMembers(membersData || []);
 
-                // Interactive Title: Update Browser title with project name
-                window.dispatchEvent(new CustomEvent('updatePageTitle', { detail: currentProj.title }));
+            if (projectData) {
+                setTempDescription(projectData.description || '');
+                window.dispatchEvent(new CustomEvent('updatePageTitle', { detail: projectData.title }));
             }
 
-            const checklistsRes = await fetch(`${API_URL}/projects/${projectId}/checklists`);
-            const listsData = await checklistsRes.json();
-            setChecklists(listsData);
-
-            // Pre-fetch comments as well so they are ready
-            const commentsRes = await fetch(`${API_URL}/projects/${projectId}/comments`);
-            const commentsData = await commentsRes.json();
-            setComments(commentsData);
-
-            // Initialize expanded state for all lists, merging with saved states
+            // Initialize expanded state for all lists
             const initExpanded = { ...expandedChecklists };
-            listsData.forEach(list => {
-                if (initExpanded[list.id] === undefined) {
-                    initExpanded[list.id] = true;
-                }
-            });
+            if (Array.isArray(checklistsData)) {
+                checklistsData.forEach(list => {
+                    if (initExpanded[list.id] === undefined) {
+                        initExpanded[list.id] = true;
+                    }
+                });
+            }
             setExpandedChecklists(initExpanded);
 
-            if (magicRevealing) {
-                setTimeout(() => startWaterfall(listsData), 100);
+            if (magicRevealing && Array.isArray(checklistsData)) {
+                setTimeout(() => startWaterfall(checklistsData), 100);
             }
 
-            // Save to cache including comments now
-            cache.set(`project_data_${projectId}`, { 
-                project: currentProj, 
-                checklists: listsData,
-                comments: commentsData
-            });
-
+            // Fetch secondary data (progress is date-dependent)
+            fetchProgressForDate(selectedDate);
+            
         } catch (err) {
             console.error('Error fetching project data:', err);
+            toast.error('שגיאה בטעינת נתוני הפרויקט');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const fetchProgressForDate = async (dateStr) => {
         try {
-            const progressRes = await fetch(`${API_URL}/projects/${projectId}/progress/${dateStr}`);
+            const progressRes = await authFetch(`${API_URL}/projects/${projectId}/progress/${dateStr}`);
             const progressData = await progressRes.json();
             setTodayProgress(progressData);
         } catch (err) {
@@ -373,9 +367,8 @@ const Project = () => {
         }
 
         try {
-            const res = await fetch(`${API_URL}/projects/${project.id}`, {
+            const res = await authFetch(`${API_URL}/projects/${project.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: tempTitle })
             });
             if (res.ok) {
@@ -404,9 +397,8 @@ const Project = () => {
         }
 
         try {
-            const res = await fetch(`${API_URL}/projects/${project.id}`, {
+            const res = await authFetch(`${API_URL}/projects/${project.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ description: tempDescription.trim() })
             });
             if (res.ok) {
@@ -434,7 +426,7 @@ const Project = () => {
 
     const fetchProjectMembers = async () => {
         try {
-            const res = await fetch(`${API_URL}/projects/${projectId}/members`);
+            const res = await authFetch(`${API_URL}/projects/${projectId}/members`);
             if (res.ok) {
                 setProjectMembers(await res.json());
             }
@@ -443,7 +435,7 @@ const Project = () => {
 
     const fetchFriends = async () => {
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/friends`);
+            const res = await authFetch(`${API_URL}/users/current/friends`);
             if (res.ok) setFriends((await res.json()).filter(f => f.status === 'accepted'));
         } catch (error) { console.error(error); }
     };
@@ -454,9 +446,8 @@ const Project = () => {
 
     const handleAddMember = async (targetUserId) => {
         try {
-            const res = await fetch(`${API_URL}/projects/${projectId}/members`, {
+            const res = await authFetch(`${API_URL}/projects/${projectId}/members`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: targetUserId, role: 'member' })
             });
             if (res.ok) {
@@ -470,7 +461,7 @@ const Project = () => {
 
     const handleRemoveMember = async (targetUserId) => {
         try {
-            const res = await fetch(`${API_URL}/projects/${projectId}/members/${targetUserId}`, { method: 'DELETE' });
+            const res = await authFetch(`${API_URL}/projects/${projectId}/members/${targetUserId}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success('חבר הוסר מהצוות!');
                 fetchProjectMembers();
@@ -480,9 +471,8 @@ const Project = () => {
 
     const handleUpdateMemberRole = async (targetUserId, role) => {
         try {
-            const res = await fetch(`${API_URL}/projects/${projectId}/members/${targetUserId}`, {
+            const res = await authFetch(`${API_URL}/projects/${projectId}/members/${targetUserId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role })
             });
             if (res.ok) {
@@ -501,7 +491,7 @@ const Project = () => {
         setShowProjectMenu(false);
         if (!window.confirm('האם אתה בטוח שברצונך למחוק פרויקט זה ואת כל התבניות והמשימות שבתוכו?')) return;
         try {
-            await fetch(`${API_URL}/projects/${projectId}`, { method: 'DELETE' });
+            await authFetch(`${API_URL}/projects/${projectId}`, { method: 'DELETE' });
             navigate('/');
         } catch (err) {
             console.error('Error deleting project:', err);
@@ -510,9 +500,8 @@ const Project = () => {
 
     const handleSaveSettings = async (settings) => {
         try {
-            const res = await fetch(`${API_URL}/projects/${projectId}`, {
+            const res = await authFetch(`${API_URL}/projects/${projectId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     title: settings.title.trim(), 
                     color: settings.color,
@@ -554,9 +543,8 @@ const Project = () => {
 
         // Create one if none exists
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+            const res = await authFetch(`${API_URL}/users/current/checklists`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: '',
                     project_id: projectId
@@ -585,7 +573,7 @@ const Project = () => {
             if (!target) {
                 // No checklists — create a default one
                 try {
-                    const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                    const res = await authFetch(`${API_URL}/users/current/checklists`, {
                         method: 'POST',
                         body: JSON.stringify({ title: '', project_id: projectId })
                     });
@@ -623,9 +611,8 @@ const Project = () => {
         if (newListTitle === undefined) return;
 
         try {
-            const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+            const res = await authFetch(`${API_URL}/users/current/checklists`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: newListTitle,
                     project_id: projectId
@@ -650,9 +637,8 @@ const Project = () => {
                 toast.success('רשימה חדשה נוצרה');
 
                 // Persist the new order
-                await fetch(`${API_URL}/projects/${projectId}/checklists/reorder`, {
+                await authFetch(`${API_URL}/projects/${projectId}/checklists/reorder`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ checklistIds: newChecklists.map(c => c.id) })
                 });
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
@@ -723,9 +709,8 @@ const Project = () => {
         window.globalNewItemReminderMinutes = null;
 
         try {
-            const res = await fetch(`${API_URL}/checklists/${_checklistId}/items`, {
+            const res = await authFetch(`${API_URL}/checklists/${_checklistId}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: contentToSave,
                     parent_item_id: parentItemId,
@@ -802,7 +787,7 @@ const Project = () => {
         window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
 
         try {
-            const res = await fetch(`${API_URL}/items/${itemId}`, { method: 'DELETE' });
+            const res = await authFetch(`${API_URL}/items/${itemId}`, { method: 'DELETE' });
             if (!res.ok) throw new Error("Failed to delete");
         } catch (err) {
             console.error(err);
@@ -820,9 +805,8 @@ const Project = () => {
         })));
 
         try {
-            const res = await fetch(`${API_URL}/items/${itemId}`, {
+            const res = await authFetch(`${API_URL}/items/${itemId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
             });
                 if (res.ok) {
@@ -865,9 +849,8 @@ const Project = () => {
 
         try {
             // 2. Perform network request
-            const res = await fetch(`${API_URL}/users/${user.id}/progress`, {
+            const res = await authFetch(`${API_URL}/users/current/progress`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     checklist_item_id: itemId,
                     date: currentDate,
@@ -892,7 +875,7 @@ const Project = () => {
         e.stopPropagation();
         if (!window.confirm('האם אתה בטוח שברצונך למחוק תבנית זו?')) return;
         try {
-            await fetch(`${API_URL}/checklists/${id}`, { method: 'DELETE' });
+            await authFetch(`${API_URL}/checklists/${id}`, { method: 'DELETE' });
             setChecklists(checklists.filter(c => c.id !== id));
             window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
         } catch (err) {
@@ -927,6 +910,7 @@ const Project = () => {
         setChecklists,
         API_URL,
         user,
+        authFetch,
         fetchData: fetchProjectData
     });
 
@@ -957,9 +941,8 @@ const Project = () => {
                 const hasChecklist = checklists.some(c => String(c.id) === String(checklistId));
                 if (!hasChecklist) {
                     try {
-                        const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                        const res = await authFetch(`${API_URL}/users/current/checklists`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ title: '', project_id: projectId })
                         });
                         if (!res.ok) throw new Error('Failed to create project list');
@@ -1022,11 +1005,11 @@ const Project = () => {
         );
     }
 
-    const activeChecklists = checklists
+    const activeChecklists = (Array.isArray(checklists) ? checklists : [])
         .filter(c => (!magicRevealing && !isWaterfalling) || visibleChecklistIds.has(c.id))
         .map(c => ({
             ...c,
-            items: c.items.filter(item => {
+            items: (c.items || []).filter(item => {
                 const p = todayProgress.find(prog => prog.checklist_item_id === item.id);
                 const isCompleted = p && p.completed === 1;
                 return activePageTab === 'tasks' ? !isCompleted : isCompleted;
@@ -1035,7 +1018,7 @@ const Project = () => {
 
     const uncompletedCount = activeChecklists.reduce((acc, c) => acc + c.items.length, 0);
 
-    const completedTasks = activePageTab === 'tasks' ? checklists
+    const completedTasks = activePageTab === 'tasks' ? (Array.isArray(checklists) ? checklists : [])
         .filter(c => (!magicRevealing && !isWaterfalling) || visibleChecklistIds.has(c.id))
         .flatMap(c => c.items
             .map(item => ({ ...item, checklist_title: c.title, checklist_id: c.id, projectTitle: project?.title }))
@@ -1048,7 +1031,7 @@ const Project = () => {
     const handleClearProjectCompleted = async () => {
         if (!window.confirm("האם אתה בטוח שברצונך למחוק את כל המשימות שהושלמו?")) return;
         try {
-            await Promise.all(completedTasks.map(item => fetch(`${API_URL}/items/${item.id}`, { method: 'DELETE' })));
+            await Promise.all(completedTasks.map(item => authFetch(`${API_URL}/items/${item.id}`, { method: 'DELETE' })));
             toast.success("המשימות שהושלמו נמחקו בהצלחה");
             fetchProjectData();
             window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
@@ -1196,7 +1179,7 @@ const Project = () => {
         >
 
             {activeTab === 'history' ? (
-                <ProjectCalendar projectId={project.id} API_URL={API_URL} onDayClick={(date) => { setSelectedDate(date); setActiveTab('tasks'); }} />
+                <ProjectCalendar projectId={project.id} API_URL={API_URL} authFetch={authFetch} onDayClick={(date) => { setSelectedDate(date); setActiveTab('tasks'); }} />
             ) : (
                 <>
                     {/* Tasks View */}
@@ -1221,6 +1204,51 @@ const Project = () => {
                                 <div style={{ padding: '0.5rem 0' }}>
                                     <EmptyStateDropZone active={activeDragItem?.data?.current?.type === 'FAB'} checklistId={project.id} />
                                     <ListDropSlot id="list-slot-0" activeType={activeDragItem?.data?.current?.type} />
+
+                                    {/* Inline Add Task for Empty Projects */}
+                                    {activePageTab === 'tasks' && !isCreatingList && (
+                                        <div
+                                            onClick={handleGlobalAddTask}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '10px',
+                                                padding: '10px 0',
+                                                cursor: 'pointer',
+                                                color: 'var(--add-task-btn-color)',
+                                                transition: 'all 0.2s ease',
+                                                direction: 'rtl',
+                                                WebkitTapHighlightColor: 'transparent',
+                                                width: 'fit-content'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.color = 'var(--add-task-btn-hover)';
+                                                e.currentTarget.style.transform = 'translateX(-2px)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.color = 'var(--add-task-btn-color)';
+                                                e.currentTarget.style.transform = 'none';
+                                            }}
+                                        >
+                                            <div style={{
+                                                width: '20px',
+                                                height: '20px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexShrink: 0
+                                            }}>
+                                                <Plus size={18} strokeWidth={2.5} />
+                                            </div>
+                                            <span style={{ 
+                                                fontSize: '16px', 
+                                                fontWeight: 500,
+                                                letterSpacing: '-0.2px'
+                                            }}>
+                                                הוסף משימה
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {isCreatingList === true && activePageTab === 'tasks' && (
                                         <form 

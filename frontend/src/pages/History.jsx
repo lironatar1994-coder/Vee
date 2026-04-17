@@ -7,7 +7,7 @@ import cache from '../utils/cache';
 const API_URL = '/api';
 
 const History = () => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const [activities, setActivities] = useState(() => (user && cache.get(`history_data_${user.id}`)) || []);
     const [loading, setLoading] = useState(user ? !cache.get(`history_data_${user.id}`) : true);
     const [scrollTop, setScrollTop] = useState(0);
@@ -31,7 +31,7 @@ const History = () => {
                 setLoading(true);
             }
             try {
-                const res = await fetch(`${API_URL}/users/${user.id}/activity`);
+                const res = await authFetch(`${API_URL}/users/current/activity`);
                 if (res.ok) {
                     const data = await res.json();
                     if (!cancelled) {
@@ -62,7 +62,7 @@ const History = () => {
 
         const loadProjects = async () => {
             try {
-                const res = await fetch(`${API_URL}/users/${user.id}/projects`);
+                const res = await authFetch(`${API_URL}/users/current/projects`);
                 if (res.ok) {
                     const data = await res.json();
                     setProjects(Array.isArray(data) ? data : []);

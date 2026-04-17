@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useHeaderScroll } from '../../context/HeaderContext';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
 import { useNavigate } from 'react-router-dom';
+import { adminAuthFetch } from '../../services/adminAuthService';
 
 const API_URL = '/api';
 
@@ -35,12 +36,8 @@ const AdminDashboard = () => {
     };
 
     const fetchWhatsappStatus = async () => {
-        const token = localStorage.getItem('adminToken');
-        if (!token) return;
         try {
-            const res = await fetch(`${API_URL}/admin/whatsapp/status`, {
-                headers: { 'Admin-Token': token }
-            });
+            const res = await adminAuthFetch(`${API_URL}/admin/whatsapp/status`);
             if (res.ok) {
                 const data = await res.json();
                 setWhatsappStatus(data.status);
@@ -51,22 +48,15 @@ const AdminDashboard = () => {
     };
 
     const fetchAdminData = async () => {
-        const token = localStorage.getItem('adminToken');
-        const headers = {
-            'Content-Type': 'application/json',
-            'Admin-Token': token
-        };
-
         try {
             const [statsRes, usersRes, settingsRes] = await Promise.all([
-                fetch(`${API_URL}/admin/stats`, { headers }),
-                fetch(`${API_URL}/admin/users`, { headers }),
-                fetch(`${API_URL}/admin/settings/whatsapp_task_adder_enabled`, { headers })
+                adminAuthFetch(`${API_URL}/admin/stats`),
+                adminAuthFetch(`${API_URL}/admin/users`),
+                adminAuthFetch(`${API_URL}/admin/settings/whatsapp_task_adder_enabled`)
             ]);
 
             if (statsRes.status === 401 || usersRes.status === 401) {
                 toast.error('פג תוקף ההתחברות. אנא התחבר מחדש.');
-                // Will be handled by layout redirect optionally, or explicit logic
                 return;
             }
             const statsData = await statsRes.json();

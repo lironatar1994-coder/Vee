@@ -27,14 +27,13 @@ const History = lazy(() => import('./pages/History'));
 import OnboardingWizard from './components/OnboardingWizard';
 
 function App() {
-  const { user } = useUser();
-
+  const { user, authFetch } = useUser();
   useEffect(() => {
     if (!user) return;
-
     const pingServer = async () => {
       try {
-        await fetch(`/api/users/${user.id}/ping`, { method: 'POST' });
+        // Backend now uses userAuth, so no need for userId in the URL
+        await authFetch('/api/users/current/ping', { method: 'POST' });
       } catch (e) {
         console.error('Ping failed', e);
       }

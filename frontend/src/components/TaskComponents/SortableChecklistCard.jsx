@@ -4,6 +4,7 @@ import { ChevronDown, ChevronLeft, Plus, MoreHorizontal, Layout, Trash2,
 } from 'lucide-react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DndContext, pointerWithin, useDroppable } from '@dnd-kit/core';
+import { useUser } from '../../context/UserContext';
 import ActionMenu from './ActionMenu';
 import SortableTaskItem from './SortableTaskItem';
 import AddTaskCard from './AddTaskCard';
@@ -229,12 +230,12 @@ const SortableChecklistCard = ({
     hideActionMenu = false,
     canEditTitle = true
 }) => {
+    const { authFetch } = useUser();
 
     // Local update handler — calls PUT /api/items/:itemId and updates UI eventually via parent reload / socket
     const handleUpdateItem = onUpdateItem || handleUpdateItemProp || ((itemId, updates) => {
-        fetch(`${API_URL}/items/${itemId}`, {
+        authFetch(`${API_URL}/items/${itemId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates),
         }).catch(err => console.error('Failed to update task', err));
     });
@@ -293,9 +294,8 @@ const SortableChecklistCard = ({
         if (!finalTitle || finalTitle === (originalTitleRef.current || '').trim()) return;
         
         try {
-            const res = await fetch(`${API_URL}/checklists/${checklist.id}`, {
+            const res = await authFetch(`${API_URL}/checklists/${checklist.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: finalTitle })
             });
             if (res.ok) {

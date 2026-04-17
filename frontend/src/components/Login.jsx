@@ -42,8 +42,9 @@ export default function Login() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    // Auto-login after register using UserContext
-                    await login(data.user.username, data.user.email, data.user);
+                    // Auto-login after register using UserContext 
+                    // Now includes the JWT token returned from backend
+                    await login(data.user.username, data.user.email, data.user, data.token);
                 } else {
                     setError(data.error || 'שגיאה בהרשמה');
                 }
@@ -59,7 +60,8 @@ export default function Login() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    await login(data.user.username, data.user.email, data.user);
+                    // Includes the JWT token returned from backend
+                    await login(data.user.username, data.user.email, data.user, data.token);
                 } else {
                     setError(data.error || 'שגיאה בהתחברות');
                 }

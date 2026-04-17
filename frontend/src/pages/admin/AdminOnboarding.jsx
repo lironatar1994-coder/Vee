@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, Save, Layers, Sparkles, Wand2, Command, Zap, FolderPlus, FileText, CheckCircle2, ArrowDown, LayoutPanelTop, CheckSquare } from 'lucide-react';
 import Header from '../../components/Header';
 import { useHeaderScroll } from '../../context/HeaderContext';
+import { adminAuthFetch } from '../../services/adminAuthService';
 
 const API_URL = '/api';
 
@@ -27,12 +28,9 @@ const AdminOnboarding = () => {
     };
 
     const fetchData = async () => {
-        const token = localStorage.getItem('adminToken');
         try {
             const [cfgRes, tplRes] = await Promise.all([
-                fetch(`${API_URL}/admin/settings/onboarding_config`, {
-                    headers: { 'Admin-Token': token }
-                }),
+                adminAuthFetch(`${API_URL}/admin/settings/onboarding_config`),
                 fetch(`${API_URL}/templates`) // public route
             ]);
 
@@ -56,14 +54,9 @@ const AdminOnboarding = () => {
 
     const handleSave = async () => {
         setSaving(true);
-        const token = localStorage.getItem('adminToken');
         try {
-            const res = await fetch(`${API_URL}/admin/settings`, {
+            const res = await adminAuthFetch(`${API_URL}/admin/settings`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Admin-Token': token
-                },
                 body: JSON.stringify({
                     key: 'onboarding_config',
                     value: JSON.stringify(config)

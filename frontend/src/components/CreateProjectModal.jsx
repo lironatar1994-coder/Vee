@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Folder, Check, ChevronDown, Repeat, Target } from 'lucide-react';
+import { useUser } from '../context/UserContext';
+import { toast } from 'sonner';
 
 const PROJECT_COLORS = [
     { label: 'לבן', value: '#ffffff' },
@@ -17,6 +19,7 @@ const PROJECT_COLORS = [
 ];
 
 export default function CreateProjectModal({ isOpen, onClose, onCreated, existingProjects = [], userId, apiUrl }) {
+    const { authFetch } = useUser();
     const [title, setTitle] = useState('');
     const [color, setColor] = useState('#6b7280'); // Default to Gray (אפור)
     const [parentId, setParentId] = useState('');
@@ -45,9 +48,8 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated, existin
         if (!title.trim()) return;
         setLoading(true);
         try {
-            const res = await fetch(`${apiUrl}/users/${userId}/projects`, {
+            const res = await authFetch(`${apiUrl}/users/current/projects`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: title.trim(),
                     color,
@@ -57,6 +59,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated, existin
             if (res.ok) {
                 const newProject = await res.json();
                 onCreated(newProject);
+                toast.success('הפרויקט נוצר בהצלחה');
                 setTitle('');
                 setColor('#6b7280');
                 setParentId('');

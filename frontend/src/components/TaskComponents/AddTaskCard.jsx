@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 const API_URL = '/api';
 
 const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, defaultProject, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
-    const { user } = useUser();
+    const { user, authFetch } = useUser();
     const { theme } = useTheme();
     const [description, setDescription] = useState('');
     const [showDateDropdown, setShowDateDropdown] = useState(false);
@@ -125,9 +125,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
             const targetProjectId = isProjectInbox ? parseInt(targetChecklistId.split('_')[2]) : null;
 
             try {
-                const listRes = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                const listRes = await authFetch(`${API_URL}/users/current/checklists`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         title: '',
                         active_days: '0,1,2,3,4,5,6',

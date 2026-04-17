@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Key, History, Activity, ShieldAlert, CheckCircle, Ban, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { adminAuthFetch } from '../../services/adminAuthService';
 
 const API_URL = '/api';
 
@@ -19,14 +20,11 @@ const UserDetailsModal = ({ userBasicInfo, onClose, onUserUpdated }) => {
 
     const fetchUserData = async () => {
         setLoading(true);
-        const token = localStorage.getItem('adminToken');
-        const headers = { 'Admin-Token': token };
-
         try {
             const [detailsRes, logsRes, loginLogsRes] = await Promise.all([
-                fetch(`${API_URL}/admin/users/${userBasicInfo.id}`, { headers }),
-                fetch(`${API_URL}/admin/users/${userBasicInfo.id}/logs`, { headers }),
-                fetch(`${API_URL}/admin/users/${userBasicInfo.id}/login-logs`, { headers })
+                adminAuthFetch(`${API_URL}/admin/users/${userBasicInfo.id}`),
+                adminAuthFetch(`${API_URL}/admin/users/${userBasicInfo.id}/logs`),
+                adminAuthFetch(`${API_URL}/admin/users/${userBasicInfo.id}/login-logs`)
             ]);
 
             if (detailsRes.ok && logsRes.ok && loginLogsRes.ok) {
@@ -47,10 +45,8 @@ const UserDetailsModal = ({ userBasicInfo, onClose, onUserUpdated }) => {
 
         setActionLoading(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${API_URL}/admin/users/${userBasicInfo.id}/reset-password`, {
-                method: 'POST',
-                headers: { 'Admin-Token': token }
+            const res = await adminAuthFetch(`${API_URL}/admin/users/${userBasicInfo.id}/reset-password`, {
+                method: 'POST'
             });
             const data = await res.json();
 
@@ -74,13 +70,8 @@ const UserDetailsModal = ({ userBasicInfo, onClose, onUserUpdated }) => {
 
         setActionLoading(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${API_URL}/admin/users/${userBasicInfo.id}/status`, {
+            const res = await adminAuthFetch(`${API_URL}/admin/users/${userBasicInfo.id}/status`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Admin-Token': token
-                },
                 body: JSON.stringify({ is_active: newStatus })
             });
 
