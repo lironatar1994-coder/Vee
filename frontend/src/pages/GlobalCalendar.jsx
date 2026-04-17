@@ -271,7 +271,7 @@ const GlobalCalendar = () => {
         }
     };
 
-    const handleDatesSet = (dateInfo) => {
+    const handleDatesSet = useCallback((dateInfo) => {
         // FullCalendar's datesSet gives us the visible range.
         const midDate = new Date((dateInfo.start.getTime() + dateInfo.end.getTime()) / 2);
         const y = midDate.getFullYear();
