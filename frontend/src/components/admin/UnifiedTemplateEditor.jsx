@@ -136,7 +136,7 @@ const UnifiedTemplateEditor = ({
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                         {variables.map(v => (
                                             <button key={v.key} onClick={() => insertVariable(v.key)} className="btn-pill" style={{ fontSize: '0.8rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.4rem 0.8rem' }}>
-                                                {v.label} <code style={{ marginRight: '0.4rem', color: 'var(--primary-color)', fontSize: '0.75rem' }}>{{v.key}}</code>
+                                                {v.label} <code style={{ marginRight: '0.4rem', color: 'var(--primary-color)', fontSize: '0.75rem' }}>{"{{" + v.key + "}}"}</code>
                                             </button>
                                         ))}
                                     </div>
@@ -207,7 +207,7 @@ const UnifiedTemplateEditor = ({
                                     {/* Simplified Email body simulator matching the generateResetPasswordEmailHtml layout */}
                                     <div style={{ fontFamily: 'sans-serif', textAlign: 'center' }}>
                                         <div style={{ background: type === 'email' && title.includes('איפוס') ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)', padding: '20px', borderRadius: '12px 12px 0 0', color: '#fff' }}>
-                                            <h3 style={{ margin: 0 }}>{{title}}</h3>
+                                            <h3 style={{ margin: 0 }}>{title}</h3>
                                         </div>
                                         <div style={{ padding: '20px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0 0 12px 12px', textAlign: 'center' }}>
                                             <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
