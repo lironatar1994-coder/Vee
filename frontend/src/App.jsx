@@ -15,6 +15,7 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const WhatsappAdmin = lazy(() => import('./pages/admin/WhatsappAdmin'));
 const AdminOnboarding = lazy(() => import('./pages/admin/AdminOnboarding'));
+const CommunicationStudio = lazy(() => import('./pages/admin/CommunicationStudio'));
 
 // Lazy-loaded App pages
 const Home = lazy(() => import('./pages/Home'));
@@ -23,6 +24,7 @@ const GlobalCalendar = lazy(() => import('./pages/GlobalCalendar'));
 const Inbox = lazy(() => import('./pages/Inbox'));
 const Today = lazy(() => import('./pages/Today'));
 const History = lazy(() => import('./pages/History'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 import OnboardingWizard from './components/OnboardingWizard';
 
@@ -69,6 +71,7 @@ function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="whatsapp" element={<WhatsappAdmin />} />
           <Route path="onboarding" element={<AdminOnboarding />} />
+          <Route path="studio" element={<CommunicationStudio />} />
         </Route>
 
         {/* Normal App Routes */}
@@ -80,6 +83,7 @@ function App() {
           <Route path="inbox" element={<Inbox />} />
           <Route path="today" element={<Today />} />
           <Route path="history" element={<History />} />
+          <Route path="reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

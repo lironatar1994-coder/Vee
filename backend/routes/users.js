@@ -393,9 +393,14 @@ router.post('/:id/onboard', userAuth, (req, res) => {
     const userId = req.user.id;
     const { username, operations } = req.body;
 
+    const RESERVED_NAMES = ['admin', 'administrator', 'system', 'root', 'vee', 'support', 'management'];
+    if (RESERVED_NAMES.includes((username || '').toLowerCase().trim())) {
+        return res.status(400).json({ error: 'THIS_NAME_IS_RESERVED', message: 'זהו שם שמור במערכת. בחר שם אחר.' });
+    }
+
     try {
         db.transaction(() => {
-            // 1. Update user setup state
+            // 1. Update user setup state (UNIQUE constraint removed in migration)
             db.prepare('UPDATE users SET username = ?, is_onboarded = 1 WHERE id = ?').run(username, userId);
 
             // 2. Process onboarding operations

@@ -1033,14 +1033,21 @@ h2.react-datepicker__current-month {
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96); /* Slightly more pronounced scale down */
 }
 
 .btn-primary {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #8b5cf6 100%); /* Vibrant gradient */
   color: #fff;
-  box-shadow: none;
+  box-shadow: 0 4px 14px 0 rgba(var(--primary-rgb), 0.39);
   border-radius: var(--radius-sm);
+  transition: all 0.25s var(--ease-premium);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.23);
+  background: linear-gradient(135deg, var(--primary-hover) 0%, #7c3aed 100%);
 }
 
 [data-theme="dark"] .btn-primary {
@@ -1153,25 +1160,27 @@ h2.react-datepicker__current-month {
 
 .sidebar {
   width: 280px;
-  background: var(--sidebar-bg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: none;
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--glass-border);
   border-radius: 0;
   margin: 0;
   height: 100vh;
   position: sticky;
   top: 0;
   z-index: 40;
-  box-shadow: none;
+  box-shadow: var(--glass-shadow);
   display: flex;
   flex-direction: column;
   opacity: 1;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   will-change: transform, margin-right, opacity;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s var(--ease-premium),
+    margin-right 0.4s var(--ease-premium),
+    opacity 0.4s var(--ease-premium);
 }
 
 [data-theme]:not([data-theme="light"]) .sidebar {
@@ -1313,8 +1322,10 @@ h2.react-datepicker__current-month {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: var(--sidebar-bg);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -1523,7 +1534,22 @@ textarea.form-control:focus {
 }
 
 .check-circle {
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.3s var(--ease-out-back);
+}
+
+.check-circle:active {
+  transform: scale(0.85);
+}
+
+/* Productivity Spark Animation */
+@keyframes spark-glow {
+  0% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.4); transform: scale(1); }
+  50% { box-shadow: 0 0 15px 5px rgba(var(--primary-rgb), 0.2); transform: scale(1.15); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0); transform: scale(1); }
+}
+
+.is-completed .check-circle {
+  animation: spark-glow 0.45s var(--ease-premium);
 }
 
 

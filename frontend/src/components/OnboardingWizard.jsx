@@ -9,7 +9,7 @@ const OnboardingWizard = () => {
     const [step, setStep] = useState(1);
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
-    const [name, setName] = useState(user?.username || '');
+    const [name, setName] = useState(''); // Start empty as requested
     const [selectedOptions, setSelectedOptions] = useState([]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +57,13 @@ const OnboardingWizard = () => {
                 toast.error('חשוב שנדע איך לקרוא לך 🥺');
                 return;
             }
+
+            const RESERVED_NAMES = ['admin', 'administrator', 'system', 'root', 'vee', 'support', 'management'];
+            if (RESERVED_NAMES.includes(name.toLowerCase().trim())) {
+                toast.error('זהו שם שמור במערכת. בחר שם אחר.');
+                return;
+            }
+
             jumpStep(2);
         } else if (step === 2) {
             const minSelections = config?.min_selections || 3;
@@ -128,10 +135,10 @@ const OnboardingWizard = () => {
         },
         contentBox: {
             width: '100%',
-            maxWidth: isMobileView ? '100%' : '640px', // slightly wider on desktop for grandeur
-            maxHeight: isMobileView ? '92dvh' : '85dvh',
-            padding: isMobileView ? '2.5rem 1.5rem 3rem' : '4rem 3.5rem',
-            borderRadius: isMobileView ? '40px 40px 0 0' : '40px',
+            maxWidth: isMobileView ? '100%' : '600px', // slightly tighter for better fit
+            maxHeight: isMobileView ? '100dvh' : '88dvh', // ensure it fits
+            padding: isMobileView ? '1.5rem 1.25rem 2rem' : '2rem 2.5rem', // significantly reduced padding
+            borderRadius: isMobileView ? '24px 24px 0 0' : '40px', // smaller radius on mobile to save space
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
@@ -157,17 +164,17 @@ const OnboardingWizard = () => {
             gap: '0.5rem'
         },
         title: {
-            fontSize: isMobileView ? '2rem' : '2.6rem',
+            fontSize: isMobileView ? '1.4rem' : '1.8rem', // Compact title
             fontWeight: '800',
             color: 'var(--text-primary)',
-            margin: '0 0 0.5rem 0',
+            margin: '0 0 0.25rem 0',
             lineHeight: 1.15,
             letterSpacing: '-0.5px'
         },
         subtitle: {
-            fontSize: isMobileView ? '1.15rem' : '1.25rem',
+            fontSize: isMobileView ? '0.95rem' : '1.05rem', // Smaller subtitle
             color: 'var(--text-secondary)',
-            marginBottom: '2.5rem',
+            marginBottom: isMobileView ? '1.25rem' : '2rem',
             fontWeight: '400',
             lineHeight: 1.5
         },
@@ -177,8 +184,8 @@ const OnboardingWizard = () => {
         },
         input: {
             width: '100%',
-            padding: '1.25rem 0',
-            fontSize: isMobileView ? '2rem' : '2.5rem',
+            padding: '1rem 0',
+            fontSize: isMobileView ? '1.6rem' : '2rem', // Reduced input font size
             fontWeight: '800',
             color: 'var(--text-primary)',
             background: 'transparent',
@@ -191,14 +198,14 @@ const OnboardingWizard = () => {
         grid: {
             display: 'grid',
             gridTemplateColumns: isMobileView ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(130px, 1fr))',
-            gap: isMobileView ? '0.75rem' : '1.25rem',
-            paddingBottom: '2rem'
+            gap: isMobileView ? '0.5rem' : '0.75rem', // Tighter grid
+            paddingBottom: '1rem'
         },
         card: {
             background: 'var(--bg-inset, rgba(0,0,0,0.02))',
             border: '2px solid transparent',
-            borderRadius: '24px',
-            padding: isMobileView ? '1.5rem 0.5rem' : '1.5rem 1rem',
+            borderRadius: '18px', // Slightly less rounded for compact cards
+            padding: isMobileView ? '0.75rem 0.5rem' : '1rem 0.75rem', // Compact card padding
             textAlign: 'center',
             cursor: 'pointer',
             position: 'relative',
@@ -206,7 +213,7 @@ const OnboardingWizard = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '1rem',
+            gap: '0.5rem', // Tighter internal card gap
             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' // bouncier transition
         },
         cardSelected: {
@@ -216,13 +223,13 @@ const OnboardingWizard = () => {
             transform: 'translateY(-4px) scale(1.02)'
         },
         cardIcon: {
-            fontSize: isMobileView ? '2.5rem' : '3rem',
+            fontSize: isMobileView ? '1.8rem' : '2.2rem', // Smaller icons
             lineHeight: 1,
-            filter: 'drop-shadow(0px 8px 12px rgba(0,0,0,0.15))',
+            filter: 'drop-shadow(0px 4px 8px rgba(0,0,0,0.12))',
             transition: 'transform 0.3s ease'
         },
         cardLabel: {
-            fontSize: '1rem',
+            fontSize: '0.85rem', // Smaller labels
             fontWeight: '700',
             color: 'var(--text-primary)'
         },
@@ -244,18 +251,18 @@ const OnboardingWizard = () => {
             background: 'linear-gradient(135deg, var(--primary-color) 0%, #8b5cf6 100%)',
             color: '#FFFFFF',
             border: 'none',
-            padding: isMobileView ? '1.2rem' : '1.2rem 3rem',
+            padding: isMobileView ? '1rem' : '1rem 3rem', // Thinner buttons
             width: isMobileView ? '100%' : 'auto',
-            fontSize: '1.2rem',
+            fontSize: '1.1rem',
             fontWeight: '800',
-            borderRadius: '18px',
+            borderRadius: '16px',
             cursor: 'pointer',
-            boxShadow: '0 10px 25px rgba(var(--primary-rgb), 0.4)',
+            boxShadow: '0 8px 20px rgba(var(--primary-rgb), 0.3)',
             transition: 'transform 0.2s, box-shadow 0.2s',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.75rem',
+            gap: '0.5rem',
             textShadow: '0 1px 2px rgba(0,0,0,0.1)',
             opacity: (step === 2 && selectedOptions.length < minSelections) ? 0.6 : 1,
         },
@@ -332,9 +339,9 @@ const OnboardingWizard = () => {
 
                 {step === 1 && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                            <div style={{ background: 'var(--bg-inset)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', transform: 'rotate(-5deg)' }}>
-                                <span style={{ fontSize: '2.5rem' }}>👋</span>
+                        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+                            <div style={{ background: 'var(--bg-inset)', width: '56px', height: '56px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', transform: 'rotate(-5deg)' }}>
+                                <span style={{ fontSize: '1.8rem' }}>👋</span>
                             </div>
                             <h2 style={dynamicStyles.title}>{config.welcome_title || 'ברוכים הבאים ל-Vee'}</h2>
                             <p style={dynamicStyles.subtitle}>{config.name_prompt || 'איך תרצה שנקרא לך?'}</p>
@@ -344,7 +351,7 @@ const OnboardingWizard = () => {
                             <input
                                 type="text"
                                 style={dynamicStyles.input}
-                                placeholder="הזן את שמך כאן..."
+                                placeholder="ישראל"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleNext()}
@@ -358,14 +365,13 @@ const OnboardingWizard = () => {
 
                 {step === 2 && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                            <div style={{ background: 'var(--bg-inset)', width: '64px', height: '64px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', color: 'var(--primary-color)' }}>
-                                <LayoutGrid size={28} />
+                        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+                            <div style={{ background: 'var(--bg-inset)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem auto', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', color: 'var(--primary-color)' }}>
+                                <LayoutGrid size={22} />
                             </div>
                             <h2 style={dynamicStyles.title}>מה מעניין אותך, {name.split(' ')[0]}?</h2>
                             <p style={dynamicStyles.subtitle}>
-                                בחר לפחות {config.min_selections} תחומי עניין.
-                                <br/>{selectedOptions.length}/{minSelections} נבחרו
+                                בחר לפחות {config.min_selections} תחומי עניין. (נבחרו {selectedOptions.length}/{minSelections})
                             </p>
                         </div>
 

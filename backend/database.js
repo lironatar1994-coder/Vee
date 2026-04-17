@@ -10,7 +10,7 @@ const initDb = () => {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
+      username TEXT NOT NULL,
       profile_image TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -185,6 +185,24 @@ const initDb = () => {
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
     );
 
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS rate_limit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ip_address TEXT,
+      identifier TEXT,
+      action TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- Performance Indexes
     CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
     CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_created ON whatsapp_logs(created_at);
@@ -196,6 +214,9 @@ const initDb = () => {
     CREATE INDEX IF NOT EXISTS idx_friends_receiver ON friends(receiver_id);
     CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id);
     CREATE INDEX IF NOT EXISTS idx_project_comments_project ON project_comments(project_id);
+    CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token);
+    CREATE INDEX IF NOT EXISTS idx_rate_limit_logs_ip ON rate_limit_logs(ip_address);
+    CREATE INDEX IF NOT EXISTS idx_rate_limit_logs_id ON rate_limit_logs(identifier);
   `);
 
   // Migration: Add profile_image to users if missing
@@ -408,6 +429,67 @@ const initDb = () => {
   if (!hasIsOnboarded) {
     db.exec('ALTER TABLE users ADD COLUMN is_onboarded BOOLEAN DEFAULT 0');
     db.exec('UPDATE users SET is_onboarded = 1'); // Set existing users to onboarded
+  }
+
+  // Migration: Remove UNIQUE constraint from username if it still exists
+  // We check if the 'username' index is 'unique' in the table definition. 
+  // In SQLite, we can check index_list or just attempt recreaton if we detect it's unique.
+  const indexList = db.pragma('index_list(users)');
+  const hasUniqueUsername = indexList.some(idx => idx.unique === 1 && idx.name.includes('username'));
+  
+  // Note: Most SQLite implementations create a hidden index for UNIQUE constraints.
+  // The most reliable way to check if 'username' is still unique is to check the SQL definition.
+  const tableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get()?.sql || "";
+  if (tableSql.toUpperCase().includes('USERNAME TEXT UNIQUE')) {
+      console.log('Migrating users table to remove UNIQUE constraint from username...');
+      db.transaction(() => {
+          // 1. Create new table without UNIQUE
+          db.exec(`
+              CREATE TABLE users_new (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  username TEXT NOT NULL,
+                  email TEXT,
+                  phone TEXT,
+                  password_hash TEXT,
+                  profile_image TEXT,
+                  is_active BOOLEAN NOT NULL DEFAULT 1,
+                  is_onboarded BOOLEAN DEFAULT 0,
+                  whatsapp_enabled BOOLEAN DEFAULT 0,
+                  invited_by INTEGER,
+                  google_access_token TEXT,
+                  google_refresh_token TEXT,
+                  google_token_expiry INTEGER,
+                  google_calendar_email TEXT,
+                  last_active_at DATETIME,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+              )
+          `);
+
+          // 2. Copy data (mapping columns carefully)
+          db.exec(`
+              INSERT INTO users_new (
+                  id, username, email, phone, password_hash, profile_image, 
+                  is_active, is_onboarded, whatsapp_enabled, invited_by, 
+                  google_access_token, google_refresh_token, google_token_expiry, 
+                  google_calendar_email, last_active_at, created_at
+              )
+              SELECT 
+                  id, username, email, phone, password_hash, profile_image, 
+                  is_active, is_onboarded, whatsapp_enabled, invited_by, 
+                  google_access_token, google_refresh_token, google_token_expiry, 
+                  google_calendar_email, last_active_at, created_at 
+              FROM users
+          `);
+
+          // 3. Swap tables
+          db.exec('DROP TABLE users');
+          db.exec('ALTER TABLE users_new RENAME TO users');
+
+          // 4. Re-create essential indexes
+          db.exec('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+          db.exec('CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone)');
+      })();
+      console.log('Users table migration complete.');
   }
 
   // Seed default Onboarding Config

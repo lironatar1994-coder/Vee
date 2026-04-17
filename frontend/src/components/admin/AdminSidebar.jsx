@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PieChart, Users, Settings, LogOut, Activity, SidebarClose, MessageCircle } from 'lucide-react';
+import { PieChart, Users, Settings, LogOut, Activity, SidebarClose, MessageCircle, Sparkles, Mail } from 'lucide-react';
 
 const AdminSidebar = ({ isOpen, onToggle }) => {
     const navigate = useNavigate();
@@ -58,6 +58,14 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
                             <NavLink to="/admin/onboarding" end className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', borderRadius: '1rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 500, fontSize: '1.05rem' }}>
                                 <span style={{fontSize: '1.4rem', lineHeight: 1}}>✨</span>
                                 <span>הגדרות קליטה (Onboarding)</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to="/admin/studio" end className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', borderRadius: '1rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 500, fontSize: '1.05rem' }}>
+                                <div style={{ color: 'var(--primary-color)' }}>
+                                    <Sparkles size={22} />
+                                </div>
+                                <span style={{ fontWeight: 800 }}>סטודיו לתקשורת</span>
                             </NavLink>
                         </li>
                     </ul>

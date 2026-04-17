@@ -3,11 +3,18 @@ const router = express.Router();
 const crypto = require('crypto');
 const db = require('../database');
 const { hashPassword, verifyPassword, generateToken, generateAdminToken } = require('../utils/authUtils');
+const { generateResetPasswordEmailHtml, parseTemplate } = require('../utils/emailUtils');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
     const { identifier, password, display_name, invite_token } = req.body;
     if (!identifier || !password) return res.status(400).json({ error: 'חסרים פרטים' });
+
+    const RESERVED_NAMES = ['admin', 'administrator', 'system', 'root', 'vee', 'support', 'management'];
+    const chosenName = (display_name || '').toLowerCase().trim();
+    if (RESERVED_NAMES.includes(chosenName)) {
+        return res.status(400).json({ error: 'זהו שם שמור במערכת. בחר שם אחר.' });
+    }
     
     const isEmail = /^[^@]+@[^@]+\.[^@]+$/.test(identifier);
     const isPhone = /^[0-9+\-() ]{7,15}$/.test(identifier.replace(/\s/g, ''));
@@ -79,10 +86,10 @@ router.post('/login', async (req, res) => {
     if (!identifier || !password) return res.status(400).json({ error: 'חסרים פרטים' });
 
     try {
-        // 1. Find user by any identifier
+        // 1. Find user by any identifier (Login restricted to email or phone for non-unique usernames)
         const user = db.prepare(
-            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded FROM users WHERE email = ? OR phone = ? OR username = ?'
-        ).get(identifier, identifier, identifier);
+            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded FROM users WHERE email = ? OR phone = ?'
+        ).get(identifier, identifier);
 
         if (!user) {
             return res.status(401).json({ error: 'פרטי התחברות שגויים' });
@@ -150,6 +157,131 @@ router.post('/admin/login', async (req, res) => {
         res.json({ success: true, token, admin: { id: admin.id, email: admin.email } });
     } catch (err) {
         console.error('Admin login error:', err);
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+    const { identifier } = req.body;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+
+    if (!identifier) return res.status(400).json({ error: 'חסרים פרטים' });
+
+    try {
+        // 1. Rate Limiting Check (max 1 request per 5 mins per identifier or IP)
+        const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const recentRequest = db.prepare(`
+            SELECT id FROM rate_limit_logs 
+            WHERE (ip_address = ? OR identifier = ?) 
+              AND action = 'password_reset_request' 
+              AND created_at > ?
+        `).get(ip, identifier, fiveMinsAgo);
+
+        if (recentRequest) {
+            return res.status(429).json({ error: 'נשלחה כבר בקשה לאחרונה. נסה שוב בעוד כמה דקות.' });
+        }
+
+        // Log the request attempt
+        db.prepare('INSERT INTO rate_limit_logs (ip_address, identifier, action) VALUES (?, ?, ?)').run(
+            ip, identifier, 'password_reset_request'
+        );
+
+        // 2. Look for user
+        const user = db.prepare('SELECT id, username, email, phone FROM users WHERE email = ? OR phone = ? OR username = ?').get(identifier, identifier, identifier);
+        
+        // Security: Always return generic success to prevent enumeration
+        const genericSuccess = { success: true, message: 'אם החשבון קיים, נשלחה הודעה עם קישור לאיפוס.' };
+        
+        if (!user) {
+            return res.json(genericSuccess);
+        }
+
+        // 3. Generate secure token (64 hex chars)
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins expiry
+
+        db.prepare('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)').run(user.id, token, expiresAt);
+
+        const resetLink = `${process.env.FRONTEND_URL || 'https://vee-app.co.il'}/reset-password?token=${token}`;
+
+        // 4. Determine primary contact method
+        if (user.phone) {
+            // Priority 1: WhatsApp
+            const customTpl = db.prepare('SELECT value FROM settings WHERE key = ?').get('tpl_wa_reset');
+            let message;
+            if (customTpl) {
+                message = parseTemplate(customTpl.value.replace(/\\n/g, '\n'), {
+                    user_name: user.username,
+                    reset_link: resetLink
+                });
+            } else {
+                message = `*Vee* - איפוס סיסמה \n\nהיי ${user.username}, לחץ על הקישור הבא כדי לאפס את הסיסמה שלך:\n${resetLink}\n\nהקישור תקף ל-15 דקות.`;
+            }
+            db.prepare('INSERT INTO whatsapp_outbox (to_phone, message) VALUES (?, ?)').run(user.phone, message);
+        } else if (user.email) {
+            // Priority 2: Email (Fallback)
+            if (req.transporter) {
+                const customTpl = db.prepare('SELECT value FROM settings WHERE key = ?').get('tpl_email_reset');
+                let htmlContent;
+                if (customTpl) {
+                    // For Email, we still want to wrap the custom text in our professional HTML frame
+                    const customText = parseTemplate(customTpl.value, {
+                        user_name: user.username,
+                        reset_link: resetLink
+                    });
+                    // We'll reuse the professional layout but replace the main body text
+                    htmlContent = generateResetPasswordEmailHtml(resetLink).replace(
+                        /<p style="font-size: 18px; color: #374151; line-height: 1.6; margin-bottom: 30px;">[\s\S]*?<\/p>/,
+                        `<p style="font-size: 18px; color: #374151; line-height: 1.6; margin-bottom: 30px; white-space: pre-wrap;">${customText}</p>`
+                    );
+                } else {
+                    htmlContent = generateResetPasswordEmailHtml(resetLink);
+                }
+
+                req.transporter.sendMail({
+                    from: process.env.EMAIL_FROM_ADDRESS || 'Vee Alerts <onboarding@resend.dev>',
+                    to: user.email,
+                    subject: 'איפוס סיסמה עבור חשבון ה-Vee שלך',
+                    html: htmlContent
+                }).catch(err => console.error('Failed to send reset email', err));
+            } else {
+                console.error('Email transporter not available for password reset');
+            }
+        }
+
+        res.json(genericSuccess);
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+    const { token, new_password } = req.body;
+    if (!token || !new_password) return res.status(400).json({ error: 'חסרים פרטים' });
+
+    try {
+        const resetRow = db.prepare('SELECT * FROM password_resets WHERE token = ? AND used_at IS NULL').get(token);
+        
+        if (!resetRow || new Date() > new Date(resetRow.expires_at)) {
+            return res.status(400).json({ error: 'הקישור לא תקף או שפג תוקפו' });
+        }
+
+        const newHash = await hashPassword(new_password);
+        
+        db.transaction(() => {
+            db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, resetRow.user_id);
+            db.prepare('UPDATE password_resets SET used_at = CURRENT_TIMESTAMP WHERE id = ?').run(resetRow.id);
+            db.prepare('INSERT INTO user_logs (user_id, action, details) VALUES (?, ?, ?)').run(
+                resetRow.user_id, 'PASSWORD_RESET', 'סיסמת המשתמש אופסה בהצלחה'
+            );
+        })();
+
+        res.json({ success: true, message: 'הסיסמה עודכנה בהצלחה' });
+    } catch (err) {
+        console.error('Reset password error:', err);
         res.status(500).json({ error: 'שגיאת שרת' });
     }
 });
