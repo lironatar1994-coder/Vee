@@ -188,6 +188,26 @@ const SortableTaskItem = ({
                         <div style={{ flexGrow: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', minWidth: 0 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, width: '100%', gap: '2px', opacity: isCompleted ? 0.5 : 1, transition: 'opacity 0.2s', overflow: 'hidden', textAlign: 'right' }}>
                                 <span style={{ fontSize: '16px', fontWeight: 400, textDecoration: isCompleted ? 'line-through' : 'none', color: isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.4', display: 'block' }} dangerouslySetInnerHTML={{ __html: item.content }} />
+                                {item.description && (
+                                    <div 
+                                        style={{ 
+                                            fontSize: '13px', 
+                                            color: 'var(--text-secondary)', 
+                                            opacity: isCompleted ? 0.5 : 0.8,
+                                            marginTop: '2px',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            lineHeight: '1.4',
+                                            maxWidth: '100%',
+                                            textAlign: 'right'
+                                        }}
+                                    >
+                                        {item.description}
+                                    </div>
+                                )}
                                 {(item.target_date || item.repeat_rule || item.projectTitle || totalSubtasks > 0 || item.time || item.reminder_minutes) && (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap', rowGap: '4px', columnGap: '8px', width: '100%', marginTop: '4px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -337,6 +357,8 @@ const areEqual = (prevProps, nextProps) => {
     if (prevProps.item.repeat_rule !== nextProps.item.repeat_rule) return false;
     if (prevProps.item.reminder_minutes !== nextProps.item.reminder_minutes) return false;
     if (prevProps.item.duration !== nextProps.item.duration) return false;
+    if (prevProps.item.description !== nextProps.item.description) return false;
+    if (prevProps.item.comments_count !== nextProps.item.comments_count) return false;
     if ((prevProps.item.children?.length || 0) !== (nextProps.item.children?.length || 0)) return false;
 
     const prevCompleted = prevProps.useProgressArray && prevProps.todayProgress ? prevProps.todayProgress.find(p => p.checklist_item_id === prevProps.item.id)?.completed === 1 : prevProps.isCompletedFallback;

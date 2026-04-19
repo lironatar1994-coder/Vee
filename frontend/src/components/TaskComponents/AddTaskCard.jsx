@@ -256,14 +256,30 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     />
                 </div>
 
-                <input
-                    type="text"
+                <textarea
                     placeholder="תיאור"
                     value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    onFocus={() => setIsFocused(true)}
+                    onChange={e => {
+                        setDescription(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    onFocus={(e) => {
+                        setIsFocused(true);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
                     onBlur={() => setIsFocused(false)}
-                    style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 400, background: 'transparent', color: 'var(--text-secondary)', padding: 0 }}
+                    style={{ 
+                        width: '100%', border: 'none', outline: 'none', resize: 'none',
+                        fontSize: '14px', fontWeight: 400, background: 'transparent', 
+                        color: 'var(--text-secondary)', padding: 0,
+                        minHeight: '1.4em',
+                        lineHeight: '1.4',
+                        overflow: 'hidden',
+                        transition: 'height 0.1s ease'
+                    }}
+                    rows={1}
                 />
             </div>
 

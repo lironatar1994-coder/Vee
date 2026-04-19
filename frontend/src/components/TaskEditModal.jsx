@@ -615,16 +615,26 @@ export default function TaskEditModal({
 
                             <textarea
                                 value={description}
-                                onChange={e => setDescription(e.target.value)}
-                                onFocus={() => setIsEditing(true)}
+                                onChange={e => {
+                                    setDescription(e.target.value);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                }}
+                                onFocus={(e) => {
+                                    setIsEditing(true);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                }}
                                 onBlur={() => handleSave()}
                                 placeholder="≡ תיאור..."
-                                rows={2}
                                 style={{
                                     width: '100%', border: 'none', outline: 'none', resize: 'none',
                                     fontSize: '0.95rem', background: 'transparent',
                                     color: 'var(--text-secondary)', fontFamily: 'inherit',
-                                    padding: 0, lineHeight: 1.5
+                                    padding: 0, lineHeight: 1.5,
+                                    overflow: 'hidden',
+                                    minHeight: '1.5em',
+                                    transition: 'height 0.1s ease',
                                 }}
                             />
                         </div>
@@ -952,6 +962,7 @@ export default function TaskEditModal({
                                                             toggleItem={(subId) => handleToggleSubtask(subId, item.checklist_id, !sub.completed)}
                                                             deleteItem={handleDeleteSubtask}
                                                             onUpdateItem={handleUpdateSubtask}
+                                                            onItemClick={() => onNavigate && onNavigate(sub)}
                                                             isFlatList={true}
                                                         />
                                                     ))}
