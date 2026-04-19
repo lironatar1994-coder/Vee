@@ -4,7 +4,7 @@ import { Folder } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const SortableProjectItem = ({ proj, isProjActive, onToggle, getChildren, location, startTransition, handleNav }) => {
+const SortableProjectItem = ({ proj, isProjActive, onToggle, getChildren, location, startTransition, handleNav, taskCount, getProjectTotalCount }) => {
     const navigate = useNavigate();
     const {
         attributes,
@@ -40,6 +40,7 @@ const SortableProjectItem = ({ proj, isProjActive, onToggle, getChildren, locati
                 >
                     <Folder size={18} style={{ color: projColor, opacity: 0.8 }} strokeWidth={2} />
                     <span style={{ fontSize: '1rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{proj.title}</span>
+                    {taskCount > 0 && <span className="sidebar-badge">{taskCount}</span>}
                 </Link>
             </div>
             {children.length > 0 && !isDragging && (
@@ -52,6 +53,7 @@ const SortableProjectItem = ({ proj, isProjActive, onToggle, getChildren, locati
                     {children.map(child => {
                         const isChildActive = location.pathname === `/project/${child.id}`;
                         const childColor = child.color && child.color !== '#ffffff' ? child.color : 'var(--text-secondary)';
+                        const childCount = getProjectTotalCount ? getProjectTotalCount(child.id) : 0;
                         return (
                             <Link 
                                 key={child.id} 
@@ -71,6 +73,7 @@ const SortableProjectItem = ({ proj, isProjActive, onToggle, getChildren, locati
                             >
                                 <Folder size={16} style={{ color: childColor, opacity: 0.8 }} strokeWidth={2} />
                                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{child.title}</span>
+                                {childCount > 0 && <span className="sidebar-badge" style={{ fontSize: '10px', minWidth: '16px', height: '16px' }}>{childCount}</span>}
                             </Link>
                         );
                     })}

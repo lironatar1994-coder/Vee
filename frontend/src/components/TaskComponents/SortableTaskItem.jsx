@@ -125,7 +125,7 @@ const SortableTaskItem = ({
 
     return (
         <>
-            <div ref={setNodeRef} style={{ ...style, display: 'flex', flexDirection: 'column', paddingRight: isOverlay ? 0 : `${depth * 1.5}rem` }}>
+            <div ref={setNodeRef} style={{ ...style, display: 'flex', flexDirection: 'column', paddingRight: isOverlay ? 0 : `${depth * 1.0}rem` }}>
                 <div
                     className={`task-item ${isCompleted ? 'is-completed' : ''} ${isOverlay ? 'is-drag-overlay' : isDragging ? 'is-dragging-origin' : ''} ${isWaterfalling ? 'magic-reveal' : ''}`}
                     {...(!isCompleted && depth === 0 ? { ...attributes, ...listeners } : {})}
@@ -140,7 +140,7 @@ const SortableTaskItem = ({
                         alignItems: 'flex-start',
                         background: isOverlay ? 'var(--bg-secondary)' : 'transparent',
                         cursor: (!isCompleted && depth === 0) ? 'grab' : 'pointer',
-                        padding: compact ? '4px 8px' : (depth > 0 ? '4px 0' : '8px 0'),
+                        padding: compact ? '4px 8px' : '8px 0',
                         marginBottom: '0',
                         position: 'relative',
                         borderRadius: isOverlay ? 'var(--radius-md)' : '0',
@@ -189,10 +189,10 @@ const SortableTaskItem = ({
                             <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, width: '100%', gap: '2px', opacity: isCompleted ? 0.5 : 1, transition: 'opacity 0.2s', overflow: 'hidden', textAlign: 'right' }}>
                                 <span style={{ fontSize: '16px', fontWeight: 400, textDecoration: isCompleted ? 'line-through' : 'none', color: isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.4', display: 'block' }} dangerouslySetInnerHTML={{ __html: item.content }} />
                                 {item.description && (
-                                    <div 
-                                        style={{ 
-                                            fontSize: '13px', 
-                                            color: 'var(--text-secondary)', 
+                                    <div
+                                        style={{
+                                            fontSize: '13px',
+                                            color: 'var(--text-secondary)',
                                             opacity: isCompleted ? 0.5 : 0.8,
                                             marginTop: '2px',
                                             display: '-webkit-box',
@@ -273,16 +273,16 @@ const SortableTaskItem = ({
                                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                                                     {item.time || 'זמן'}
                                                 </button>
-                                                <TimePickerDropdown 
-                                                    isOpen={showTimeMenu} 
-                                                    onClose={() => setShowTimeMenu(false)} 
-                                                    anchorRef={timeBtnRef} 
-                                                    initialTime={item.time} 
+                                                <TimePickerDropdown
+                                                    isOpen={showTimeMenu}
+                                                    onClose={() => setShowTimeMenu(false)}
+                                                    anchorRef={timeBtnRef}
+                                                    initialTime={item.time}
                                                     initialDuration={item.duration}
-                                                    timeOptions={TIME_OPTIONS} 
-                                                    onSave={(timeVal, durVal) => { 
-                                                        if (handleUpdateItem) handleUpdateItem(item.id, { time: timeVal, duration: durVal }); 
-                                                    }} 
+                                                    timeOptions={TIME_OPTIONS}
+                                                    onSave={(timeVal, durVal) => {
+                                                        if (handleUpdateItem) handleUpdateItem(item.id, { time: timeVal, duration: durVal });
+                                                    }}
                                                 />
                                             </div>
                                             <div style={{ position: 'relative' }}>
@@ -331,7 +331,7 @@ const SortableTaskItem = ({
                 )}
 
                 {item.children && item.children.length > 0 && (
-                    <div className="subtasks-container" style={{ paddingRight: '0.4rem', marginRight: '0.86rem', marginBottom: '0.25rem', border: 'none' }}>
+                    <div className="subtasks-container" style={{ paddingRight: '0.2rem', marginRight: '0.75rem', marginBottom: '0.25rem', border: 'none' }}>
                         {item.children.map(child => (
                             <SortableTaskItem key={child.id} item={child} checklistId={checklistId} depth={depth + 1} todayProgress={todayProgress} addingToItem={addingToItem} toggleItem={toggleItem} setAddingToItem={setAddingToItem} setAddingToList={setAddingToList} handleAddItem={handleAddItem} handleDeleteItem={handleDeleteItem} newItemContent={newItemContent} setNewItemContent={setNewItemContent} handleSetTargetDate={handleSetTargetDate} handleUpdateItem={handleUpdateItem} allItems={allItems} isCompletedFallback={isCompletedFallback} useProgressArray={useProgressArray} sectionTitle={sectionTitle} projectTitle={projectTitle} isWaterfalling={isWaterfalling} hideAddButton={hideAddButton} isOverlay={isOverlay} compact={compact} hideToday={hideToday} />
                         ))}

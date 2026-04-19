@@ -41,7 +41,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     const [, startTransition] = useTransition();
 
     const [projects, setProjects] = useState([]);
-    const [counts, setCounts] = useState({ todayCount: 0, inboxCount: 0 });
+    const [counts, setCounts] = useState({ todayCount: 0, inboxCount: 0, projectCounts: {} });
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isFriendsOpen, setIsFriendsOpen] = useState(false);
@@ -423,8 +423,20 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                     {(() => {
                                         const rootProjects = projects.filter(p => !p.parent_id);
                                         const getChildren = (parentId) => projects.filter(p => Number(p.parent_id) === Number(parentId));
+                                        
+                                        // Recursive function to get total sum of tasks for a project and its children
+                                        const getProjectTotalCount = (projectId) => {
+                                            let sum = counts.projectCounts?.[projectId] || 0;
+                                            const children = getChildren(projectId);
+                                            children.forEach(child => {
+                                                sum += getProjectTotalCount(child.id);
+                                            });
+                                            return sum;
+                                        };
+
                                         return rootProjects.map(proj => {
                                             const isProjActive = location.pathname === `/project/${proj.id}`;
+                                            const totalCount = getProjectTotalCount(proj.id);
                                             return (
                                                 <div
                                                     key={proj.id}
@@ -440,6 +452,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                                         location={location}
                                                         startTransition={startTransition}
                                                         handleNav={handleNav}
+                                                        taskCount={totalCount}
+                                                        getProjectTotalCount={getProjectTotalCount}
                                                     />
                                                 </div>
                                             );

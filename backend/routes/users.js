@@ -241,7 +241,21 @@ router.get('/:userId/sidebar-counts', (req, res) => {
             WHERE c.user_id = ? AND c.project_id IS NULL AND ci.parent_item_id IS NULL
             AND ci.id NOT IN (SELECT checklist_item_id FROM daily_progress WHERE user_id = ? AND date = ? AND completed = 1)
         `).get(userId, userId, date).count;
-        res.json({ todayCount, inboxCount });
+
+        const projectCountsRows = db.prepare(`
+            SELECT c.project_id, COUNT(*) as count 
+            FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id
+            WHERE c.user_id = ? AND c.project_id IS NOT NULL AND ci.parent_item_id IS NULL
+            AND ci.id NOT IN (SELECT checklist_item_id FROM daily_progress WHERE user_id = ? AND date = ? AND completed = 1)
+            GROUP BY c.project_id
+        `).all(userId, userId, date);
+
+        const projectCounts = {};
+        projectCountsRows.forEach(row => {
+            projectCounts[row.project_id] = row.count;
+        });
+
+        res.json({ todayCount, inboxCount, projectCounts });
     } catch (err) {
         res.status(500).json({ error: 'Failed' });
     }
