@@ -2205,8 +2205,8 @@ textarea.form-control:focus {
 }
 
 .fc-custom-event-month.is-completed {
-  opacity: 0.4 !important;
-  text-decoration: line-through !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
   background-color: transparent !important;
   border-color: transparent !important;
 }

@@ -800,7 +800,7 @@ const GlobalCalendar = () => {
                                         overflow: 'hidden', 
                                         textOverflow: 'ellipsis', 
                                         whiteSpace: 'nowrap',
-                                        textDecoration: isCompleted ? 'line-through' : 'none'
+                                        textDecoration: 'none'
                                     }}>
                                         {task.content}
                                     </span>

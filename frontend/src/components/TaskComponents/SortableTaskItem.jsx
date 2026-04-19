@@ -186,14 +186,14 @@ const SortableTaskItem = ({
                         </div>
 
                         <div style={{ flexGrow: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', minWidth: 0 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, width: '100%', gap: '2px', opacity: isCompleted ? 0.5 : 1, transition: 'opacity 0.2s', overflow: 'hidden', textAlign: 'right' }}>
-                                <span style={{ fontSize: '16px', fontWeight: 400, textDecoration: isCompleted ? 'line-through' : 'none', color: isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.4', display: 'block' }} dangerouslySetInnerHTML={{ __html: item.content }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, width: '100%', gap: '2px', opacity: 1, transition: 'opacity 0.2s', overflow: 'hidden', textAlign: 'right' }}>
+                                <span style={{ fontSize: '16px', fontWeight: 400, textDecoration: 'none', color: isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.4', display: 'block' }} dangerouslySetInnerHTML={{ __html: item.content }} />
                                 {item.description && (
                                     <div
                                         style={{
                                             fontSize: '13px',
                                             color: 'var(--text-secondary)',
-                                            opacity: isCompleted ? 0.5 : 0.8,
+                                            opacity: 0.8,
                                             marginTop: '2px',
                                             display: '-webkit-box',
                                             WebkitLineClamp: 2,

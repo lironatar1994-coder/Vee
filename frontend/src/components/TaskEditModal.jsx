@@ -610,15 +610,17 @@ export default function TaskEditModal({
                                 style={{
                                     width: '100%', border: 'none', outline: 'none', background: 'transparent',
                                     fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)',
-                                    fontFamily: 'inherit', textDecoration: isCompleted ? 'line-through' : 'none',
-                                    opacity: isCompleted ? 0.6 : 1, padding: 0, marginBottom: '0.75rem'
+                                    fontFamily: 'inherit', textDecoration: 'none',
+                                    opacity: 1, padding: 0, marginBottom: '0.75rem'
                                 }}
                             />
 
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', position: 'relative' }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '4px', color: 'var(--text-secondary)', opacity: 0.6 }}>
-                                    <line x1="21" y1="10" x2="3" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="21" y1="18" x2="3" y2="18" />
-                                </svg>
+                                {!description && !isFocused && (
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '4px', color: 'var(--text-secondary)', opacity: 0.6 }}>
+                                        <line x1="21" y1="10" x2="3" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="21" y1="18" x2="3" y2="18" />
+                                    </svg>
+                                )}
                                 <textarea
                                     value={description}
                                     onChange={e => {

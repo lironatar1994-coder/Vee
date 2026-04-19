@@ -250,8 +250,8 @@
 }
 
 .is-completed {
-    opacity: 0.5;
-    text-decoration: line-through;
+    opacity: 1;
+    text-decoration: none;
 }
 
 /* Header columns (Sun, Mon, Tue...) */
