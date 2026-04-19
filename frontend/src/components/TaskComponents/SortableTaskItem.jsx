@@ -211,8 +211,10 @@ const SortableTaskItem = ({
                                 {(item.target_date || item.repeat_rule || item.projectTitle || totalSubtasks > 0 || item.time || item.reminder_minutes) && (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap', rowGap: '4px', columnGap: '8px', width: '100%', marginTop: '4px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                                            {completionDateString ? (
-                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>הושלם ב-{completionDateString}</div>
+                                            {isCompleted ? (
+                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                    הושלם {completionDateString ? `ב-${completionDateString}` : (item.last_completed_date ? `ב-${new Date(item.last_completed_date).toLocaleDateString('he-IL')}` : '')}
+                                                </div>
                                             ) : (
                                                 (item.target_date || (item.repeat_rule && item.repeat_rule !== 'none')) ? (
                                                     <div ref={dateRef} onClick={(e) => { e.stopPropagation(); setShowDatePicker(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '12px', cursor: 'pointer' }}>
@@ -241,21 +243,6 @@ const SortableTaskItem = ({
                                             </div>
                                         )}
 
-                                        {item.projectTitle && (
-                                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginRight: 'auto', flexDirection: 'row', direction: 'ltr' }}>
-                                                {item.projectTitle === 'כללי' || item.projectTitle === 'בית' || !item.projectTitle ? '🗳️' : <Folder size={12} style={{ opacity: 0.6 }} />}
-                                                <span style={{ fontSize: '11px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', direction: 'rtl' }}>
-                                                    {(() => {
-                                                        const pTitle = item.projectTitle;
-                                                        const isDefaultProject = !pTitle || pTitle === 'כללי' || pTitle === 'בית';
-                                                        const cTitleRaw = item.checklistTitle === 'תיבת דואר' ? 'תיבת המשימות' : item.checklistTitle;
-                                                        const cTitle = (cTitleRaw && cTitleRaw.includes('‧ היום ‧')) ? '' : cTitleRaw;
-                                                        if (cTitle && cTitle !== pTitle && !isDefaultProject && cTitle !== 'כללי') return `${pTitle} / ${cTitle}`;
-                                                        return isDefaultProject ? 'תיבת המשימות' : pTitle;
-                                                    })()}
-                                                </span>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                                 {showDatePicker && (
