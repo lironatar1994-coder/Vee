@@ -798,10 +798,23 @@ const Project = () => {
     };
 
     const handleUpdateItem = async (itemId, updates) => {
+        // Deep recursive update helper
+        const updateItemDeep = (items) => {
+            return items.map(i => {
+                if (i.id == itemId) {
+                    return { ...i, ...updates, children: i.children ? updateItemDeep(i.children) : [] };
+                }
+                if (i.children && i.children.length > 0) {
+                    return { ...i, children: updateItemDeep(i.children) };
+                }
+                return i;
+            });
+        };
+
         // Optimistic update
         setChecklists(prev => prev.map(c => ({
             ...c,
-            items: c.items.map(i => i.id == itemId ? { ...i, ...updates } : i)
+            items: updateItemDeep(c.items || [])
         })));
 
         try {
@@ -809,23 +822,25 @@ const Project = () => {
                 method: 'PUT',
                 body: JSON.stringify(updates)
             });
-                if (res.ok) {
-                    const updatedItem = await res.json();
-                    if (updates.checklist_id !== undefined) {
-                        fetchProjectData();
-                        toast.success('המשימה הועברה בהצלחה');
-                    } else {
-                        setChecklists(prev => prev.map(c => ({
-                            ...c,
-                            items: c.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
-                        })));
-                        toast.success('משימה אחת נערכה');
-                    }
-                    window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+            if (res.ok) {
+                const updatedItem = await res.json();
+                if (updates.checklist_id !== undefined) {
+                    fetchProjectData();
+                    toast.success('המשימה הועברה בהצלחה');
+                } else {
+                    // Update with actual server response
+                    setChecklists(prev => prev.map(c => ({
+                        ...c,
+                        items: updateItemDeep(c.items || [])
+                    })));
+                    toast.success('משימה אחת נערכה');
                 }
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+            }
         } catch (err) {
             console.error('Failed to update item', err);
-            toast.error('שגיאה בעדכון המשימה');
+            toast.error('שגיאה בעדכון המשימה, מרענן...');
+            fetchProjectData();
         }
     };
 

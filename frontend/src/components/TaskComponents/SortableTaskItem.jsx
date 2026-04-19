@@ -359,7 +359,7 @@ const areEqual = (prevProps, nextProps) => {
     if (prevProps.item.duration !== nextProps.item.duration) return false;
     if (prevProps.item.description !== nextProps.item.description) return false;
     if (prevProps.item.comments_count !== nextProps.item.comments_count) return false;
-    if ((prevProps.item.children?.length || 0) !== (nextProps.item.children?.length || 0)) return false;
+    if (prevProps.item.children !== nextProps.item.children) return false;
 
     const prevCompleted = prevProps.useProgressArray && prevProps.todayProgress ? prevProps.todayProgress.find(p => p.checklist_item_id === prevProps.item.id)?.completed === 1 : prevProps.isCompletedFallback;
     const nextCompleted = nextProps.useProgressArray && nextProps.todayProgress ? nextProps.todayProgress.find(p => p.checklist_item_id === nextProps.item.id)?.completed === 1 : nextProps.isCompletedFallback;

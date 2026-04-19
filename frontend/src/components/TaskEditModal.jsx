@@ -69,6 +69,7 @@ export default function TaskEditModal({
     const [description, setDescription] = useState(item?.description || '');
     const [targetDate, setTargetDate] = useState(item?.target_date || '');
     const [isEditing, setIsEditing] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [showProjectSelector, setShowProjectSelector] = useState(false);
     const [priority, setPriority] = useState(item?.priority || 4);
@@ -350,6 +351,7 @@ export default function TaskEditModal({
             if (res.ok) {
                 setSubtasks(prev => prev.map(s => s.id === subId ? { ...s, ...updates } : s));
                 window.dispatchEvent(new CustomEvent('refreshTasks'));
+                toast.success('משימה אחת נערכה');
             }
         } catch (err) {
             console.error(err);
@@ -382,55 +384,31 @@ export default function TaskEditModal({
     const goToPrev = () => { if (hasPrev && onNavigate) onNavigate(allItems[currentIdx - 1]); };
     const goToNext = () => { if (hasNext && onNavigate) onNavigate(allItems[currentIdx + 1]); };
 
-    const handleSave = (isAutomatic = false) => {
-        const plainText = typeof content === 'string' ? content.replace(/<[^>]*>?/gm, '').trim() : '';
-
-        const hasContentChanged = plainText !== lastSavedContent.current;
-        const hasDescriptionChanged = description !== lastSavedDescription.current;
-
-        if (hasContentChanged || hasDescriptionChanged) {
-            if (onSave) {
-                onSave({
-                    content: plainText,
-                    description,
-                    target_date: targetDate || null,
-                    time: time || null,
-                    repeat_rule: repeatRule || null,
-                    priority: priority,
-                    reminder_minutes: reminderMinutes
-                });
-            }
-            lastSavedContent.current = plainText;
-            lastSavedDescription.current = description;
-        }
-
-        if (!isAutomatic) {
-            setIsEditing(false);
-        }
-    };
-
-    // Debounced save for text fields
-    useEffect(() => {
-        // Skip first render
-        if (content === item.content && description === (item.description || '')) return;
-
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-
-        saveTimeoutRef.current = setTimeout(() => {
-            handleSave(true);
-        }, 1500); // 1.5s debounce for typing
-
-        return () => {
-            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        };
-    }, [content, description]);
-
     const handleDateSelect = (dateStr) => {
         setTargetDate(dateStr);
         setShowDatePicker(false);
         if (onSave) onSave({
             target_date: dateStr || null,
         });
+    };
+
+    const handleSave = () => {
+        if (!isEditing) {
+            setIsFocused(false);
+            return;
+        }
+        onSave({ content, description });
+        setIsEditing(false);
+        setIsFocused(false);
+        lastSavedContent.current = content;
+        lastSavedDescription.current = description;
+    };
+
+    const handleCancel = () => {
+        setContent(lastSavedContent.current);
+        setDescription(lastSavedDescription.current);
+        setIsEditing(false);
+        setIsFocused(false);
     };
 
     const handleDelete = () => {
@@ -595,48 +573,117 @@ export default function TaskEditModal({
                             {isCompleted && <Check size={14} strokeWidth={3} color="white" />}
                         </div>
 
-                        {/* Text Content */}
-                        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        {/* Text Content Area with Focus Border */}
+                        <div style={{
+                            flexGrow: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: isFocused ? '12px' : '0',
+                            margin: isFocused ? '-12px 0 0 -12px' : '0',
+                            border: isFocused ? '1.5px solid var(--border-color)' : '1.5px solid transparent',
+                            borderRadius: 'var(--radius-lg)',
+                            backgroundColor: isFocused ? 'var(--bg-secondary)' : 'transparent',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            position: 'relative'
+                        }}>
                             <input
                                 type="text"
                                 value={content}
-                                onChange={e => setContent(e.target.value)}
-                                onFocus={() => setIsEditing(true)}
-                                onBlur={() => handleSave()}
-                                onKeyDown={e => { if (e.key === 'Enter') { e.target.blur(); handleSave(); } }}
+                                onChange={e => {
+                                    setContent(e.target.value);
+                                    setIsEditing(true);
+                                }}
+                                onFocus={() => setIsFocused(true)}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                        if (e.ctrlKey || e.metaKey) {
+                                            handleSave();
+                                        } else {
+                                            e.target.blur();
+                                        }
+                                    }
+                                    if (e.key === 'Escape') {
+                                        handleCancel();
+                                    }
+                                }}
                                 placeholder="שם משימה"
                                 style={{
                                     width: '100%', border: 'none', outline: 'none', background: 'transparent',
-                                    fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)',
+                                    fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)',
                                     fontFamily: 'inherit', textDecoration: isCompleted ? 'line-through' : 'none',
-                                    opacity: isCompleted ? 0.6 : 1, padding: 0, marginBottom: '0.5rem'
+                                    opacity: isCompleted ? 0.6 : 1, padding: 0, marginBottom: '0.75rem'
                                 }}
                             />
 
-                            <textarea
-                                value={description}
-                                onChange={e => {
-                                    setDescription(e.target.value);
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                onFocus={(e) => {
-                                    setIsEditing(true);
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                onBlur={() => handleSave()}
-                                placeholder="≡ תיאור..."
-                                style={{
-                                    width: '100%', border: 'none', outline: 'none', resize: 'none',
-                                    fontSize: '0.95rem', background: 'transparent',
-                                    color: 'var(--text-secondary)', fontFamily: 'inherit',
-                                    padding: 0, lineHeight: 1.5,
-                                    overflow: 'hidden',
-                                    minHeight: '1.5em',
-                                    transition: 'height 0.1s ease',
-                                }}
-                            />
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', position: 'relative' }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '4px', color: 'var(--text-secondary)', opacity: 0.6 }}>
+                                    <line x1="21" y1="10" x2="3" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="21" y1="18" x2="3" y2="18" />
+                                </svg>
+                                <textarea
+                                    value={description}
+                                    onChange={e => {
+                                        setDescription(e.target.value);
+                                        setIsEditing(true);
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                    }}
+                                    onFocus={(e) => {
+                                        setIsFocused(true);
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                    }}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                            handleSave();
+                                        }
+                                        if (e.key === 'Escape') {
+                                            handleCancel();
+                                        }
+                                    }}
+                                    placeholder="תיאור..."
+                                    style={{
+                                        width: '100%', border: 'none', outline: 'none', resize: 'none',
+                                        fontSize: '0.95rem', background: 'transparent',
+                                        color: 'var(--text-secondary)', fontFamily: 'inherit',
+                                        padding: 0, lineHeight: 1.5,
+                                        overflow: 'hidden',
+                                        minHeight: '1.5em',
+                                        transition: 'height 0.1s ease',
+                                    }}
+                                />
+                            </div>
+
+                            {isFocused && (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px', animation: 'fadeIn 0.2s ease' }}>
+                                    <button
+                                        onClick={handleCancel}
+                                        className="btn btn-soft"
+                                        style={{
+                                            padding: '6px 16px',
+                                            fontSize: '0.88rem',
+                                            borderRadius: '8px',
+                                            fontWeight: 500
+                                        }}
+                                    >
+                                        ביטול
+                                    </button>
+                                    <button
+                                        onClick={handleSave}
+                                        className="btn btn-primary"
+                                        style={{
+                                            padding: '6px 20px',
+                                            fontSize: '0.88rem',
+                                            borderRadius: '8px',
+                                            fontWeight: 600,
+                                            backgroundColor: 'var(--primary-color)',
+                                            border: 'none',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        שמור
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
