@@ -237,4 +237,50 @@ router.post('/settings', (req, res) => {
     }
 });
 
+// GET /api/admin/logs/errors
+router.get('/logs/errors', (req, res) => {
+    try {
+        const logPath = path.join(__dirname, '..', 'logs', 'error.log');
+        if (!fs.existsSync(logPath)) return res.json([]);
+
+        const logs = fs.readFileSync(logPath, 'utf8')
+            .trim()
+            .split('\n')
+            .map(line => {
+                try { return JSON.parse(line); } 
+                catch (e) { return { message: line, level: 'error', timestamp: new Date() }; }
+            })
+            .reverse()
+            .slice(0, 100);
+        
+        res.json(logs);
+    } catch (err) {
+        console.error('Error reading error logs:', err);
+        res.status(500).json({ error: 'Failed to read error logs' });
+    }
+});
+
+// GET /api/admin/logs/combined
+router.get('/logs/combined', (req, res) => {
+    try {
+        const logPath = path.join(__dirname, '..', 'logs', 'combined.log');
+        if (!fs.existsSync(logPath)) return res.json([]);
+
+        const logs = fs.readFileSync(logPath, 'utf8')
+            .trim()
+            .split('\n')
+            .map(line => {
+                try { return JSON.parse(line); } 
+                catch (e) { return { message: line, level: 'info', timestamp: new Date() }; }
+            })
+            .reverse()
+            .slice(0, 100);
+        
+        res.json(logs);
+    } catch (err) {
+        console.error('Error reading combined logs:', err);
+        res.status(500).json({ error: 'Failed to read combined logs' });
+    }
+});
+
 module.exports = router;

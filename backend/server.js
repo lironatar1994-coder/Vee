@@ -9,6 +9,9 @@ const nodemailer = require('nodemailer');
 const webpush = require('web-push');
 const cron = require('node-cron');
 const helmet = require('helmet');
+const morgan = require('morgan');
+const logger = require('./utils/logger');
+const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 const db = require('./database');
 const injectGlobals = require('./middleware/globals');
@@ -38,7 +41,7 @@ try {
         auth: { user: 'resend', pass: process.env.RESEND_API_KEY }
     });
 } catch (error) {
-    console.error('[Config Error] Failed to initialize Nodemailer:', error.message);
+    logger.error('[Config Error] Failed to initialize Nodemailer:', error.message);
 }
 
 try {
@@ -52,7 +55,7 @@ try {
         console.warn('[Config Warn] VAPID keys missing. WebPush will not be functional.');
     }
 } catch (error) {
-    console.error('[Config Error] Failed to set VAPID details:', error.message);
+    logger.error('[Config Error] Failed to set VAPID details:', error.message);
 }
 
 // --- Middleware ---
@@ -65,6 +68,20 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+app.use(morgan('combined', { 
+    stream: { write: message => logger.info(message.trim()) },
+    skip: (req, res) => {
+        // Skip logging for noisy polling endpoints
+        const noisyEndpoints = [
+            '/api/admin/whatsapp/status',
+            '/api/users/current/ping',
+            '/api/health'
+        ];
+        return noisyEndpoints.includes(req.originalUrl);
+    }
+}));
+app.use('/api/', generalLimiter);
+app.use('/api/auth', authLimiter);
 app.use(injectGlobals(io, transporter, webpush));
 
 // Static files
@@ -90,6 +107,23 @@ app.use('/api/invitations', invitationsRouter);
 app.use('/api', checklistsRouter);
 app.use('/api', miscRouter);
 
+// --- Health Check ---
+app.get('/api/health', (req, res) => {
+    try {
+        // Check DB connection
+        db.prepare('SELECT 1').get();
+        res.json({ 
+            status: 'ok', 
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            database: 'connected'
+        });
+    } catch (error) {
+        logger.error('Health check failed:', error);
+        res.status(500).json({ status: 'error', database: 'disconnected' });
+    }
+});
+
 // --- Cron Job (Reminders) ---
 cron.schedule('* * * * *', async () => {
     try {
@@ -114,12 +148,12 @@ cron.schedule('* * * * *', async () => {
                 const subs = db.prepare('SELECT * FROM web_push_subscriptions WHERE user_id = ?').all(r.user_id);
                 subs.forEach(sub => {
                     const payload = JSON.stringify({ title: 'תזכורת למשימה', body: r.content });
-                    webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload).catch(e => console.error(e));
+                    webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload).catch(e => logger.error('WebPush notification failed:', e));
                 });
             }
         }
     } catch (e) {
-        console.error('Cron error:', e);
+        logger.error('Cron error:', e);
     }
 });
 
@@ -139,8 +173,19 @@ app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
+// --- Global Error Handler ---
+app.use((err, req, res, next) => {
+    logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+    
+    res.status(err.status || 500).json({
+        error: process.env.NODE_ENV === 'production' 
+            ? 'Internal Server Error' 
+            : err.message
+    });
+});
+
 // --- Start Server ---
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
 });

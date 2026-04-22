@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 const db = require('../database');
 const { hashPassword, verifyPassword, generateToken, generateAdminToken } = require('../utils/authUtils');
 const { generateResetPasswordEmailHtml, parseTemplate } = require('../utils/emailUtils');
@@ -61,7 +62,7 @@ router.post('/register', async (req, res) => {
                 newUserId, null, 'ACCOUNT_CREATED', 'חשבון המשתמש נוצר בהצלחה'
             );
         } catch (e) {
-            console.error('Failed to log account creation', e);
+            logger.error('Failed to log account creation:', e);
         }
 
         const user = db.prepare('SELECT id, username, email, phone, profile_image, is_onboarded FROM users WHERE id = ?').get(newUserId);
@@ -108,7 +109,7 @@ router.post('/login', async (req, res) => {
         if (!user.password_hash.startsWith('$2')) {
             const newHash = await hashPassword(password);
             db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, user.id);
-            console.log(`[Security] Upgraded user ${user.id} to BCrypt hashing`);
+            logger.info(`[Security] Upgraded user ${user.id} to BCrypt hashing`);
         }
 
         // 4. Finalize login
@@ -244,9 +245,9 @@ router.post('/forgot-password', async (req, res) => {
                     to: user.email,
                     subject: 'איפוס סיסמה עבור חשבון ה-Vee שלך',
                     html: htmlContent
-                }).catch(err => console.error('Failed to send reset email', err));
+                }).catch(err => logger.error('Failed to send reset email:', err));
             } else {
-                console.error('Email transporter not available for password reset');
+                logger.error('Email transporter not available for password reset');
             }
         }
 

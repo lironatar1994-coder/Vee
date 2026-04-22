@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const logger = require('./utils/logger');
 
 const dbPath = path.join(__dirname, 'database.sqlite');
 const db = new Database(dbPath);
@@ -365,14 +366,14 @@ const initDb = () => {
   // Migration: Drop active_days and is_routine (Cleanup requested by user)
   const tableInfoProjectsMigration = db.pragma('table_info(projects)');
   if (tableInfoProjectsMigration.some(col => col.name === 'active_days')) {
-    try { db.exec('ALTER TABLE projects DROP COLUMN active_days'); } catch (e) { console.error(e); }
+    try { db.exec('ALTER TABLE projects DROP COLUMN active_days'); } catch (e) { logger.error('Migration error (dropping active_days from projects):', e); }
   }
   if (tableInfoProjectsMigration.some(col => col.name === 'is_routine')) {
-    try { db.exec('ALTER TABLE projects DROP COLUMN is_routine'); } catch (e) { console.error(e); }
+    try { db.exec('ALTER TABLE projects DROP COLUMN is_routine'); } catch (e) { logger.error('Migration error (dropping is_routine from projects):', e); }
   }
   const tableInfoChecklistsMigration = db.pragma('table_info(checklists)');
   if (tableInfoChecklistsMigration.some(col => col.name === 'active_days')) {
-    try { db.exec('ALTER TABLE checklists DROP COLUMN active_days'); } catch (e) { console.error(e); }
+    try { db.exec('ALTER TABLE checklists DROP COLUMN active_days'); } catch (e) { logger.error('Migration error (dropping active_days from checklists):', e); }
   }
   // Migration: Add whatsapp_enabled to users if missing
   const hasWhatsappEnabled = tableInfoUsers.some(col => col.name === 'whatsapp_enabled');
@@ -441,7 +442,7 @@ const initDb = () => {
   // The most reliable way to check if 'username' is still unique is to check the SQL definition.
   const tableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get()?.sql || "";
   if (tableSql.toUpperCase().includes('USERNAME TEXT UNIQUE')) {
-      console.log('Migrating users table to remove UNIQUE constraint from username...');
+      logger.info('Migrating users table to remove UNIQUE constraint from username...');
       db.transaction(() => {
           // 1. Create new table without UNIQUE
           db.exec(`
@@ -489,7 +490,7 @@ const initDb = () => {
           db.exec('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
           db.exec('CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone)');
       })();
-      console.log('Users table migration complete.');
+      logger.info('Users table migration complete.');
   }
 
   // Seed default Onboarding Config

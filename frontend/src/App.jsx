@@ -16,6 +16,7 @@ const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const WhatsappAdmin = lazy(() => import('./pages/admin/WhatsappAdmin'));
 const AdminOnboarding = lazy(() => import('./pages/admin/AdminOnboarding'));
 const CommunicationStudio = lazy(() => import('./pages/admin/CommunicationStudio'));
+const AdminLogs = lazy(() => import('./pages/admin/AdminLogs'));
 
 // Lazy-loaded App pages
 const Home = lazy(() => import('./pages/Home'));
@@ -72,6 +73,7 @@ function App() {
           <Route path="whatsapp" element={<WhatsappAdmin />} />
           <Route path="onboarding" element={<AdminOnboarding />} />
           <Route path="studio" element={<CommunicationStudio />} />
+          <Route path="logs" element={<AdminLogs />} />
         </Route>
 
         {/* Normal App Routes */}

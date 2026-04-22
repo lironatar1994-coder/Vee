@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode, Smartphone, Loader2, CheckCircle2, History, Sparkles, Mail } from 'lucide-react';
+import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode, Smartphone, Loader2, CheckCircle2, History, Sparkles, Mail, Terminal } from 'lucide-react';
 import { toast } from 'sonner';
 import { useHeaderScroll } from '../../context/HeaderContext';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
@@ -175,6 +175,20 @@ const AdminDashboard = () => {
                         <h2 style={{ fontSize: '1.4rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 900 }}>סטודיו לתקשורת</h2>
                         <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'center' }}>עריכת תבניות WhatsApp ואימייל</span>
                         <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--primary-color)', fontWeight: 700, background: 'var(--primary-color)10', padding: '0.3rem 0.8rem', borderRadius: '12px' }}>הגרסה החדשה</div>
+                    </div>
+
+                    <div className="card" onClick={() => navigate('/admin/logs')} style={{ 
+                        padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', 
+                        justifyContent: 'center', minHeight: '200px', background: 'var(--bg-secondary)', 
+                        border: '1px solid var(--error-color)', cursor: 'pointer', transition: 'all 0.3s ease', 
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '1.25rem', borderRadius: '50%', marginBottom: '1rem', background: 'var(--error-color)', color: '#fff', boxShadow: '0 8px 20px rgba(var(--error-color-rgb), 0.3)' }}>
+                            <Terminal size={32} />
+                        </div>
+                        <h2 style={{ fontSize: '1.4rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 900 }}>יומני מערכת</h2>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'center' }}>ניטור שגיאות ופעילות שרת</span>
+                        <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--error-color)', fontWeight: 700, background: 'var(--error-color)10', padding: '0.3rem 0.8rem', borderRadius: '12px' }}>לוגים בזמן אמת</div>
                     </div>
                 </div>
             </div>
