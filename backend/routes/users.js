@@ -4,6 +4,7 @@ const db = require('../database');
 const { hashPassword } = require('../utils/authUtils');
 const { calculateNextOccurrence, isOccurrenceOnDate } = require('../utils/dateUtils');
 const userAuth = require('../middleware/userAuth');
+const googleCalendarService = require('../services/googleCalendar');
 
 // Protected routes (except legacy quick-create)
 router.post('/', (req, res, next) => next()); // Allow legacy creation for now
@@ -461,6 +462,32 @@ router.post('/:id/onboard', userAuth, (req, res) => {
     } catch (err) {
         console.error('Onboarding processing error:', err);
         res.status(500).json({ error: 'התהליך נכשל. אנא נסה שוב.' });
+    }
+});
+
+// --- Google Calendar Integration ---
+
+// GET /api/users/:id/google/events
+router.get('/:id/google/events', async (req, res) => {
+    const userId = req.params.id === 'current' ? req.user.id : req.params.id;
+    const { timeMin, timeMax } = req.query;
+    try {
+        const events = await googleCalendarService.getEvents(db, userId, timeMin, timeMax);
+        res.json(events);
+    } catch (e) {
+        console.error('Failed bringing google events to user', userId, e.message);
+        res.json([]);
+    }
+});
+
+// DELETE /api/users/:id/google
+router.delete('/:id/google', (req, res) => {
+    const userId = req.params.id === 'current' ? req.user.id : req.params.id;
+    try {
+        db.prepare('UPDATE users SET google_access_token = NULL, google_refresh_token = NULL, google_token_expiry = NULL, google_calendar_email = NULL WHERE id = ?').run(userId);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to disconnect Google Calendar' });
     }
 });
 
