@@ -32,7 +32,7 @@ import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
 import ProjectSettingsModal from '../components/ProjectComponents/ProjectSettingsModal';
 import { ActionMenu, SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
-import { useTaskDnD } from '../hooks/useTaskDnD';
+import { useTaskDnD, buildHierarchy } from '../hooks/useTaskDnD';
 import ProjectComments from '../components/ProjectComments';
 import ProjectTeamModal from '../components/ProjectTeamModal';
 import cache from '../utils/cache';
@@ -1581,29 +1581,7 @@ const Project = () => {
 export default Project;
 
 // Helper functions for hierarchy and progress moved outside component to prevent recreation
-const buildHierarchy = (items) => {
-    const itemMap = new Map();
-    const roots = [];
 
-    items.forEach(item => {
-        itemMap.set(item.id, { ...item, children: [] });
-    });
-
-    items.forEach(item => {
-        if (item.parent_item_id) {
-            const parent = itemMap.get(item.parent_item_id);
-            if (parent) {
-                parent.children.push(itemMap.get(item.id));
-            } else {
-                roots.push(itemMap.get(item.id)); // Orphaned subtasks become roots
-            }
-        } else {
-            roots.push(itemMap.get(item.id));
-        }
-    });
-
-    return roots;
-};
 
 
 

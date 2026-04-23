@@ -2,6 +2,31 @@ import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { arrayMove } from '@dnd-kit/sortable';
 
+// Helpers
+export const buildHierarchy = (items) => {
+    const itemMap = new Map();
+    const roots = [];
+
+    items.forEach(item => {
+        itemMap.set(item.id, { ...item, children: [] });
+    });
+
+    items.forEach(item => {
+        if (item.parent_item_id) {
+            const parent = itemMap.get(item.parent_item_id);
+            if (parent) {
+                parent.children.push(itemMap.get(item.id));
+            } else {
+                roots.push(itemMap.get(item.id));
+            }
+        } else {
+            roots.push(itemMap.get(item.id));
+        }
+    });
+
+    return roots;
+};
+
 export const useTaskDnD = ({
     checklists,
     setChecklists,
@@ -12,6 +37,13 @@ export const useTaskDnD = ({
 }) => {
     const [activeDragItem, setActiveDragItem] = useState(null);
     const lastActionRef = useRef(null);
+    const checklistsRef = useRef(checklists);
+
+    // Keep ref in sync for use in async event handlers (closures)
+    useState(() => {
+        checklistsRef.current = checklists;
+    });
+    checklistsRef.current = checklists;
 
     const getNumericId = (id) => {
         if (typeof id === 'string') {
@@ -20,31 +52,6 @@ export const useTaskDnD = ({
             return isNaN(val) ? id : val;
         }
         return id;
-    };
-
-    // Helpers
-    const buildHierarchy = (items) => {
-        const itemMap = new Map();
-        const roots = [];
-
-        items.forEach(item => {
-            itemMap.set(item.id, { ...item, children: [] });
-        });
-
-        items.forEach(item => {
-            if (item.parent_item_id) {
-                const parent = itemMap.get(item.parent_item_id);
-                if (parent) {
-                    parent.children.push(itemMap.get(item.id));
-                } else {
-                    roots.push(itemMap.get(item.id));
-                }
-            } else {
-                roots.push(itemMap.get(item.id));
-            }
-        });
-
-        return roots;
     };
 
     const findContainer = (id) => {
@@ -107,10 +114,25 @@ export const useTaskDnD = ({
             const activeList = prev[activeListIndex];
             const overList = prev[overListIndex];
 
-            const activeItemIndex = activeList.items.findIndex(i => i.id === activeNumericId);
-            if (activeItemIndex === -1) return prev;
+            // Find parent and all its descendants in the flat list
+            const getDescendantIds = (items, parentId) => {
+                let ids = [];
+                items.forEach(item => {
+                    if (item.parent_item_id === parentId) {
+                        ids.push(item.id);
+                        ids = ids.concat(getDescendantIds(items, item.id));
+                    }
+                });
+                return ids;
+            };
 
-            const activeItem = activeList.items[activeItemIndex];
+            const descendantIds = getDescendantIds(activeList.items, activeNumericId);
+            const allMovingIds = [activeNumericId, ...descendantIds];
+            
+            const movingItems = activeList.items.filter(i => allMovingIds.includes(i.id))
+                .map(i => ({ ...i, checklist_id: overContainerId }));
+            
+            const remainingActiveItems = activeList.items.filter(i => !allMovingIds.includes(i.id));
 
             const overItemsType = over.data.current?.type;
             let overItemIndex;
@@ -123,14 +145,11 @@ export const useTaskDnD = ({
                 }
             }
 
-            const activeListItems = [...activeList.items];
-            activeListItems.splice(activeItemIndex, 1);
-
             const overListItems = [...overList.items];
-            overListItems.splice(overItemIndex, 0, { ...activeItem, checklist_id: overContainerId });
+            overListItems.splice(overItemIndex, 0, ...movingItems);
 
             const newChecklists = [...prev];
-            newChecklists[activeListIndex] = { ...activeList, items: activeListItems };
+            newChecklists[activeListIndex] = { ...activeList, items: remainingActiveItems };
             newChecklists[overListIndex] = { ...overList, items: overListItems };
 
             return newChecklists;
@@ -180,8 +199,12 @@ export const useTaskDnD = ({
                     authFetch(endpoint, {
                         method: 'PUT',
                         body: JSON.stringify({ checklistIds })
-                    }).then(res => {
-                        if (res.ok) toast.success("סדר הרשימות עודכן בהצלחה", { duration: 2500 });
+                    }).then(async res => {
+                        if (res.ok) {
+                            toast.success("סדר הרשימות עודכן בהצלחה", { duration: 2500 });
+                        } else {
+                            throw new Error('Failed to save order');
+                        }
                     }).catch(e => {
                         console.error("Failed to save checklist reorder", e);
                         toast.error("שגיאה בעדכון סדר הרשימות");
@@ -224,8 +247,12 @@ export const useTaskDnD = ({
                     authFetch(`${API_URL}/checklists/${activeContainerId}/reorder`, {
                         method: 'PUT',
                         body: JSON.stringify({ itemIds })
-                    }).then(res => {
-                        if (res.ok) toast.success('סדר המשימות עודכן בהצלחה', { duration: 2500 });
+                    }).then(async res => {
+                        if (res.ok) {
+                            toast.success('סדר המשימות עודכן בהצלחה', { duration: 2500 });
+                        } else {
+                            throw new Error('Reorder failed');
+                        }
                     }).catch(e => {
                         console.error("Failed to save reorder", e);
                         toast.error("שגיאה בעדכון סדר המשימות");
@@ -241,26 +268,26 @@ export const useTaskDnD = ({
             const activeDbItem = active.data.current?.item;
             const originalChecklistId = activeDbItem?.checklist_id || activeContainerId; // Fallback to current UI container
 
-            // Re-find the list since UI jumped list
-            const newListIndex = checklists.findIndex(c => c.id === overContainerId);
-            const newList = checklists[newListIndex];
-
             // In API we need to PUT the item to update its checklist_id
             try {
-                // 1. Update checklist ID of item
-                await authFetch(`${API_URL}/items/${active.id}`, {
+                // 1. Update checklist ID of item (backend handles recursive children update)
+                const updateRes = await authFetch(`${API_URL}/items/${active.id}`, {
                     method: 'PUT',
                     body: JSON.stringify({ checklist_id: overContainerId })
                 });
 
+                if (!updateRes.ok) throw new Error('Update failed');
+
                 // 2. Save the new order in the target container
-                const targetList = checklists.find(c => c.id === overContainerId);
+                // CRITICAL: We MUST use the latest checklistsRef to get items including those moved in handleDragOver
+                const targetList = checklistsRef.current.find(c => c.id === overContainerId);
                 if (targetList) {
                     const targetItemIds = targetList.items.map(i => i.id);
-                    await authFetch(`${API_URL}/checklists/${overContainerId}/reorder`, {
+                    const reorderRes = await authFetch(`${API_URL}/checklists/${overContainerId}/reorder`, {
                         method: 'PUT',
                         body: JSON.stringify({ itemIds: targetItemIds })
                     });
+                    if (!reorderRes.ok) throw new Error('Reorder failed');
                 }
 
                 // Re-find the list since UI jumped list

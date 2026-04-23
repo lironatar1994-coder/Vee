@@ -208,7 +208,7 @@ const SortableTaskItem = ({
                                         {item.description}
                                     </div>
                                 )}
-                                {(item.target_date || item.repeat_rule || item.projectTitle || totalSubtasks > 0 || item.time || item.reminder_minutes) && (
+                                {(item.target_date || item.repeat_rule || item.projectTitle || totalSubtasks > 0 || item.time || item.reminder_minutes || !isCompleted) && (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap', rowGap: '4px', columnGap: '8px', width: '100%', marginTop: '4px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
                                             {isCompleted ? (
@@ -216,16 +216,20 @@ const SortableTaskItem = ({
                                                     הושלם {completionDateString ? `ב-${completionDateString}` : (item.last_completed_date ? `ב-${new Date(item.last_completed_date).toLocaleDateString('he-IL')}` : '')}
                                                 </div>
                                             ) : (
-                                                (item.target_date || (item.repeat_rule && item.repeat_rule !== 'none')) ? (
-                                                    <div ref={dateRef} onClick={(e) => { e.stopPropagation(); setShowDatePicker(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '12px', cursor: 'pointer' }}>
-                                                        {renderFormattedDate(item.target_date, item.repeat_rule, item.last_completed_date, item.created_at, hideToday, item.time, item.reminder_minutes, false, item.duration, (e) => {
+                                                <div ref={dateRef} onClick={(e) => { e.stopPropagation(); setShowDatePicker(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '12px', cursor: 'pointer', color: (item.target_date || item.repeat_rule) ? 'inherit' : 'var(--text-secondary)', opacity: (item.target_date || item.repeat_rule) ? 1 : 0.6 }}>
+                                                    { (item.target_date || (item.repeat_rule && item.repeat_rule !== 'none')) ? (
+                                                        renderFormattedDate(item.target_date, item.repeat_rule, item.last_completed_date, item.created_at, hideToday, item.time, item.reminder_minutes, false, item.duration, (e) => {
                                                             e.stopPropagation();
                                                             const rect = e.currentTarget.getBoundingClientRect();
                                                             setAnchorRect(rect);
                                                             setShowReminderMenu(!showReminderMenu);
-                                                        }, reminderRef)}
-                                                    </div>
-                                                ) : null
+                                                        }, reminderRef)
+                                                    ) : (
+                                                        <span style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <CalendarIcon size={12} /> הגדר תאריך
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
 

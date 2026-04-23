@@ -12,9 +12,19 @@ import { toast } from 'sonner';
 
 const API_URL = '/api';
 
-const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, defaultProject, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
+const AddTaskCard = ({ newItemContent: propContent, setNewItemContent: propSetContent, newItemDate: propDate, setNewItemDate: propSetDate, checklist, defaultProject, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
     const { user, authFetch } = useUser();
     const { theme } = useTheme();
+
+    // Internal state if props are not provided
+    const [internalContent, setInternalContent] = useState('');
+    const [internalDate, setInternalDate] = useState('');
+
+    const newItemContent = propContent !== undefined ? propContent : internalContent;
+    const setNewItemContent = propSetContent || setInternalContent;
+    const newItemDate = propDate !== undefined ? propDate : internalDate;
+    const setNewItemDate = propSetDate || setInternalDate;
+
     const [description, setDescription] = useState('');
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [showRepeatMenu, setShowRepeatMenu] = useState(false);

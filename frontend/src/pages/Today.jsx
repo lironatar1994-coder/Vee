@@ -21,6 +21,7 @@ import {
 import { SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
 import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
+import { useTaskDnD, buildHierarchy } from '../hooks/useTaskDnD';
 import cache from '../utils/cache';
 import PageSkeleton from '../components/PageSkeleton';
 
@@ -763,26 +764,7 @@ const Today = () => {
 
 export default Today;
 
-const buildHierarchy = (items) => {
-    const itemMap = new Map();
-    const roots = [];
-    items.forEach(item => {
-        itemMap.set(item.id, { ...item, children: [] });
-    });
-    items.forEach(item => {
-        if (item.parent_item_id) {
-            const parent = itemMap.get(item.parent_item_id);
-            if (parent) {
-                parent.children.push(itemMap.get(item.id));
-            } else {
-                roots.push(itemMap.get(item.id));
-            }
-        } else {
-            roots.push(itemMap.get(item.id));
-        }
-    });
-    return roots;
-};
+
 
 
 

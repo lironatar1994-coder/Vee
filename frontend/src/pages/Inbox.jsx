@@ -13,7 +13,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboa
 import { ActionMenu, SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
 import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
-import { useTaskDnD } from '../hooks/useTaskDnD';
+import { useTaskDnD, buildHierarchy } from '../hooks/useTaskDnD';
 import cache from '../utils/cache';
 
 const API_URL = '/api';

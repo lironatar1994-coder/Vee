@@ -1030,7 +1030,7 @@ export default function TaskEditModal({
                                             defaultProject={null}
                                             setAddingToList={() => setAddingSubtask(false)}
                                             handleAddItem={handleCreateSubtask}
-                                            suppressDateSpan={true}
+                                            suppressDateSpan={false}
                                         />
                                     </div>
                                 ) : (

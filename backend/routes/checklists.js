@@ -112,7 +112,35 @@ router.put('/items/:itemId', (req, res) => {
 
         if (updates.length > 0) {
             params.push(itemId);
-            db.prepare(`UPDATE checklist_items SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+            
+            // If checklist_id is being updated, we must recursively update all sub-tasks to move with the parent
+            if (checklist_id !== undefined) {
+                db.prepare(`
+                    UPDATE checklist_items 
+                    SET checklist_id = ? 
+                    WHERE id IN (
+                        WITH RECURSIVE descendants AS (
+                            SELECT id FROM checklist_items WHERE id = ?
+                            UNION ALL
+                            SELECT ci.id FROM checklist_items ci
+                            JOIN descendants d ON ci.parent_item_id = d.id
+                        )
+                        SELECT id FROM descendants
+                    )
+                `).run(actualChecklistId, itemId);
+                
+                // Remove checklist_id from the main updates list to avoid redundant update 
+                // (though it doesn't hurt, it's cleaner this way)
+                const checklistIdx = updates.indexOf('checklist_id = ?');
+                if (checklistIdx !== -1) {
+                    updates.splice(checklistIdx, 1);
+                    params.splice(checklistIdx, 1);
+                }
+            }
+
+            if (updates.length > 0) {
+                db.prepare(`UPDATE checklist_items SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+            }
         }
         res.json({ success: true });
     } catch (err) {
@@ -181,4 +209,44 @@ router.post('/checklist-items/:id/comments', (req, res) => {
     }
 });
 
+// PUT /api/checklists/:id/reorder
+router.put('/checklists/:id/reorder', (req, res) => {
+    const { id } = req.params;
+    const { itemIds } = req.body;
+    if (!itemIds || !Array.isArray(itemIds)) return res.status(400).json({ error: 'itemIds array required' });
+
+    try {
+        const update = db.prepare('UPDATE checklist_items SET order_index = ? WHERE id = ? AND checklist_id = ?');
+        db.transaction(() => {
+            itemIds.forEach((itemId, idx) => {
+                update.run(idx, itemId, id);
+            });
+        })();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Reorder checklist failed:', err);
+        res.status(500).json({ error: 'Reorder failed' });
+    }
+});
+
+// PUT /api/items/reorder (General/Sub-task reordering)
+router.put('/items/reorder', (req, res) => {
+    const { itemIds } = req.body;
+    if (!itemIds || !Array.isArray(itemIds)) return res.status(400).json({ error: 'itemIds array required' });
+
+    try {
+        const update = db.prepare('UPDATE checklist_items SET order_index = ? WHERE id = ?');
+        db.transaction(() => {
+            itemIds.forEach((itemId, idx) => {
+                update.run(idx, itemId);
+            });
+        })();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Reorder items failed:', err);
+        res.status(500).json({ error: 'Reorder failed' });
+    }
+});
+
 module.exports = router;
+
