@@ -56,18 +56,25 @@ export const useTaskDnD = ({
 
     const findContainer = (id) => {
         const numericId = getNumericId(id);
-        // If the ID matches a checklist, return the numerical checklist ID
-        if (checklists.find(c => c.id === numericId)) {
-            return numericId;
-        }
-
-        // Otherwise find which checklist contains this task numeric item ID
-        for (const list of checklists) {
-            if (list.items?.some(item => item.id === numericId)) {
-                return list.id;
+        
+        // Helper to search in a flat or nested (projectGroups) structure
+        const searchInLists = (lists) => {
+            if (!Array.isArray(lists)) return null;
+            for (const list of lists) {
+                // If it's a project (has checklists property)
+                if (list.checklists) {
+                    const found = searchInLists(list.checklists);
+                    if (found) return found;
+                }
+                
+                // If it's a checklist
+                if (list.id === numericId) return numericId;
+                if (list.items?.some(item => item.id === numericId)) return list.id;
             }
-        }
-        return null;
+            return null;
+        };
+
+        return searchInLists(checklists);
     };
 
     const handleDragStart = (event) => {
@@ -280,7 +287,20 @@ export const useTaskDnD = ({
 
                 // 2. Save the new order in the target container
                 // CRITICAL: We MUST use the latest checklistsRef to get items including those moved in handleDragOver
-                const targetList = checklistsRef.current.find(c => c.id === overContainerId);
+                // Helper to find list in flat or nested structure
+                const findListById = (lists, targetId) => {
+                    if (!Array.isArray(lists)) return null;
+                    for (const l of lists) {
+                        if (l.id === targetId) return l;
+                        if (l.checklists) {
+                            const found = findListById(l.checklists, targetId);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+
+                const targetList = findListById(checklistsRef.current, overContainerId);
                 if (targetList) {
                     const targetItemIds = targetList.items.map(i => i.id);
                     const reorderRes = await authFetch(`${API_URL}/checklists/${overContainerId}/reorder`, {

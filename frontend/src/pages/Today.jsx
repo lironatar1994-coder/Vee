@@ -502,26 +502,30 @@ const Today = () => {
         return d.toISOString().split('T')[0];
     };
 
-    const handleDragCancel = () => {
-        setActiveDragItem(null);
-        document.body.classList.remove('is-dragging');
-    };
-
-    const handleDragStart = (event) => {
-        setActiveDragItem(event.active);
-    };
+    const {
+        activeDragItem,
+        handleDragStart,
+        handleDragOver: handleDnDOver,
+        handleDragEnd: handleDnDUpdate,
+        handleDragCancel
+    } = useTaskDnD({
+        checklists: projectGroups,
+        setChecklists: setProjectGroups,
+        API_URL,
+        user,
+        authFetch,
+        fetchData: () => fetchTodayTasks()
+    });
 
     const handleDragOver = (event) => {
         const { active, over } = event;
-        if (active.data.current?.type === 'FAB' && over?.data.current?.type === 'FABSlot') {
-            // No specific action needed for hover, handled within components
-        }
+        if (active.data.current?.type === 'FAB') return;
+        handleDnDOver(event);
     };
 
-    const handleDragEnd = (event) => {
+    const handleDragEnd = async (event) => {
         const { active, over } = event;
-        setActiveDragItem(null);
-        document.body.classList.remove('is-dragging');
+        handleDragCancel();
 
         if (active.data.current?.type === 'FAB') {
             if (over?.data.current?.type === 'FABSlot') {
@@ -544,6 +548,8 @@ const Today = () => {
             }
             return;
         }
+
+        handleDnDUpdate(event);
     };
 
     const [unfilteredAllTasksFlat, setUnfilteredAllTasksFlat] = useState([]);

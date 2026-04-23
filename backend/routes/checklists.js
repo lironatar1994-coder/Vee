@@ -127,7 +127,7 @@ router.put('/items/:itemId', (req, res) => {
                         )
                         SELECT id FROM descendants
                     )
-                `).run(actualChecklistId, itemId);
+                `).run(actualChecklistId, Number(itemId));
                 
                 // Remove checklist_id from the main updates list to avoid redundant update 
                 // (though it doesn't hurt, it's cleaner this way)
@@ -219,7 +219,7 @@ router.put('/checklists/:id/reorder', (req, res) => {
         const update = db.prepare('UPDATE checklist_items SET order_index = ? WHERE id = ? AND checklist_id = ?');
         db.transaction(() => {
             itemIds.forEach((itemId, idx) => {
-                update.run(idx, itemId, id);
+                update.run(idx, itemId, Number(id));
             });
         })();
         res.json({ success: true });
