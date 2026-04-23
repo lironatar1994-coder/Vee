@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar as CalendarIcon, Bell, RefreshCw, X, ArrowLeft, ChevronDown, Inbox, List, Flag, SendHorizontal, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Bell, RefreshCw, X, ArrowLeft, ChevronDown, Inbox, List, Flag, SendHorizontal, Clock, AlignLeft } from 'lucide-react';
 import SmartInput from '../SmartInput';
 import DatePickerDropdown from '../DatePickerDropdown';
 import TimePickerDropdown from '../TimePickerDropdown';
@@ -266,31 +266,42 @@ const AddTaskCard = ({ newItemContent: propContent, setNewItemContent: propSetCo
                     />
                 </div>
 
-                <textarea
-                    placeholder="תיאור"
-                    value={description}
-                    onChange={e => {
-                        setDescription(e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onFocus={(e) => {
-                        setIsFocused(true);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onBlur={() => setIsFocused(false)}
-                    style={{ 
-                        width: '100%', border: 'none', outline: 'none', resize: 'none',
-                        fontSize: '14px', fontWeight: 400, background: 'transparent', 
-                        color: 'var(--text-secondary)', padding: 0,
-                        minHeight: '1.4em',
-                        lineHeight: '1.4',
-                        overflow: 'hidden',
-                        transition: 'height 0.1s ease'
-                    }}
-                    rows={1}
-                />
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'flex-start', 
+                    gap: '8px', 
+                    marginTop: '4px',
+                    opacity: description || isFocused ? 1 : 0.7,
+                    transition: 'opacity 0.2s ease'
+                }}>
+                    <AlignLeft size={14} style={{ marginTop: '3px', color: 'var(--text-secondary)', flexShrink: 0 }} />
+                    <textarea
+                        placeholder="תיאור"
+                        value={description}
+                        onChange={e => {
+                            setDescription(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onFocus={(e) => {
+                            setIsFocused(true);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onBlur={() => setIsFocused(false)}
+                        style={{ 
+                            width: '100%', border: 'none', outline: 'none', resize: 'none',
+                            fontSize: '0.88rem', fontWeight: 400, background: 'transparent', 
+                            color: 'var(--text-primary)', padding: 0,
+                            minHeight: '1.4em',
+                            lineHeight: '1.5',
+                            overflow: 'hidden',
+                            transition: 'color 0.2s ease',
+                            fontFamily: 'inherit'
+                        }}
+                        rows={1}
+                    />
+                </div>
             </div>
 
             <div style={{ padding: '0.2rem 0.6rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-start', direction: 'rtl' }}>
