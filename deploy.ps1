@@ -56,4 +56,9 @@ $REMOTE_CMD = "cd /root/Vee && chmod +x deploy_linux.sh && ./deploy_linux.sh"
 
 ssh $SSH_HOST $REMOTE_CMD
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "--- Deployment FAILED ---" -ForegroundColor Red
+    exit $LASTEXITCODE
+}
+
 Write-Host "--- Deployment Complete ---" -ForegroundColor Green

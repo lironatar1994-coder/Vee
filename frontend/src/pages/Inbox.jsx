@@ -861,23 +861,4 @@ const Inbox = () => {
 
 export default Inbox;
 
-const buildHierarchy = (items) => {
-    const itemMap = new Map();
-    const roots = [];
-    items.forEach(item => {
-        itemMap.set(item.id, { ...item, children: [] });
-    });
-    items.forEach(item => {
-        if (item.parent_item_id) {
-            const parent = itemMap.get(item.parent_item_id);
-            if (parent) {
-                parent.children.push(itemMap.get(item.id));
-            } else {
-                roots.push(itemMap.get(item.id));
-            }
-        } else {
-            roots.push(itemMap.get(item.id));
-        }
-    });
-    return roots;
-};
+
