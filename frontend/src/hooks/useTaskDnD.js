@@ -92,7 +92,7 @@ export const useTaskDnD = ({
         if (activeItemType === 'Checklist') return;
 
         const activeContainerId = findContainer(active.id);
-        const overContainerId = overItemType === 'Checklist' ? over.id : findContainer(over.id);
+        const overContainerId = overItemType === 'Checklist' ? getNumericId(over.id) : findContainer(over.id);
 
         if (!activeContainerId || !overContainerId) return;
 
@@ -220,7 +220,7 @@ export const useTaskDnD = ({
 
         // 2. Task Reordering / Moving
         const activeContainerId = findContainer(active.id);
-        const overContainerId = over.data.current?.type === 'Checklist' ? over.id : findContainer(over.id);
+        const overContainerId = over.data.current?.type === 'Checklist' ? getNumericId(over.id) : findContainer(over.id);
 
         if (!activeContainerId || !overContainerId) return;
 
