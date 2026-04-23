@@ -51,7 +51,6 @@ const Today = () => {
     const [addingToItem, setAddingToItem] = useState(null);
     const [newItemContent, setNewItemContent] = useState('');
     const [scrollTop, setScrollTop] = useState(0);
-    const [activeDragItem, setActiveDragItem] = useState(null);
     const [addingAtIndex, setAddingAtIndex] = useState(null);
     const [isCreatingList, setIsCreatingList] = useState(null);
     const [itemToDelete, setItemToDelete] = useState(null);
