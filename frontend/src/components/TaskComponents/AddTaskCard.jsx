@@ -298,7 +298,7 @@ const AddTaskCard = ({ newItemContent: propContent, setNewItemContent: propSetCo
             <div style={{ padding: '0.2rem 0.6rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-start', direction: 'rtl' }}>
 
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', border: `1px solid ${newItemDate ? getDateDisplayInfo(newItemDate).color : 'var(--border-color)'}`, borderRadius: 'var(--radius-sm)', background: 'var(--bg-color)', transition: 'var(--transition)' }}
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-color)', transition: 'var(--transition)' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-color)'}
                     >
