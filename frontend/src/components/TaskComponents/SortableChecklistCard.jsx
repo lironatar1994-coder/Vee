@@ -140,15 +140,6 @@ export const ListDropSlot = ({ id, activeType, isLastSlot = false }) => {
             )}
         </div>
 
-            <style>
-                {`
-                    @keyframes shimmerMove {
-                        0% { left: -100%; }
-                        100% { left: 200%; }
-                    }
-                `}
-            </style>
-        </div>
     );
 };
 
