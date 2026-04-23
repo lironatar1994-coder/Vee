@@ -43,36 +43,55 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
             return;
         }
 
-        const PANEL_W = Math.min(300, window.innerWidth - 16);
-        const PANEL_MAX_H = 460;
+        const updatePosition = () => {
+            const PANEL_W = Math.min(300, window.innerWidth - 16);
+            let PANEL_H = 420; // Default estimate
 
-        if (anchorRef?.current) {
-            const rect = anchorRef.current.getBoundingClientRect();
-            // In RTL, align right edge of panel with right edge of button if possible
-            let left = rect.right - PANEL_W;
-            if (left < 8) left = 8;
-            if (left + PANEL_W > window.innerWidth - 8) left = window.innerWidth - PANEL_W - 8;
-
-            const spaceBelow = window.innerHeight - rect.bottom - 12;
-            const spaceAbove = rect.top - 12;
-
-            let top;
-            // A more realistic estimation of height if we don't know it yet
-            const estimatedHeight = children ? 420 : 380; 
-
-            if (spaceBelow >= estimatedHeight || spaceBelow >= spaceAbove) {
-                top = rect.bottom + 4;
-            } else {
-                top = Math.max(8, rect.top - estimatedHeight - 4);
-                // If it still overlaps the button (button is high but picker is large), adjust
-                if (top + estimatedHeight > rect.top) {
-                    top = Math.max(4, rect.top - estimatedHeight - 4);
-                }
+            if (dropRef.current) {
+                PANEL_H = dropRef.current.offsetHeight;
             }
 
-            setPos({ top, left, width: PANEL_W, visible: true });
-        } else {
-            const left = Math.max(8, (window.innerWidth - PANEL_W) / 2);
+            if (anchorRef?.current) {
+                const rect = anchorRef.current.getBoundingClientRect();
+                
+                // Horizontal: Try to align right edges (RTL standard), but clamp to viewport
+                let left = rect.right - PANEL_W;
+                if (left < 8) left = 8;
+                if (left + PANEL_W > window.innerWidth - 8) {
+                    left = window.innerWidth - PANEL_W - 8;
+                }
+
+                // Vertical: Check space below vs above
+                const spaceBelow = window.innerHeight - rect.bottom - 16;
+                const spaceAbove = rect.top - 16;
+
+                let top;
+                if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
+                    // Fits below
+                    top = rect.bottom + 6;
+                } else {
+                    // Fits above
+                    top = rect.top - PANEL_H - 6;
+                }
+
+                // Final safety clamp for vertical
+                if (top < 8) top = 8;
+                if (top + PANEL_H > window.innerHeight - 8) {
+                    top = window.innerHeight - PANEL_H - 8;
+                }
+
+                setPos({ top, left, width: PANEL_W, visible: true });
+            } else {
+                const left = Math.max(8, (window.innerWidth - PANEL_W) / 2);
+                setPos({ top: 80, left, width: PANEL_W, visible: true });
+            }
+        };
+
+        // Run once immediately, then again after a short delay to account for layout
+        updatePosition();
+        const timer = setTimeout(updatePosition, 10);
+        return () => clearTimeout(timer);
+    }, [isOpen, anchorRef, children]);
             setPos({ top: 80, left, width: PANEL_W, visible: true });
         }
     }, [isOpen, anchorRef]);
@@ -181,6 +200,8 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                 direction: 'rtl',
                 visibility: pos.visible ? 'visible' : 'hidden',
                 animation: 'fadeIn 0.12s ease',
+                maxHeight: 'calc(100vh - 16px)',
+                overflowY: 'auto'
             }}
         >
             {/* Header Summary (Always Visible) */}
