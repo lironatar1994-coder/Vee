@@ -23,52 +23,46 @@ export const DropSlot = ({ id, active }) => {
         <div
             ref={setNodeRef}
             style={{
-                // Tangible hit area for better precision on mobile
-                height: isOver ? '64px' : '24px',
-                marginTop: isOver ? '0px' : '-12px',
-                marginBottom: isOver ? '0px' : '-12px',
+                height: isOver ? '24px' : '16px',
+                marginTop: '-8px',
+                marginBottom: '-8px',
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
                 position: 'relative',
                 zIndex: isOver ? 100 : 1,
-                transition: 'all 0.25s ease-in-out',
-                pointerEvents: 'auto', // Allow hit detection
+                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                pointerEvents: 'auto',
             }}
         >
-            {/* The Demi-Task Visuals: Looks like a blank task waiting to be filled */}
+            {/* The Drop Line */}
             <div style={{
-                width: '100%',
-                height: isOver ? '52px' : '0px',
-                background: 'rgba(var(--primary-rgb), 0.05)', // Use primary color with alpha
-                borderRadius: '8px',
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                height: '3px',
+                background: 'var(--primary-color)',
+                borderRadius: '3px',
                 opacity: isOver ? 1 : 0,
-                transition: 'all 0.25s ease',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 12px',
-                gap: '12px',
-                boxShadow: isOver ? 'inset 0 0 0 1px var(--border-color)' : 'none',
-                visibility: isOver ? 'visible' : 'hidden'
-            }}>
-                {/* Faded typical checkbox circle */}
-                <div style={{
-                    minWidth: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    border: '1.5px solid var(--border-color)',
-                    opacity: 0.4
-                }} />
-                {/* Empty demi-task text line */}
-                <div style={{
-                    height: '14px',
-                    width: '120px',
-                    background: 'var(--border-color)',
-                    borderRadius: '4px',
-                    opacity: 0.3
-                }} />
-            </div>
+                transform: isOver ? 'scaleX(1)' : 'scaleX(0.8)',
+                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                boxShadow: '0 0 8px rgba(var(--primary-rgb), 0.5)',
+            }} />
+            
+            {/* The Bulb (Node) */}
+            <div style={{
+                position: 'absolute',
+                right: '-6px', // assuming RTL
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: 'var(--primary-color)',
+                border: '2px solid var(--bg-primary)',
+                opacity: isOver ? 1 : 0,
+                transform: isOver ? 'scale(1)' : 'scale(0)',
+                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                boxShadow: '0 0 8px rgba(var(--primary-rgb), 0.5)',
+            }} />
         </div>
     );
 };
@@ -95,91 +89,56 @@ export const ListDropSlot = ({ id, activeType, isLastSlot = false }) => {
         <div
             ref={setNodeRef}
             style={{
-                height: isOver ? (isSmartDragging ? '60px' : '90px') : '20px',
+                height: isOver ? (isChecklistDragging ? '80px' : '100px') : '24px',
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
                 zIndex: isOver ? 100 : 1,
-                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                padding: '4px 0',
-                cursor: 'pointer',
-                // Add some negative margin to keep gaps consistent when not over
-                marginTop: isOver ? '8px' : '-4px',
-                marginBottom: isOver ? '8px' : '-4px',
+                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+                margin: isOver ? '8px 0' : '-12px 0',
+                padding: '0',
             }}
         >
-            {/* The Hint Container: Premium Thin Line Separator */}
             <div style={{
-                width: isOver ? '100%' : '15%',
-                height: isOver ? '40px' : '2px',
+                width: '100%',
+                height: isOver ? '100%' : '4px',
+                border: isOver ? '2px dashed var(--primary-color)' : 'none',
+                background: isOver ? 'rgba(var(--primary-rgb), 0.05)' : 'transparent',
+                borderRadius: 'var(--radius-lg)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '12px',
-                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                opacity: isOver ? 1 : (isLastSlot ? 0.3 : 0),
-                position: 'relative',
-                direction: 'rtl'
+                opacity: isOver ? 1 : 0,
+                transform: isOver ? 'scale(1)' : 'scale(0.95)',
+                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+                gap: '8px',
+                color: 'var(--primary-color)',
+                fontWeight: '600',
+                fontSize: '1rem',
+                boxShadow: isOver ? '0 0 20px rgba(var(--primary-rgb), 0.1)' : 'none',
             }}>
-                {/* Dash Lines */}
-                <div style={{
-                    flex: 1,
-                    height: '1px',
-                    background: isOver
-                        ? 'linear-gradient(to left, var(--primary-color), transparent)'
-                        : 'rgba(var(--primary-rgb), 0.3)',
-                    opacity: isOver ? 0.6 : 1,
-                    transition: 'all 0.3s ease'
-                }} />
-
-                {isOver ? (
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(var(--primary-rgb), 0.1)',
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        color: 'var(--primary-color)',
-                        boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.2)',
-                    }}>
-                        <Plus size={20} strokeWidth={3} />
-                    </div>
-                ) : (
-                    <div style={{
-                        width: '100%',
-                        height: '100%',
-                        background: 'rgba(var(--primary-rgb), 0.2)',
-                        borderRadius: '1px'
-                    }} />
-                )}
-
-                <div style={{
-                    flex: 1,
-                    height: '1px',
-                    background: isOver
-                        ? 'linear-gradient(to right, var(--primary-color), transparent)'
-                        : 'rgba(var(--primary-rgb), 0.3)',
-                    opacity: isOver ? 0.6 : 1,
-                    transition: 'all 0.3s ease'
-                }} />
-
-                {/* Shimmer Effect (Only when Over) */}
                 {isOver && (
-                    <div className="shimmer-line" style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '-100%',
-                        width: '30%',
-                        height: '1px',
-                        background: 'linear-gradient(90deg, transparent, var(--primary-color), transparent)',
-                        animation: 'shimmerMove 2s infinite linear'
-                    }} />
+                    <>
+                        <Plus size={20} />
+                        {isChecklistDragging ? 'שחרר כאן להעברת הרשימה' : 'שחרר כאן ליצירת רשימה חדשה'}
+                    </>
                 )}
             </div>
+            
+            {/* The horizontal line between lists when just hovering nearby (not fully over) */}
+            {!isOver && isChecklistDragging && (
+                <div style={{
+                    position: 'absolute',
+                    width: '60%',
+                    height: '4px',
+                    background: 'rgba(var(--primary-rgb), 0.2)',
+                    borderRadius: '4px',
+                    opacity: 0.5,
+                }} />
+            )}
+        </div>
 
             <style>
                 {`
@@ -692,22 +651,33 @@ const EmptyStateDropZone = ({ active, checklistId = 'inbox' }) => {
         <div
             ref={setNodeRef}
             style={{
-                height: isOver ? '120px' : '40px',
+                height: isOver ? '120px' : '60px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: isOver ? '2px dashed var(--primary-color)' : '1px dashed var(--border-color)',
+                border: isOver ? '2px dashed var(--primary-color)' : '2px dashed rgba(var(--primary-rgb), 0.2)',
                 borderRadius: 'var(--radius-lg)',
                 margin: '1rem 0',
-                transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                background: isOver ? 'rgba(var(--primary-rgb), 0.05)' : 'transparent',
+                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+                background: isOver ? 'rgba(var(--primary-rgb), 0.05)' : 'rgba(var(--primary-rgb), 0.01)',
                 color: isOver ? 'var(--primary-color)' : 'var(--text-secondary)',
                 gap: '0.8rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transform: isOver ? 'scale(1.02)' : 'scale(1)',
+                boxShadow: isOver ? '0 0 20px rgba(var(--primary-rgb), 0.1)' : 'none',
             }}
         >
-            <Plus size={24} style={{ opacity: isOver ? 1 : 0.5 }} />
-            <span style={{ fontWeight: 500, opacity: isOver ? 1 : 0.8 }}>
+            <Plus size={24} style={{ 
+                opacity: isOver ? 1 : 0.6,
+                transform: isOver ? 'scale(1.2)' : 'scale(1)',
+                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)'
+            }} />
+            <span style={{ 
+                fontWeight: 600, 
+                opacity: isOver ? 1 : 0.8,
+                fontSize: '1.05rem',
+                transition: 'all 0.3s ease'
+            }}>
                 {isOver ? 'שחרר כאן להוספת משימה' : 'גרור לכאן כדי להוסיף משימה'}
             </span>
         </div>
