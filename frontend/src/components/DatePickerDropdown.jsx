@@ -92,9 +92,6 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
         const timer = setTimeout(updatePosition, 10);
         return () => clearTimeout(timer);
     }, [isOpen, anchorRef, children]);
-            setPos({ top: 80, left, width: PANEL_W, visible: true });
-        }
-    }, [isOpen, anchorRef]);
 
     // ---- Click-outside ----
     useEffect(() => {
