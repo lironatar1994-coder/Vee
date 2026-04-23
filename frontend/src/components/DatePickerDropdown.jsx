@@ -57,10 +57,17 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
             const spaceAbove = rect.top - 12;
 
             let top;
-            if (spaceBelow >= PANEL_MAX_H || spaceBelow >= spaceAbove) {
-                top = rect.bottom + 6;
+            // A more realistic estimation of height if we don't know it yet
+            const estimatedHeight = children ? 420 : 380; 
+
+            if (spaceBelow >= estimatedHeight || spaceBelow >= spaceAbove) {
+                top = rect.bottom + 4;
             } else {
-                top = Math.max(8, rect.top - PANEL_MAX_H - 6);
+                top = Math.max(8, rect.top - estimatedHeight - 4);
+                // If it still overlaps the button (button is high but picker is large), adjust
+                if (top + estimatedHeight > rect.top) {
+                    top = Math.max(4, rect.top - estimatedHeight - 4);
+                }
             }
 
             setPos({ top, left, width: PANEL_W, visible: true });

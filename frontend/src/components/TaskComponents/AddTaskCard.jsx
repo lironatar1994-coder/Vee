@@ -319,7 +319,7 @@ const AddTaskCard = ({ newItemContent: propContent, setNewItemContent: propSetCo
                                 color: newItemDate ? getDateDisplayInfo(newItemDate).color : 'var(--text-secondary)',
                                 cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap',
                                 fontFamily: 'inherit',
-                                fontWeight: newItemDate ? 600 : 500
+                                fontWeight: 500
                             }}
                         >
                             <CalendarIcon size={14} style={{ opacity: 0.8 }} />
