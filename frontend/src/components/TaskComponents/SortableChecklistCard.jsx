@@ -570,8 +570,8 @@ const SortableChecklistCard = ({
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '10px',
-                                padding: '10px 0',
+                                gap: '8px',
+                                padding: '0 0 10px 0',
                                 cursor: 'pointer',
                                 color: 'var(--add-task-btn-color)',
                                 transition: 'all 0.2s ease',
