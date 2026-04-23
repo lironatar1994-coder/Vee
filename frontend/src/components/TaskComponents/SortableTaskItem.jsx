@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, Check, Plus, RefreshCw, GripVertical, Folder, ListTree, MessageSquare } from 'lucide-react';
+import { CheckCircle, Check, Plus, RefreshCw, GripVertical, Folder, ListTree, MessageSquare, Calendar as CalendarIcon } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DatePickerDropdown from '../DatePickerDropdown';
