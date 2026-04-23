@@ -23,9 +23,9 @@ export const DropSlot = ({ id, active }) => {
         <div
             ref={setNodeRef}
             style={{
-                height: isOver ? '24px' : '16px',
-                marginTop: '-8px',
-                marginBottom: '-8px',
+                height: '40px', // Large invisible hit area
+                marginTop: '-20px',
+                marginBottom: '-20px',
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
@@ -89,7 +89,7 @@ export const ListDropSlot = ({ id, activeType, isLastSlot = false }) => {
         <div
             ref={setNodeRef}
             style={{
-                height: isOver ? (isChecklistDragging ? '80px' : '100px') : '24px',
+                height: isOver ? (isChecklistDragging ? '100px' : '120px') : '60px',
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
@@ -97,7 +97,7 @@ export const ListDropSlot = ({ id, activeType, isLastSlot = false }) => {
                 position: 'relative',
                 zIndex: isOver ? 100 : 1,
                 transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                margin: isOver ? '8px 0' : '-12px 0',
+                margin: isOver ? '16px 0' : '-30px 0',
                 padding: '0',
             }}
         >
