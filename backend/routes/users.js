@@ -491,4 +491,32 @@ router.delete('/:id/google', (req, res) => {
     }
 });
 
+// DELETE /api/users/current (Soft Delete with Shadowing)
+router.delete('/current', userAuth, (req, res) => {
+    const userId = req.user.id;
+    const user = db.prepare('SELECT username, email, phone FROM users WHERE id = ?').get(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const timestamp = Date.now();
+    const deletedUsername = `${user.username}__del_${timestamp}`;
+    const deletedEmail = user.email ? `${user.email}__del_${timestamp}` : null;
+    const deletedPhone = user.phone ? `${user.phone}__del_${timestamp}` : null;
+
+    try {
+        db.prepare(`
+            UPDATE users 
+            SET is_deleted = 1, 
+                deleted_at = CURRENT_TIMESTAMP,
+                username = ?,
+                email = ?,
+                phone = ?
+            WHERE id = ?
+        `).run(deletedUsername, deletedEmail, deletedPhone, userId);
+        res.json({ success: true, message: 'Account deleted successfully' });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({ error: 'Failed to delete account' });
+    }
+});
+
 module.exports = router;

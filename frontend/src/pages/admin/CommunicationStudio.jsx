@@ -47,6 +47,19 @@ const TEMPLATES = [
             { key: 'task_name', label: 'שם המשימה', example: 'פגישה חשובה' },
             { key: 'task_time', label: 'שעה', example: '16:00' }
         ]
+    },
+    {
+        id: 'tpl_email_verify',
+        title: 'אימות חשבון (Email)',
+        type: 'email',
+        description: 'האימייל שנשלח למשתמשים חדשים כדי לאמת את זהותם.',
+        category: 'אבטחה',
+        icon: <Mail size={20} />,
+        fallback: 'שלום {user_name},\n\nברוכים הבאים ל-Vee! כדי לאמת את החשבון שלכם ולהתחיל להשתמש באפליקציה, לחצו על הקישור הבא:\n{verify_link}\n\nבהצלחה!\nצוות Vee',
+        variables: [
+            { key: 'user_name', label: 'שם המשתמש', example: 'לירון' },
+            { key: 'verify_link', label: 'קישור לאימות', example: 'https://vee-app.co.il/verify?token=...' }
+        ]
     }
 ];
 

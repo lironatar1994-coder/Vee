@@ -432,6 +432,39 @@ const initDb = () => {
     db.exec('UPDATE users SET is_onboarded = 1'); // Set existing users to onboarded
   }
 
+  // Security Migrations
+  const hasFailedAttempts = tableInfoUsers.some(col => col.name === 'failed_login_attempts');
+  if (!hasFailedAttempts) {
+    db.exec('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0');
+  }
+
+  const hasLockoutUntil = tableInfoUsers.some(col => col.name === 'lockout_until');
+  if (!hasLockoutUntil) {
+    db.exec('ALTER TABLE users ADD COLUMN lockout_until DATETIME');
+  }
+
+  const hasIsVerified = tableInfoUsers.some(col => col.name === 'is_verified');
+  if (!hasIsVerified) {
+    db.exec('ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0');
+    db.exec('UPDATE users SET is_verified = 1'); // Mark existing users as verified
+  }
+
+  const hasVerificationToken = tableInfoUsers.some(col => col.name === 'verification_token');
+  if (!hasVerificationToken) {
+    db.exec('ALTER TABLE users ADD COLUMN verification_token TEXT');
+  }
+
+  // Soft Delete Migrations
+  const hasIsDeleted = tableInfoUsers.some(col => col.name === 'is_deleted');
+  if (!hasIsDeleted) {
+    db.exec('ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT 0');
+  }
+
+  const hasDeletedAt = tableInfoUsers.some(col => col.name === 'deleted_at');
+  if (!hasDeletedAt) {
+    db.exec('ALTER TABLE users ADD COLUMN deleted_at DATETIME');
+  }
+
   // Migration: Remove UNIQUE constraint from username if it still exists
   // We check if the 'username' index is 'unique' in the table definition. 
   // In SQLite, we can check index_list or just attempt recreaton if we detect it's unique.
@@ -533,6 +566,11 @@ const initDb = () => {
   });
   db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
     .run('onboarding_config', defaultOnboardingConfig);
+
+  // Seed default Verification Email Template
+  const defaultVerifyEmail = "שלום {user_name},\n\nברוכים הבאים ל-Vee! כדי לאמת את החשבון שלכם ולהתחיל להשתמש באפליקציה, לחצו על הקישור הבא:\n{verify_link}\n\nבהצלחה!\nצוות Vee";
+  db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
+    .run('tpl_email_verify', defaultVerifyEmail);
 };
 
 initDb();

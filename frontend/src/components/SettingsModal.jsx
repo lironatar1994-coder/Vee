@@ -25,6 +25,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [isMobileViewMode, setIsMobileViewMode] = useState(window.innerWidth <= 992);
     const [pushEnabled, setPushEnabled] = useState(false);
+    const [isResending, setIsResending] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -131,6 +133,48 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
             } else {
                 toast.error('שגיאה בהפעלת התראות: ' + result.error);
             }
+        }
+    };
+    
+    const resendVerification = async () => {
+        setIsResending(true);
+        try {
+            const res = await authFetch(`${API_URL}/auth/resend-verification`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                if (data.alreadyVerified) {
+                    updateUser(data.user);
+                    toast.success('החשבון כבר מאומת! המצב עודכן.');
+                } else {
+                    toast.success('אימייל אימות נשלח שוב בהצלחה!');
+                }
+            } else {
+                toast.error(data.error || 'שגיאה בשליחת אימייל');
+            }
+        } catch (e) {
+            toast.error('שגיאת רשת');
+        } finally {
+            setIsResending(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (!window.confirm('האם אתה בטוח שברצונך למחוק את החשבון? כל הנתונים שלך יישמרו אך לא תוכל להיכנס למערכת יותר.')) return;
+        
+        setIsSaving(true);
+        try {
+            const res = await authFetch(`${API_URL}/users/current`, { method: 'DELETE' });
+            if (res.ok) {
+                toast.success('החשבון נמחק בהצלחה. להתראות!');
+                logout();
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'שגיאה במחיקת החשבון');
+            }
+        } catch (e) {
+            toast.error('שגיאת רשת');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -459,6 +503,40 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                                 החלף אימייל
                                             </button>
                                         </div>
+                                        {user && !user.is_verified && email && (
+                                            <div style={{ 
+                                                marginTop: '0.75rem', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '0.5rem', 
+                                                color: '#ef4444', 
+                                                fontSize: '0.85rem', 
+                                                fontWeight: 600,
+                                                background: 'rgba(239, 68, 68, 0.05)',
+                                                padding: '0.5rem 0.75rem',
+                                                borderRadius: '8px',
+                                                border: '1px solid rgba(239, 68, 68, 0.1)'
+                                            }}>
+                                                <ShieldCheck size={16} />
+                                                <span>האימייל טרם אומת. בדוק את תיבת המייל שלך או </span>
+                                                <button 
+                                                    onClick={resendVerification} 
+                                                    disabled={isResending}
+                                                    style={{ 
+                                                        background: 'none', 
+                                                        border: 'none', 
+                                                        color: 'var(--primary-color)', 
+                                                        padding: 0, 
+                                                        cursor: 'pointer', 
+                                                        fontWeight: 800, 
+                                                        fontSize: '0.85rem', 
+                                                        textDecoration: 'underline' 
+                                                    }}
+                                                >
+                                                    {isResending ? 'שולח...' : 'לחץ כאן לשליחה חוזרת'}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Phone & WhatsApp Section */}
@@ -524,14 +602,20 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                         <h3 style={{ fontSize: '1.05rem', margin: '0 0 0.5rem', color: 'var(--danger-color)' }}>מחק חשבון</h3>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '2rem' }}>
                                             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0, maxWidth: '400px' }}>
-                                                מחיקת חשבונך היא פעולה קבועה. אתה תאבד מיידית גישה לכל הנתונים שלך.
+                                                מחיקת חשבונך היא פעולה קבועה. אתה תאבד מיידית גישה לכל הנתונים שלך. הנתונים יישמרו במערכת למקרה של טעות אך לא תוכל להתחבר יותר.
                                             </p>
-                                            <button type="button" className="btn" style={{
-                                                background: 'transparent', border: '1px solid var(--danger-color)',
-                                                color: 'var(--danger-color)', padding: '0.5rem 1rem', fontSize: '0.9rem',
-                                                whiteSpace: 'nowrap', borderRadius: '8px'
-                                            }}>
-                                                מחק חשבון
+                                            <button 
+                                                type="button" 
+                                                className="btn" 
+                                                onClick={handleDeleteAccount}
+                                                disabled={isSaving}
+                                                style={{
+                                                    background: 'var(--danger-color)', border: '1px solid var(--danger-color)',
+                                                    color: 'white', padding: '0.6rem 1.2rem', fontSize: '0.9rem',
+                                                    whiteSpace: 'nowrap', borderRadius: '8px', fontWeight: 600, cursor: 'pointer'
+                                                }}
+                                            >
+                                                {isSaving ? 'מוחק...' : 'מחק חשבון'}
                                             </button>
                                         </div>
                                     </div>

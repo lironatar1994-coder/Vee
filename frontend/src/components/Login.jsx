@@ -18,6 +18,7 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [registerSuccess, setRegisterSuccess] = useState(false);
 
     // Detect type of identifier
     const identifierType = () => {
@@ -43,9 +44,7 @@ export default function Login() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    // Auto-login after register using UserContext 
-                    // Now includes the JWT token returned from backend
-                    await login(data.user.username, data.user.email, data.user, data.token);
+                    setRegisterSuccess(true);
                 } else {
                     setError(data.error || 'שגיאה בהרשמה');
                 }
@@ -246,6 +245,31 @@ export default function Login() {
                             >
                                 חזרה להתחברות
                             </button>
+                        </div>
+                    ) : registerSuccess ? (
+                        <div style={{ padding: '3.5rem 2rem', textAlign: 'center', animation: 'fadeIn 0.6s ease', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '1.75rem' }}>
+                            <div style={{ width: '80px', height: '80px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary-color)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                                <MailOpen size={40} />
+                            </div>
+                            <div>
+                                <h2 style={{ margin: '0 0 0.75rem', color: 'var(--text-primary)', fontSize: '1.6rem', fontWeight: 900 }}>בדקו את המייל שלכם</h2>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6, fontSize: '1.05rem' }}>
+                                    שלחנו קישור אימות לכתובת <b>{identifier}</b>.<br />
+                                    אנא אשרו את החשבון כדי שתוכלו להתחיל להשתמש ב-Vee.
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '240px' }}>
+                                <button
+                                    onClick={() => { setMode('login'); setRegisterSuccess(false); }}
+                                    className="btn btn-primary"
+                                    style={{ padding: '0.85rem', borderRadius: '14px', fontWeight: 800 }}
+                                >
+                                    חזרה להתחברות
+                                </button>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                    לא קיבלתם? בדקו בתיקיית הספאם.
+                                </p>
+                            </div>
                         </div>
                     ) : (
                         <form onSubmit={mode === 'forgot' ? handleForgotPassword : handleSubmit} style={{ padding: '2rem 2.5rem 2.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

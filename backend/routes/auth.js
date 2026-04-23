@@ -6,6 +6,55 @@ const db = require('../database');
 const { hashPassword, verifyPassword, generateToken, generateAdminToken } = require('../utils/authUtils');
 const { generateResetPasswordEmailHtml, parseTemplate } = require('../utils/emailUtils');
 
+/**
+ * Shared logic to send verification email and respond with success
+ */
+async function sendVerificationAndRespond(user, res, req, inviteId = null, inviterId = null) {
+    const verificationToken = db.prepare('SELECT verification_token FROM users WHERE id = ?').get(user.id).verification_token || crypto.randomBytes(32).toString('hex');
+    
+    // Ensure token is stored
+    db.prepare('UPDATE users SET verification_token = ? WHERE id = ?').run(verificationToken, user.id);
+
+    if (user.email && req.transporter) {
+        const verifyLink = `${process.env.BACKEND_URL || 'https://vee-app.co.il/api'}/auth/verify/${verificationToken}`;
+        let template = "שלום {user_name},\n\nברוכים הבאים ל-Vee! כדי לאמת את החשבון שלכם ולהתחיל להשתמש באפליקציה, לחצו על הקישור הבא:\n{verify_link}\n\nבהצלחה!\nצוות Vee";
+        const customTpl = db.prepare('SELECT value FROM settings WHERE key = ?').get('tpl_email_verify');
+        if (customTpl) template = customTpl.value;
+
+        const htmlContent = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; direction: rtl; text-align: right;">
+                <h2 style="color: #4f46e5;">אמת את חשבון ה-Vee שלך</h2>
+                <div style="white-space: pre-wrap; line-height: 1.6; color: #1e293b; margin-bottom: 25px;">
+                    ${template.replace('{user_name}', user.username).replace('{verify_link}', `<a href="${verifyLink}" style="color: #4f46e5; font-weight: bold; text-decoration: underline;">לחצו כאן</a>`)}
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="${verifyLink}" style="display: inline-block; padding: 12px 35px; background: #4f46e5; color: #fff; text-decoration: none; border-radius: 12px; font-weight: bold; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);">אמת את החשבון שלי</a>
+                </div>
+            </div>
+        `;
+        req.transporter.sendMail({
+            from: process.env.EMAIL_FROM_ADDRESS || 'Vee <onboarding@resend.dev>',
+            to: user.email,
+            subject: 'אמת את חשבון ה-Vee שלך',
+            html: htmlContent
+        }).catch(err => logger.error('Failed to send verification email:', err));
+    }
+
+    // Default Inbox
+    db.transaction(() => {
+        const hasInbox = db.prepare('SELECT id FROM checklists WHERE user_id = ? AND project_id IS NULL').get(user.id);
+        if (!hasInbox) {
+            db.prepare("INSERT INTO checklists (title, user_id, project_id) VALUES ('', ?, NULL)").run(user.id);
+        }
+        if (inviteId && inviterId) {
+            db.prepare('UPDATE invitations SET used_at = CURRENT_TIMESTAMP WHERE id = ?').run(inviteId);
+            db.prepare("INSERT OR IGNORE INTO friends (requester_id, receiver_id, status) VALUES (?, ?, 'accepted')").run(inviterId, user.id);
+        }
+    })();
+
+    return res.json({ success: true, user: { id: user.id, username: user.username, email: user.email } });
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
     const { identifier, password, display_name, invite_token } = req.body;
@@ -37,26 +86,16 @@ router.post('/register', async (req, res) => {
             }
         }
 
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
         const result = db.prepare(
-            'INSERT INTO users (username, email, phone, password_hash, invited_by) VALUES (?, ?, ?, ?, ?)'
-        ).run(username, email, phone, hash, inviterId);
+            'INSERT INTO users (username, email, phone, password_hash, invited_by, verification_token) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(username, email, phone, hash, inviterId, verificationToken);
 
         const newUserId = result.lastInsertRowid;
+        const newUser = db.prepare('SELECT id, username, email FROM users WHERE id = ?').get(newUserId);
 
-        db.transaction(() => {
-            // Create default Inbox list for new user
-            db.prepare("INSERT INTO checklists (title, user_id, project_id) VALUES ('', ?, NULL)").run(newUserId);
-            // Process invitation acceptance if valid
-            if (inviteId && inviterId) {
-                db.prepare('UPDATE invitations SET used_at = CURRENT_TIMESTAMP WHERE id = ?').run(inviteId);
-                // Create instant friendship
-                const existingFriendship = db.prepare('SELECT id FROM friends WHERE (requester_id = ? AND receiver_id = ?) OR (requester_id = ? AND receiver_id = ?)').get(inviterId, newUserId, newUserId, inviterId);
-                if (!existingFriendship) {
-                    db.prepare("INSERT INTO friends (requester_id, receiver_id, status) VALUES (?, ?, 'accepted')").run(inviterId, newUserId);
-                }
-            }
-        })();
-
+        // Success log
         try {
             db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
                 newUserId, null, 'ACCOUNT_CREATED', 'חשבון המשתמש נוצר בהצלחה'
@@ -64,12 +103,9 @@ router.post('/register', async (req, res) => {
         } catch (e) {
             logger.error('Failed to log account creation:', e);
         }
-
-        const user = db.prepare('SELECT id, username, email, phone, profile_image, is_onboarded FROM users WHERE id = ?').get(newUserId);
-        user.invited_users = [];
         
-        const token = generateToken({ id: user.id });
-        res.json({ success: true, user, token });
+        // After success, we also send verification
+        return sendVerificationAndRespond(newUser, res, req, inviteId, inviterId);
     } catch (err) {
         if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
             return res.status(409).json({ error: 'המשתמש כבר קיים. נסה להתחבר.' });
@@ -87,23 +123,47 @@ router.post('/login', async (req, res) => {
     if (!identifier || !password) return res.status(400).json({ error: 'חסרים פרטים' });
 
     try {
-        // 1. Find user by any identifier (Login restricted to email or phone for non-unique usernames)
+        // 1. Find user by any identifier
         const user = db.prepare(
-            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded FROM users WHERE email = ? OR phone = ? OR username = ?'
+            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded, failed_login_attempts, lockout_until, is_deleted FROM users WHERE email = ? OR phone = ? OR username = ?'
         ).get(identifier, identifier, identifier);
 
         if (!user) {
             return res.status(401).json({ error: 'פרטי התחברות שגויים' });
         }
 
-        // 2. Verify password (handles legacy SHA256 migration internally)
+        if (user.is_deleted) {
+            return res.status(403).json({ error: 'החשבון נמחק. פנה לתמיכה לשחזור.' });
+        }
+
+        // 2. Check Lockout Status
+        if (user.lockout_until && new Date() < new Date(user.lockout_until)) {
+            const diff = Math.ceil((new Date(user.lockout_until) - new Date()) / 60000);
+            return res.status(403).json({ error: `החשבון נעול זמנית עקב ניסיונות כושלים. נסה שוב בעוד ${diff} דקות.` });
+        }
+
+        // 3. Verify password
         const isValid = await verifyPassword(password, user.password_hash);
         if (!isValid) {
-            db.prepare('INSERT INTO login_logs (user_id, identifier_attempted, status, ip_address) VALUES (?, ?, ?, ?)').run(
-                user.id, identifier, 'failed', ip
-            );
+            const newAttempts = (user.failed_login_attempts || 0) + 1;
+            let lockoutUntil = null;
+            
+            if (newAttempts >= 5) {
+                lockoutUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+                logger.warn(`[Security] Account lockout triggered for user ${user.id} (${identifier})`);
+            }
+
+            db.prepare('UPDATE users SET failed_login_attempts = ?, lockout_until = ? WHERE id = ?').run(newAttempts, lockoutUntil, user.id);
+            db.prepare('INSERT INTO login_logs (user_id, identifier_attempted, status, ip_address) VALUES (?, ?, ?, ?)').run(user.id, identifier, 'failed', ip);
+            
+            if (newAttempts >= 5) {
+                return res.status(403).json({ error: 'החשבון ננעל ל-15 דקות עקב ריבוי ניסיונות כושלים.' });
+            }
             return res.status(401).json({ error: 'פרטי התחברות שגויים' });
         }
+
+        // 4. Reset Lockout/Attempts on success
+        db.prepare('UPDATE users SET failed_login_attempts = 0, lockout_until = NULL WHERE id = ?').run(user.id);
 
         // 3. Migration Trigger: If the stored hash was legacy (SHA256), upgrade it to BCrypt on the fly
         if (!user.password_hash.startsWith('$2')) {
@@ -288,6 +348,87 @@ router.post('/reset-password', async (req, res) => {
         res.json({ success: true, message: 'הסיסמה עודכנה בהצלחה' });
     } catch (err) {
         console.error('Reset password error:', err);
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+// POST /api/auth/resend-verification
+router.post('/resend-verification', async (req, res) => {
+    // This route should be protected by userAuth middleware or we get user from token
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { verifyToken } = require('../utils/authUtils');
+    const decoded = verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Invalid token' });
+
+    try {
+        const user = db.prepare('SELECT id, username, email, is_verified, verification_token FROM users WHERE id = ?').get(decoded.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (user.is_verified) {
+            // If already verified, return the user object so frontend can sync
+            return res.json({ success: true, alreadyVerified: true, user });
+        }
+
+        const verificationToken = user.verification_token || crypto.randomBytes(32).toString('hex');
+        if (!user.verification_token) {
+            db.prepare('UPDATE users SET verification_token = ? WHERE id = ?').run(verificationToken, user.id);
+        }
+
+        if (user.email && req.transporter) {
+            // Hit the backend API directly for verification
+            const verifyLink = `${process.env.BACKEND_URL || 'https://vee-app.co.il/api'}/auth/verify/${verificationToken}`;
+            let template = "שלום {user_name},\n\nברוכים הבאים ל-Vee! כדי לאמת את החשבון שלכם ולהתחיל להשתמש באפליקציה, לחצו על הקישור הבא:\n{verify_link}\n\nבהצלחה!\nצוות Vee";
+            const customTpl = db.prepare('SELECT value FROM settings WHERE key = ?').get('tpl_email_verify');
+            if (customTpl) template = customTpl.value;
+
+            const htmlContent = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; direction: rtl; text-align: right;">
+                    <h2 style="color: #4f46e5;">אמת את חשבון ה-Vee שלך</h2>
+                    <div style="white-space: pre-wrap; line-height: 1.6; color: #1e293b; margin-bottom: 25px;">
+                        ${template.replace('{user_name}', user.username).replace('{verify_link}', `<a href="${verifyLink}" style="color: #4f46e5; font-weight: bold; text-decoration: underline;">לחצו כאן</a>`)}
+                    </div>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <a href="${verifyLink}" style="display: inline-block; padding: 12px 35px; background: #4f46e5; color: #fff; text-decoration: none; border-radius: 12px; font-weight: bold; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);">אמת את החשבון שלי</a>
+                    </div>
+                </div>
+            `;
+            await req.transporter.sendMail({
+                from: process.env.EMAIL_FROM_ADDRESS || 'Vee <onboarding@resend.dev>',
+                to: user.email,
+                subject: 'אמת את חשבון ה-Vee שלך',
+                html: htmlContent
+            });
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Resend verification error:', err);
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+// GET /api/auth/verify/:token
+router.get('/verify/:token', (req, res) => {
+    const { token } = req.params;
+    try {
+        const user = db.prepare('SELECT id FROM users WHERE verification_token = ?').get(token);
+        if (!user) {
+            return res.status(400).json({ error: 'קוד אימות לא תקין' });
+        }
+
+        db.prepare('UPDATE users SET is_verified = 1, verification_token = NULL WHERE id = ?').run(user.id);
+        
+        // Redirect to login or success page
+        res.send(`
+            <div style="font-family: sans-serif; text-align: center; margin-top: 100px;">
+                <h1 style="color: #4f46e5;">החשבון אומת בהצלחה!</h1>
+                <p>עכשיו תוכלו להתחבר לאפליקציה.</p>
+                <a href="${process.env.FRONTEND_URL || 'https://vee-app.co.il'}" style="color: #4f46e5; font-weight: bold;">חזרה להתחברות</a>
+            </div>
+        `);
+    } catch (err) {
+        console.error('Verification error:', err);
         res.status(500).json({ error: 'שגיאת שרת' });
     }
 });
