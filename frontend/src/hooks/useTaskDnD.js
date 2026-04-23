@@ -271,7 +271,7 @@ export const useTaskDnD = ({
             // In API we need to PUT the item to update its checklist_id
             try {
                 // 1. Update checklist ID of item (backend handles recursive children update)
-                const updateRes = await authFetch(`${API_URL}/items/${active.id}`, {
+                const updateRes = await authFetch(`${API_URL}/items/${getNumericId(active.id)}`, {
                     method: 'PUT',
                     body: JSON.stringify({ checklist_id: overContainerId })
                 });
@@ -294,7 +294,7 @@ export const useTaskDnD = ({
                 const undoAction = async () => {
                     toast.dismiss();
                     try {
-                        await authFetch(`${API_URL}/items/${active.id}`, {
+                        await authFetch(`${API_URL}/items/${getNumericId(active.id)}`, {
                             method: 'PUT',
                             body: JSON.stringify({ checklist_id: originalChecklistId })
                         });
