@@ -204,17 +204,20 @@ const UnifiedTemplateEditor = ({
                                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>From: Vee Alerts</div>
                                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginTop: '0.25rem' }}>{title}</div>
                                     </div>
-                                    {/* Simplified Email body simulator matching the generateResetPasswordEmailHtml layout */}
-                                    <div style={{ fontFamily: 'sans-serif', textAlign: 'center' }}>
-                                        <div style={{ background: type === 'email' && title.includes('איפוס') ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)', padding: '20px', borderRadius: '12px 12px 0 0', color: '#fff' }}>
-                                            <h3 style={{ margin: 0 }}>{title}</h3>
+                                    {/* Premium Email body simulator matching the generateResetPasswordEmailHtml layout */}
+                                    <div style={{ fontFamily: "'Assistant', sans-serif", textAlign: 'center', backgroundColor: '#ffffff', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+                                        <div style={{ background: type === 'email' && title.includes('איפוס') ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)', padding: '35px 20px', color: '#fff' }}>
+                                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: '60px', height: '60px', borderRadius: '50%', display: 'inline-flex', justifyContent: 'center', align-items: 'center', marginBottom: '15px' }}>
+                                                <span style={{ fontSize: '24px' }}>{type === 'email' && title.includes('איפוס') ? '🔑' : '✨'}</span>
+                                            </div>
+                                            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{title}</h3>
                                         </div>
-                                        <div style={{ padding: '20px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0 0 12px 12px', textAlign: 'center' }}>
-                                            <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+                                        <div style={{ padding: '30px 20px', textAlign: 'center' }}>
+                                            <p style={{ fontSize: '15px', color: '#1e293b', lineHeight: '1.6', whiteSpace: 'pre-wrap', textAlign: 'center', margin: '0 0 25px 0' }}>
                                                 {getPreviewText()}
                                             </p>
                                             <div style={{ marginTop: '20px' }}>
-                                                <button style={{ background: type === 'email' && title.includes('איפוס') ? '#6366f1' : '#10b981', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '25px', fontWeight: 'bold' }}>פעולה</button>
+                                                <button style={{ background: type === 'email' && title.includes('איפוס') ? '#4f46e5' : '#10b981', color: '#fff', border: 'none', padding: '12px 35px', borderRadius: '15px', fontWeight: '800', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>{type === 'email' && title.includes('איפוס') ? 'איפוס סיסמה' : 'המשך ל-Vee'}</button>
                                             </div>
                                         </div>
                                     </div>

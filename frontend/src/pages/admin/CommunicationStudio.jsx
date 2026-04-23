@@ -28,7 +28,7 @@ const TEMPLATES = [
         description: 'תוכן האימייל שנשלח כשהמשתמש מבקש לאפס סיסמה (עבור משתמשים ללא וואטסאפ).',
         category: 'אבטחה',
         icon: <Mail size={20} />,
-        fallback: 'קיבלנו בקשה לאיפוס הסיסמה שלך ב-Vee. אם לא ביקשת זאת, ניתן להתעלם מהודעה זו.',
+        fallback: 'קיבלנו בקשה לאיפוס הסיסמה עבור חשבון ה-Vee שלך. לחץ על הכפתור למטה כדי להמשיך בתהליך.',
         variables: [
             { key: 'user_name', label: 'שם המשתמש', example: 'לירון' },
             { key: 'reset_link', label: 'קישור לאיפוס', example: 'https://vee-app.co.il/reset-password?token=...' }

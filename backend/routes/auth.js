@@ -206,9 +206,12 @@ router.post('/forgot-password', async (req, res) => {
 
         const resetLink = `${process.env.FRONTEND_URL || 'https://vee-app.co.il'}/reset-password?token=${token}`;
 
-        // 4. Determine primary contact method
-        if (user.phone) {
-            // Priority 1: WhatsApp
+        // 4. Determine primary contact method based on provided identifier
+        const isEmailInput = /^[^@]+@[^@]+\.[^@]+$/.test(identifier);
+        const isPhoneInput = /^[0-9+\-() ]{7,15}$/.test(identifier.replace(/\s/g, ''));
+
+        if (isPhoneInput && user.phone) {
+            // Priority: WhatsApp if phone was provided
             const customTpl = db.prepare('SELECT value FROM settings WHERE key = ?').get('tpl_wa_reset');
             let message;
             if (customTpl) {
@@ -221,20 +224,22 @@ router.post('/forgot-password', async (req, res) => {
             }
             db.prepare('INSERT INTO whatsapp_outbox (to_phone, message) VALUES (?, ?)').run(user.phone, message);
         } else if (user.email) {
-            // Priority 2: Email (Fallback)
+            // Fallback or explicit Email request
             if (req.transporter) {
                 const customTpl = db.prepare('SELECT value FROM settings WHERE key = ?').get('tpl_email_reset');
                 let htmlContent;
                 if (customTpl) {
-                    // For Email, we still want to wrap the custom text in our professional HTML frame
                     const customText = parseTemplate(customTpl.value, {
                         user_name: user.username,
                         reset_link: resetLink
-                    });
-                    // We'll reuse the professional layout but replace the main body text
+                    })
+                    .replace(/\\n/g, '<br>') // Convert literal \n to HTML breaks
+                    .replace(/\n/g, '<br>');  // Convert real newlines to HTML breaks
+                    
+                    // We'll replace the main paragraph with the custom text
                     htmlContent = generateResetPasswordEmailHtml(resetLink).replace(
-                        /<p style="font-size: 18px; color: #374151; line-height: 1.6; margin-bottom: 30px;">[\s\S]*?<\/p>/,
-                        `<p style="font-size: 18px; color: #374151; line-height: 1.6; margin-bottom: 30px; white-space: pre-wrap;">${customText}</p>`
+                        /<p id="main-content"[\s\S]*?<\/p>/,
+                        `<p id="main-content" style="font-size: 19px; color: #1e293b; line-height: 1.6; margin-bottom: 35px; font-weight: 400;">${customText}</p>`
                     );
                 } else {
                     htmlContent = generateResetPasswordEmailHtml(resetLink);
