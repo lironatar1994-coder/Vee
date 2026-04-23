@@ -207,7 +207,7 @@ const UnifiedTemplateEditor = ({
                                     {/* Premium Email body simulator matching the generateResetPasswordEmailHtml layout */}
                                     <div style={{ fontFamily: "'Assistant', sans-serif", textAlign: 'center', backgroundColor: '#ffffff', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
                                         <div style={{ background: type === 'email' && title.includes('איפוס') ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)', padding: '35px 20px', color: '#fff' }}>
-                                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: '60px', height: '60px', borderRadius: '50%', display: 'inline-flex', justifyContent: 'center', align-items: 'center', marginBottom: '15px' }}>
+                                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: '60px', height: '60px', borderRadius: '50%', display: 'inline-flex', justifyContent: 'center', alignItems: 'center', marginBottom: '15px' }}>
                                                 <span style={{ fontSize: '24px' }}>{type === 'email' && title.includes('איפוס') ? '🔑' : '✨'}</span>
                                             </div>
                                             <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{title}</h3>

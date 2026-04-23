@@ -89,8 +89,8 @@ router.post('/login', async (req, res) => {
     try {
         // 1. Find user by any identifier (Login restricted to email or phone for non-unique usernames)
         const user = db.prepare(
-            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded FROM users WHERE email = ? OR phone = ?'
-        ).get(identifier, identifier);
+            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded FROM users WHERE email = ? OR phone = ? OR username = ?'
+        ).get(identifier, identifier, identifier);
 
         if (!user) {
             return res.status(401).json({ error: 'פרטי התחברות שגויים' });

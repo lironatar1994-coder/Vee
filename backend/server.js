@@ -84,9 +84,12 @@ app.use('/api/', generalLimiter);
 app.use('/api/auth', authLimiter);
 app.use(injectGlobals(io, transporter, webpush));
 
-// Static files
+// Directories
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const logsDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir);
+
 app.use('/api/uploads', express.static(uploadDir));
 
 // --- Socket.io ---
@@ -112,11 +115,17 @@ app.get('/api/health', (req, res) => {
     try {
         // Check DB connection
         db.prepare('SELECT 1').get();
+        
+        // Check Frontend Build
+        const buildPath = path.join(__dirname, '../frontend/dist/index.html');
+        const frontendStatus = fs.existsSync(buildPath) ? 'healthy' : 'missing';
+
         res.json({ 
-            status: 'ok', 
+            status: frontendStatus === 'healthy' ? 'ok' : 'partial', 
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
-            database: 'connected'
+            database: 'connected',
+            frontend: frontendStatus
         });
     } catch (error) {
         logger.error('Health check failed:', error);
