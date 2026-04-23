@@ -82,11 +82,11 @@ router.put('/items/:itemId', (req, res) => {
     try {
         const updates = [];
         const params = [];
+        let actualChecklistId = checklist_id;
 
         if (content !== undefined) { updates.push('content = ?'); params.push(content); }
         if (target_date !== undefined) { updates.push('target_date = ?'); params.push(target_date); }
         if (checklist_id !== undefined) {
-             let actualChecklistId = checklist_id;
              if (typeof checklist_id === 'string' && (checklist_id === 'INBOX' || String(checklist_id).startsWith('NEW_INBOX_'))) {
                 const itemContext = db.prepare(`SELECT ci.checklist_id, c.user_id, c.project_id FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id WHERE ci.id = ?`).get(itemId);
                 if (itemContext) {
