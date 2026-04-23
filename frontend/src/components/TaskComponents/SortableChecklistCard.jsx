@@ -589,8 +589,8 @@ const SortableChecklistCard = ({
                             }}
                         >
                             <div style={{
-                                width: '20px',
-                                height: '20px',
+                                width: '18px',
+                                height: '18px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
