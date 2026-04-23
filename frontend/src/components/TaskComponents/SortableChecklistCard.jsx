@@ -81,7 +81,7 @@ export const ListDropSlot = ({ id, activeType, isLastSlot = false }) => {
     // Logic: 
     // - If dragging a checklist, all slots are active for reordering.
     // - If dragging a task/fab, only the LAST slot is active for creating a new list.
-    const isActive = isChecklistDragging || (isSmartDragging && isLastSlot);
+    const isActive = isChecklistDragging;
 
     if (!isActive) return <div style={{ height: '8px' }} />;
 

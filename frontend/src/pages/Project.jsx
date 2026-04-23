@@ -310,7 +310,14 @@ const Project = () => {
             const { project: projectData, checklists: checklistsData, comments: commentsData, members: membersData } = data;
 
             setProject(projectData);
-            setChecklists(checklistsData || []);
+            
+            // Sort checklists so empty titled ones (no list) are always first
+            const sortedChecklists = (checklistsData || []).sort((a, b) => {
+                if (a.title === '' && b.title !== '') return -1;
+                if (a.title !== '' && b.title === '') return 1;
+                return 0;
+            });
+            setChecklists(sortedChecklists);
             setComments(commentsData || []);
             setProjectMembers(membersData || []);
 
