@@ -409,7 +409,21 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                         zIndex: 110,
                         direction: 'rtl'
                     }}>
+                        <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'right', flexGrow: 1 }}>
+                            {navItems.find(i => i.id === activeTab)?.label}
+                        </h2>
+
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {window.innerWidth <= 992 && (
+                                <button
+                                    onClick={() => setIsMobileViewMode(true)}
+                                    className="btn-icon-soft"
+                                    style={{ padding: '0.45rem', background: 'transparent', color: 'var(--primary-color)' }}
+                                    title="תפריט הגדרות"
+                                >
+                                    <Menu size={22} />
+                                </button>
+                            )}
                             <button
                                 onClick={onClose}
                                 className="btn-icon-soft"
@@ -419,21 +433,6 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                 <X size={22} />
                             </button>
                         </div>
-
-                        <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'right', flexGrow: 1, paddingRight: '1rem' }}>
-                            {navItems.find(i => i.id === activeTab)?.label}
-                        </h2>
-
-                        {window.innerWidth <= 992 && (
-                            <button
-                                onClick={() => setIsMobileViewMode(true)}
-                                className="btn-icon-soft"
-                                style={{ padding: '0.45rem', background: 'transparent', color: 'var(--primary-color)' }}
-                                title="תפריט הגדרות"
-                            >
-                                <Menu size={22} />
-                            </button>
-                        )}
                     </div>
 
                     {/* Scrollable Content Body */}
