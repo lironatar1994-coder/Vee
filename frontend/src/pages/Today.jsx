@@ -347,7 +347,7 @@ const Today = () => {
 
     const handleDeleteItem = async (e, itemId, checklistId) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-        
+
         // Find task name for modal
         let taskName = '';
         projectGroups.some(p => p.checklists.some(c => c.items.some(i => {
