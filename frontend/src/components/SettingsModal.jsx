@@ -353,7 +353,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                         height: '100%'
                     }}
                 >
-                    <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                    <div style={{ padding: '1.25rem 1.5rem' }}>
                         <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>הגדרות</h2>
                     </div>
 
@@ -396,15 +396,20 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                         position: 'relative'
                     }}
                 >
-                    {/* Compact Header for Mobile */}
-                    {window.innerWidth <= 992 && (
-                        <div style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            borderBottom: '1px solid var(--border-color)',
-                            background: 'var(--bg-color)', zIndex: 110,
-                            padding: '0.75rem 1.5rem',
-                            flexShrink: 0
-                        }}>
+                    {/* Unified Settings Header */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '1.25rem 1.5rem',
+                        borderBottom: '1px solid var(--border-color)',
+                        background: 'var(--bg-color)',
+                        width: '100%',
+                        flexShrink: 0,
+                        zIndex: 110,
+                        direction: 'rtl'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <button
                                 onClick={onClose}
                                 className="btn-icon-soft"
@@ -413,11 +418,13 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                             >
                                 <X size={22} />
                             </button>
+                        </div>
 
-                            <h2 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
-                                {navItems.find(i => i.id === activeTab)?.label}
-                            </h2>
+                        <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'right', flexGrow: 1, paddingRight: '1rem' }}>
+                            {navItems.find(i => i.id === activeTab)?.label}
+                        </h2>
 
+                        {window.innerWidth <= 992 && (
                             <button
                                 onClick={() => setIsMobileViewMode(true)}
                                 className="btn-icon-soft"
@@ -426,24 +433,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                             >
                                 <Menu size={22} />
                             </button>
-                        </div>
-                    )}
-
-                    {/* Desktop Close Button */}
-                    {window.innerWidth > 992 && (
-                        <button
-                            onClick={onClose}
-                            className="btn-icon-soft"
-                            style={{
-                                position: 'absolute', top: '1.25rem', right: '1.5rem',
-                                padding: '0.5rem', background: 'transparent',
-                                border: 'none', zIndex: 100
-                            }}
-                            title="סגור (Esc)"
-                        >
-                            <X size={24} />
-                        </button>
-                    )}
+                        )}
+                    </div>
 
                     {/* Scrollable Content Body */}
                     <div
@@ -455,15 +446,6 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                         }}
                     >
                         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                            {/* Desktop Header */}
-                            {window.innerWidth > 992 && (
-                                <h1 style={{
-                                    fontSize: '1.5rem', borderBottom: '1px solid var(--border-color)',
-                                    paddingBottom: '1rem', marginBottom: '2rem', color: 'var(--text-primary)'
-                                }}>
-                                    {navItems.find(i => i.id === activeTab)?.label}
-                                </h1>
-                            )}
 
                             {/* Account Tab View */}
                             {activeTab === 'account' && (
