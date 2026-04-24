@@ -635,18 +635,7 @@ const Inbox = () => {
                     </h1>
                 </div>
             }
-            headerActions={
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('fabAddTask'))}
-                        className="btn-icon-soft" 
-                        title="הוסף משימה"
-                        style={{ padding: '0.4rem' }}
-                    >
-                        <Plus size={20} strokeWidth={1.5} color="var(--text-secondary)" />
-                    </button>
-                </div>
-            }
+            headerActions={null}
 
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
@@ -662,49 +651,9 @@ const Inbox = () => {
                         <EmptyStateDropZone active={activeDragItem?.data?.current?.type === 'FAB'} checklistId="inbox" />
                         <ListDropSlot id="list-slot-0" activeType={activeDragItem?.data?.current?.type} />
 
-                        {activePageTab === 'tasks' && !isCreatingList && (
-                            <div
-                                onClick={() => window.dispatchEvent(new CustomEvent('fabAddTask'))}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px',
-                                    padding: '10px 0',
-                                    cursor: 'pointer',
-                                    color: 'var(--add-task-btn-color)',
-                                    transition: 'all 0.2s ease',
-                                    direction: 'rtl',
-                                    WebkitTapHighlightColor: 'transparent',
-                                    width: 'fit-content'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = 'var(--add-task-btn-hover)';
-                                    e.currentTarget.style.transform = 'translateX(-2px)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = 'var(--add-task-btn-color)';
-                                    e.currentTarget.style.transform = 'none';
-                                }}
-                            >
-                                <div style={{
-                                    width: '20px',
-                                    height: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0
-                                }}>
-                                    <Plus size={18} strokeWidth={2.5} />
-                                </div>
-                                <span style={{ 
-                                    fontSize: '16px', 
-                                    fontWeight: 500,
-                                    letterSpacing: '-0.2px'
-                                }}>
-                                    הוסף משימה
-                                </span>
-                            </div>
-                        )}
+                        <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginTop: '1rem', opacity: 0.6 }}>
+                            תיבת המשימות שלך ריקה.
+                        </p>
 
                         {isCreatingList === true && (
                             <form 
