@@ -345,8 +345,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                 <div
                     className="settings-sidebar"
                     style={{
-                        width: window.innerWidth <= 992 ? '100%' : '300px',
-                        background: 'var(--bg-secondary)',
+                        width: window.innerWidth <= 992 ? '100%' : '240px',
+                        background: 'var(--sidebar-bg)',
                         borderLeft: '1px solid var(--border-color)',
                         display: (window.innerWidth > 992 || isMobileViewMode) ? 'flex' : 'none',
                         flexDirection: 'column',
@@ -381,20 +381,6 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                         ))}
                     </nav>
 
-                    <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-                        <button
-                            onClick={logout}
-                            style={{
-                                width: '100%', display: 'flex', alignItems: 'center', gap: '1rem',
-                                padding: '1rem 1.5rem', borderRadius: '12px', border: '1px solid var(--danger-color)',
-                                background: 'transparent', color: 'var(--danger-color)', cursor: 'pointer',
-                                fontWeight: 600, fontSize: '0.95rem'
-                            }}
-                        >
-                            <LogOut size={18} />
-                            יציאה מהמערכת
-                        </button>
-                    </div>
                 </div>
 
                 {/* Main Content Area */}
