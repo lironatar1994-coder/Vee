@@ -1,0 +1,253 @@
+/* Settings Modal Styles - RTL Optimized */
+
+.settings-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.25s ease-out;
+}
+
+.settings-modal-overlay.visible {
+    opacity: 1;
+}
+
+.settings-modal-container {
+    width: 95%;
+    height: 85vh;
+    max-height: 800px;
+    max-width: 1000px;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    background: var(--bg-color);
+    display: flex;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    direction: rtl;
+}
+
+/* Sidebar Styling */
+.settings-sidebar {
+    width: 240px;
+    background: var(--sidebar-bg);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.settings-sidebar-header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+}
+
+.settings-sidebar-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.settings-nav-container {
+    flex-grow: 1;
+    padding: 0.75rem;
+    overflow-y: auto;
+}
+
+.settings-nav-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 4px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: right;
+    font-weight: 500;
+}
+
+.settings-nav-item:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.settings-nav-item.active {
+    background: var(--sidebar-active-bg);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Main Content Styling */
+.settings-main-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-color);
+    position: relative;
+}
+
+.settings-header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color); /* Revert to white background */
+    width: 100%;
+    flex-shrink: 0;
+    z-index: 110;
+}
+
+.settings-header h2 {
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: right;
+    flex-grow: 1;
+}
+
+.settings-scrolls-content {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.settings-page-container {
+    padding-top: 1.5rem;
+    padding-right: 2rem; /* Consistent right padding */
+}
+
+.settings-content-wrapper {
+    max-width: 650px;
+    margin-right: 0; /* Pin to the right */
+    margin-left: auto; /* Allow growth on the left */
+    width: 100%;
+}
+
+.settings-section {
+    margin-bottom: 2.5rem;
+}
+
+.settings-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+.settings-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.settings-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.settings-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    font-size: 1rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.settings-input:focus {
+    border-color: var(--primary-color);
+}
+
+/* Profile Photo Section - Right Aligned */
+.settings-avatar-section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.settings-avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    background-size: cover;
+    background-position: center;
+}
+
+.settings-avatar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+/* Footer Styling */
+.settings-footer {
+    background: var(--bg-color);
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    z-index: 105;
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 992px) {
+    .settings-modal-overlay {
+        padding: 0;
+    }
+
+    .settings-modal-container {
+        width: 100vw;
+        height: 100dvh;
+        max-height: none;
+        max-width: none;
+        border-radius: 0;
+    }
+
+    .settings-sidebar {
+        width: 100%;
+    }
+
+    .settings-main-area {
+        width: 100%;
+    }
+}
