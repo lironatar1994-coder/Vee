@@ -257,12 +257,42 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
             if (res.ok) {
                 const updatedUser = await res.json();
                 updateUser(updatedUser);
-                toast.success('השם עודכן בהצלחה!');
-                onClose();
+                
+                // Construct specific success message
+                let message = 'ההגדרות עודכנו בהצלחה!';
+                const changes = [];
+                if (isNameChanged) changes.push('שם המשתמש');
+                if (isAvatarChanged) changes.push('תמונת הפרופיל');
+                if (isEmailChanged) changes.push('האימייל');
+                if (isPhoneChanged) changes.push('מספר הטלפון');
+                if (isWhatsappChanged) changes.push('הגדרות הוואטסאפ');
+                
+                if (changes.length === 1) {
+                    const c = changes[0];
+                    if (c === 'תמונת הפרופיל') {
+                        message = `${c} עודכנה בהצלחה!`;
+                    } else if (c === 'הגדרות הוואטסאפ') {
+                        message = `${c} עודכנו בהצלחה!`;
+                    } else {
+                        message = `${c} עודכן בהצלחה!`;
+                    }
+                } else if (changes.length > 1) {
+                    const lastChange = changes.pop();
+                    message = `${changes.join(', ')} ו${lastChange} עודכנו בהצלחה!`;
+                }
+
+                toast.success(message, {
+                    style: {
+                        zIndex: 1000001,
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)'
+                    }
+                });
             } else if (res.status === 409) {
                 toast.error('שם המשתמש כבר קיים במערכת, אנא בחר שם אחר.');
             } else {
-                toast.error('אירעה שגיאה בעת עדכון השם.');
+                toast.error('אירעה שגיאה בעת עדכון ההגדרות.');
             }
         } catch (error) {
             console.error('Error updating user:', error);
