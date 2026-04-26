@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Settings, ChevronDown } from 'lucide-react';
+import useHistoryModal from '../../hooks/useHistoryModal';
 
 const PROJECT_COLORS = [
     { label: 'לבן', value: '#ffffff' },
@@ -22,6 +23,8 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, onSave }) => {
     const [settingsDescription, setSettingsDescription] = useState('');
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const colorPickerRef = useRef(null);
+
+    useHistoryModal(isOpen, onClose, 'project-settings');
 
     useEffect(() => {
         if (isOpen && project) {

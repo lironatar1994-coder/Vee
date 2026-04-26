@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import useHistoryModal from '../../hooks/useHistoryModal';
 
 /**
  * DeleteTaskModal - A high-fidelity confirmation modal inspired by modern task management apps.
@@ -12,6 +13,7 @@ const DeleteTaskModal = ({
     taskName = ''
 }) => {
     const modalRef = useRef(null);
+    useHistoryModal(isOpen, onClose, 'delete-confirm');
 
     useEffect(() => {
         const handleEscape = (e) => {

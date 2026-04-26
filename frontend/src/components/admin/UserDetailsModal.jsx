@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Key, History, Activity, ShieldAlert, CheckCircle, Ban, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminAuthFetch } from '../../services/adminAuthService';
+import useHistoryModal from '../../hooks/useHistoryModal';
 
 const API_URL = '/api';
 
@@ -13,6 +14,8 @@ const UserDetailsModal = ({ userBasicInfo, onClose, onUserUpdated }) => {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [newPassword, setNewPassword] = useState(null);
+
+    useHistoryModal(!!userBasicInfo, onClose, 'admin-user-details');
 
     useEffect(() => {
         fetchUserData();

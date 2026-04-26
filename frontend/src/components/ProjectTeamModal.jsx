@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Users, UserPlus, Trash2, Heart, ArrowRight, ChevronDown } from 'lucide-react';
+import useHistoryModal from '../hooks/useHistoryModal';
 
 const API_URL = '/api';
 
@@ -18,6 +19,8 @@ const ProjectTeamModal = ({
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     const [activeRoleDropdown, setActiveRoleDropdown] = useState(null); // userID of member with open dropdown
     const modalRef = useRef(null);
+
+    useHistoryModal(isOpen, onClose, 'project-team');
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);

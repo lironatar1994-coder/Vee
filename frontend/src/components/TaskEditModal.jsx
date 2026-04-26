@@ -11,6 +11,7 @@ import DatePickerDropdown from './DatePickerDropdown';
 import TimePickerDropdown from './TimePickerDropdown';
 import SmartInput from './SmartInput';
 import { renderFormattedDate, TIME_OPTIONS, repeatOptions, repeatLabels, getFullDateDisplay, getDateDisplayInfo } from './TaskComponents/index.jsx';
+import useHistoryModal from '../hooks/useHistoryModal';
 import ProjectSelectorDropdown from './TaskComponents/ProjectSelectorDropdown';
 import ActionMenu from './TaskComponents/ActionMenu';
 import SortableTaskItem from './TaskComponents/SortableTaskItem';
@@ -49,9 +50,11 @@ export default function TaskEditModal({
 }) {
     const { user, authFetch } = useUser();
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [time, setTime] = useState(item.time || '');
+    const [time, setTime] = useState(item?.time || '');
     const [showTimeMenu, setShowTimeMenu] = useState(false);
     const [showSubtasks, setShowSubtasks] = useState(true);
+
+    useHistoryModal(isOpen, onClose, 'task-edit');
 
     // For real-time saving of text fields
     const lastSavedContent = useRef(item.content);

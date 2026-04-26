@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { useUser } from '../context/UserContext';
 import { AddTaskCard } from './TaskComponents/index.jsx';
+import useHistoryModal from '../hooks/useHistoryModal';
 
 const API_URL = '/api';
 
@@ -14,6 +15,8 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
     const [checklists, setChecklists] = useState([]);
     const [defaultChecklist, setDefaultChecklist] = useState(null);
     const [defaultProject, setDefaultProject] = useState(null);
+
+    useHistoryModal(isOpen, onClose, 'add-task');
 
     useEffect(() => {
         if (!isOpen || !user) return;

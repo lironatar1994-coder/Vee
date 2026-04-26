@@ -154,9 +154,14 @@ const Sidebar = ({ isOpen, onToggle }) => {
     }, []);
 
     const handleNav = (path) => {
+        const MAIN_TABS = ['/today', '/inbox', '/calendar', '/history', '/projects'];
+        const isCurrentMainTab = MAIN_TABS.some(tab => location.pathname === tab || (tab === '/projects' && location.pathname === '/projects'));
+        const isTargetMainTab = MAIN_TABS.includes(path);
+
         // Start route transition
         startTransition(() => {
-            navigate(path);
+            // If switching between main tabs, use replace to keep history stack clean
+            navigate(path, { replace: isCurrentMainTab && isTargetMainTab });
         });
 
         // Sidebar close is now handled by Layout.jsx logic to wait for page load

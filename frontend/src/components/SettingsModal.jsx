@@ -5,6 +5,7 @@ import { User, Save, X, Settings, Bell, Palette, Layout, CreditCard, Trash2, Shi
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
 import { subscribeToPushNotifications, unsubscribeFromPushNotifications } from '../services/NotificationService';
+import useHistoryModal from '../hooks/useHistoryModal';
 
 const API_URL = '/api';
 
@@ -28,6 +29,8 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     const [isResending, setIsResending] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const fileInputRef = useRef(null);
+
+    useHistoryModal(isOpen, onClose, 'settings');
 
     useEffect(() => {
         if ('serviceWorker' in navigator && 'PushManager' in window) {

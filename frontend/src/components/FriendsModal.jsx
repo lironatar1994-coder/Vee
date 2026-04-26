@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useUser } from '../context/UserContext';
 import { X, Users, UserPlus, Check, Mail, Send, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import useHistoryModal from '../hooks/useHistoryModal';
 
 const API_URL = '/api';
 
@@ -15,6 +16,8 @@ const FriendsModal = ({ isOpen, onClose }) => {
     const [inviteInput, setInviteInput] = useState('');
     const [emailsTarget, setEmailsTarget] = useState([]);
     const [isSending, setIsSending] = useState(false);
+
+    useHistoryModal(isOpen, onClose, 'friends');
 
     useEffect(() => {
         if (isOpen) {

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Folder, Check, ChevronDown, Repeat, Target } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { toast } from 'sonner';
+import useHistoryModal from '../hooks/useHistoryModal';
 
 const PROJECT_COLORS = [
     { label: 'לבן', value: '#ffffff' },
@@ -24,6 +25,8 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated, existin
     const [color, setColor] = useState('#6b7280'); // Default to Gray (אפור)
     const [parentId, setParentId] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useHistoryModal(isOpen, onClose, 'create-project');
 
     // Dropdown states
     const [isColorOpen, setIsColorOpen] = useState(false);

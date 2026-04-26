@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MessageSquare, Send } from 'lucide-react';
 import EmojiSelector from './EmojiSelector';
+import useHistoryModal from '../hooks/useHistoryModal';
 
 const API_URL = '/api';
 
@@ -28,6 +29,8 @@ const ProjectComments = ({
 }) => {
     const commentsEndRef = useRef(null);
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+    useHistoryModal(isOpen, onClose, 'project-comments');
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);

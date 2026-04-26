@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Layers, ListChecks, ArrowRight, Repeat, Target, Folder } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { toast } from 'sonner';
+import useHistoryModal from '../hooks/useHistoryModal';
 
 export default function TemplateStoreModal({ isOpen, onClose, onCreated, userId, apiUrl }) {
     const { authFetch } = useUser();
@@ -11,6 +12,8 @@ export default function TemplateStoreModal({ isOpen, onClose, onCreated, userId,
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [title, setTitle] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useHistoryModal(isOpen, onClose, 'templates');
 
     useEffect(() => {
         if (isOpen && templates.length === 0) {
