@@ -111,9 +111,6 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                 }
             };
             
-            // Set initial state for this open session
-            setSelectedTime(initialTime || getNext15Min());
-            setDuration(initialDuration || 0);
             setShowFromOptions(false);
             setShowToOptions(false);
             setShowDurationMenu(false);
@@ -126,17 +123,39 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-                anchorRef.current && !anchorRef.current.contains(event.target)) {
+            // Check if click is outside the main dropdown AND outside the anchor button
+            const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target);
+            const isOutsideAnchor = anchorRef.current && !anchorRef.current.contains(event.target);
+            
+            if (isOutsideDropdown && isOutsideAnchor) {
                 onClose();
             }
-            if (showFromOptions && fromOptionsRef.current && !fromOptionsRef.current.contains(event.target)) setShowFromOptions(false);
-            if (showToOptions && toOptionsRef.current && !toOptionsRef.current.contains(event.target)) setShowToOptions(false);
-            if (showDurationMenu && !event.target.closest('.duration-menu')) setShowDurationMenu(false);
+
+            // Sub-menus closure logic
+            if (showFromOptions && fromOptionsRef.current && !fromOptionsRef.current.contains(event.target)) {
+                setShowFromOptions(false);
+            }
+            if (showToOptions && toOptionsRef.current && !toOptionsRef.current.contains(event.target)) {
+                setShowToOptions(false);
+            }
+            if (showDurationMenu && !event.target.closest('.duration-menu')) {
+                setShowDurationMenu(false);
+            }
         };
-        if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+        
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isOpen, onClose, showFromOptions, showToOptions]);
+    }, [isOpen, onClose, showFromOptions, showToOptions, showDurationMenu]);
+
+    // Update local state when initial values change (e.g. when opening)
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedTime(initialTime || '');
+            setDuration(initialDuration || 0);
+        }
+    }, [isOpen, initialTime, initialDuration]);
 
     if (!isOpen) return null;
 
@@ -178,7 +197,10 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                         <div style={{ position: 'relative', width: duration > 0 ? '85px' : '100%' }}>
                             <input
                                 type="text" value={selectedTime} placeholder="HH:mm"
-                                onFocus={() => setShowFromOptions(true)}
+                                onFocus={(e) => {
+                                    e.target.select();
+                                    setShowFromOptions(true);
+                                }}
                                 onChange={(e) => handleFromChange(e.target.value)}
                                 style={inputStyle(theme, duration > 0 ? 'center' : 'right')}
                             />
@@ -200,7 +222,10 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                                 <div style={{ position: 'relative', width: '85px' }}>
                                     <input
                                         type="text" value={getToTime()} placeholder="HH:mm"
-                                        onFocus={() => setShowToOptions(true)}
+                                        onFocus={(e) => {
+                                            e.target.select();
+                                            setShowToOptions(true);
+                                        }}
                                         onChange={(e) => handleToChange(e.target.value)}
                                         style={inputStyle(theme, 'center')}
                                     />

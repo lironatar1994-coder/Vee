@@ -348,8 +348,12 @@ const AddTaskCard = ({
                                     onClose={() => setShowTimeMenu(false)}
                                     anchorRef={timeBtnRef}
                                     initialTime={time}
+                                    initialDuration={duration}
                                     timeOptions={TIME_OPTIONS}
-                                    onSave={(val) => setTime(val)}
+                                    onSave={(val, dur) => {
+                                        setTime(val);
+                                        setDuration(dur);
+                                    }}
                                 />
                             </div>
                         );
