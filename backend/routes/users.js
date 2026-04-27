@@ -58,24 +58,36 @@ router.post('/:id/ping', (req, res) => {
 
 // PUT /api/users/:id
 router.put('/:id', async (req, res) => {
-    const id = req.user.id; // Ignore id from params, use authenticated user id
-    const { username, profile_image, email, password, phone, whatsapp_enabled } = req.body;
-    if (!username) return res.status(400).json({ error: 'Username required' });
+    const id = req.user.id;
+    const { username, profile_image, email, password, phone, whatsapp_enabled, quick_add_settings } = req.body;
 
     try {
-        const updates = ['username = ?'];
-        const params = [username.trim()];
+        const updates = [];
+        const params = [];
+
+        if (username !== undefined) {
+            if (username.trim() === '') return res.status(400).json({ error: 'Username required' });
+            updates.push('username = ?');
+            params.push(username.trim());
+        }
+
         if (profile_image !== undefined) { updates.push('profile_image = ?'); params.push(profile_image); }
         if (email !== undefined) { updates.push('email = ?'); params.push(email); }
         if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
         if (whatsapp_enabled !== undefined) { updates.push('whatsapp_enabled = ?'); params.push(whatsapp_enabled ? 1 : 0); }
-        if (req.body.quick_add_settings !== undefined) { updates.push('quick_add_settings = ?'); params.push(JSON.stringify(req.body.quick_add_settings)); }
+        
+        if (quick_add_settings !== undefined) { 
+            updates.push('quick_add_settings = ?'); 
+            params.push(typeof quick_add_settings === 'string' ? quick_add_settings : JSON.stringify(quick_add_settings)); 
+        }
         
         if (password) { 
             const hash = await hashPassword(password);
             updates.push('password_hash = ?'); 
             params.push(hash); 
         }
+
+        if (updates.length === 0) return res.json(db.prepare('SELECT * FROM users WHERE id = ?').get(id));
 
         params.push(id);
         db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);

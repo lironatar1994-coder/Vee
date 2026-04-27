@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useUser } from '../context/UserContext';
-import { User, Save, X, Settings, Bell, Palette, Layout, CreditCard, Trash2, ShieldCheck, HelpCircle, Users, UserPlus, Check, Search, Menu, LogOut, Moon, Sun, Sparkles } from 'lucide-react';
+import { User, Save, X, Settings, Bell, Palette, Layout, CreditCard, Trash2, ShieldCheck, HelpCircle, Users, UserPlus, Check, Search, Menu, LogOut, Moon, Sun, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
 import { subscribeToPushNotifications, unsubscribeFromPushNotifications } from '../services/NotificationService';
@@ -21,17 +21,18 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [friends, setFriends] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
     const [isMobileViewMode, setIsMobileViewMode] = useState(window.innerWidth <= 992);
     const [pushEnabled, setPushEnabled] = useState(false);
     const [isResending, setIsResending] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const fileInputRef = useRef(null);
 
     useHistoryModal(isOpen, onClose, 'settings');
+
+    useEffect(() => {
+        const handleResize = () => setIsMobileViewMode(window.innerWidth <= 992);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         if ('serviceWorker' in navigator && 'PushManager' in window) {
@@ -43,7 +44,6 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
         }
     }, [isOpen]);
 
-    // Sync input when modal opens/user loads
     useEffect(() => {
         if (isOpen) {
             setUsername(user?.username || '');
@@ -51,92 +51,23 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
             setPhone(user?.phone || '');
             setWhatsappEnabled(user?.whatsapp_enabled ? true : false);
             setAvatarPreview(user?.profile_image || null);
-            setActiveTab(initialTab); // Re-sync tab if it was opened from a specific button
-            setIsMobileViewMode(initialTab === 'account' ? false : window.innerWidth <= 992); // Land directly on Account if specified
-            // Slight delay to allow CSS transitions to pop the modal
+            setActiveTab(initialTab);
             requestAnimationFrame(() => setIsVisible(true));
         } else {
             setIsVisible(false);
         }
     }, [isOpen, user, initialTab]);
 
-    useEffect(() => {
-        if (activeTab === 'friends' && isOpen) {
-            fetchFriends();
-        }
-    }, [activeTab, isOpen]);
-
-    const fetchFriends = async () => {
-        try {
-            const res = await authFetch(`${API_URL}/users/current/friends`);
-            if (res.ok) setFriends(await res.json());
-        } catch (e) { console.error('Error fetching friends', e); }
-    };
-
-    const handleSearchUsers = async (e) => {
-        setSearchQuery(e.target.value);
-        if (!e.target.value.trim()) {
-            setSearchResults([]);
-            return;
-        }
-        setIsSearching(true);
-        try {
-            const res = await authFetch(`${API_URL}/users/search?q=${e.target.value}&excludeUserId=current`);
-            if (res.ok) setSearchResults(await res.json());
-        } catch (error) {
-            console.error('Search error', error);
-        }
-        setIsSearching(false);
-    };
-
-    const sendFriendRequest = async (receiver_id) => {
-        try {
-            const res = await authFetch(`${API_URL}/friends/request`, {
-                method: 'POST',
-                body: JSON.stringify({ requester_id: user.id, receiver_id })
-            });
-            if (res.ok) {
-                toast.success('בקשת חברות נשלחה בהצלחה!');
-                fetchFriends();
-                setSearchQuery('');
-                setSearchResults([]);
-            } else {
-                toast.error('הבקשה כבר קיימת');
-            }
-        } catch (error) {
-            toast.error('שגיאה בשליחת בקשה');
-        }
-    };
-
-    const acceptFriendRequest = async (requestId) => {
-        try {
-            const res = await authFetch(`${API_URL}/friends/accept/${requestId}`, { method: 'PUT' });
-            if (res.ok) {
-                toast.success('בקשת חברות אושרה!');
-                fetchFriends();
-            }
-        } catch (error) {
-            toast.error('שגיאה באישור חברות');
-        }
-    };
-
     const handleTogglePushNotifications = async () => {
-        if (pushEnabled) {
-            const result = await unsubscribeFromPushNotifications(authFetch);
-            if (result.success) {
-                setPushEnabled(false);
-                toast.success('קבלת התראות הופסקה');
-            } else {
-                toast.error('שגיאה בהפסקת התראות: ' + result.error);
-            }
+        const result = pushEnabled 
+            ? await unsubscribeFromPushNotifications(authFetch)
+            : await subscribeToPushNotifications(authFetch);
+            
+        if (result.success) {
+            setPushEnabled(!pushEnabled);
+            toast.success(pushEnabled ? 'קבלת התראות הופסקה' : 'קבלת התראות הופעלה בהצלחה');
         } else {
-            const result = await subscribeToPushNotifications(authFetch);
-            if (result.success) {
-                setPushEnabled(true);
-                toast.success('קבלת התראות הופעלה בהצלחה');
-            } else {
-                toast.error('שגיאה בהפעלת התראות: ' + result.error);
-            }
+            toast.error('שגיאה: ' + result.error);
         }
     };
     
@@ -148,7 +79,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
             if (res.ok) {
                 if (data.alreadyVerified) {
                     updateUser(data.user);
-                    toast.success('החשבון כבר מאומת! המצב עודכן.');
+                    toast.success('החשבון כבר מאומת!');
                 } else {
                     toast.success('אימייל אימות נשלח שוב בהצלחה!');
                 }
@@ -163,13 +94,13 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     };
 
     const handleDeleteAccount = async () => {
-        if (!window.confirm('האם אתה בטוח שברצונך למחוק את החשבון? כל הנתונים שלך יישמרו אך לא תוכל להיכנס למערכת יותר.')) return;
+        if (!window.confirm('האם אתה בטוח שברצונך למחוק את החשבון?')) return;
         
         setIsSaving(true);
         try {
             const res = await authFetch(`${API_URL}/users/current`, { method: 'DELETE' });
             if (res.ok) {
-                toast.success('החשבון נמחק בהצלחה. להתראות!');
+                toast.success('החשבון נמחק בהצלחה');
                 logout();
             } else {
                 const data = await res.json();
@@ -183,8 +114,6 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     };
 
     if (!isOpen) return null;
-
-    const handleImageClick = () => fileInputRef.current?.click();
 
     const handleImageChange = async (e) => {
         const file = e.target.files?.[0];
@@ -207,51 +136,38 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                 toast.error(data.error || 'שגיאה בהעלאת התמונה');
             }
         } catch (err) {
-            console.error('Upload Error:', err);
-            toast.error('שגיאת רשת בעת העלאת התמונה');
+            toast.error('שגיאת רשת');
         }
     };
-
-    const handleRemoveImage = () => setAvatarPreview('');
 
     const isNameChanged = username.trim() !== user?.username && username.trim() !== '';
     const isEmailChanged = email.trim() !== (user?.email || '');
     const isPhoneChanged = phone.trim() !== (user?.phone || '');
     const isWhatsappChanged = whatsappEnabled !== (user?.whatsapp_enabled ? true : false);
-    const currentProfileImage = user?.profile_image || null;
-    const isAvatarChanged = avatarPreview !== currentProfileImage;
+    const isAvatarChanged = avatarPreview !== (user?.profile_image || null);
     const hasChanges = isNameChanged || isAvatarChanged || isEmailChanged || isPhoneChanged || isWhatsappChanged;
 
     const handleSave = async (e) => {
         e.preventDefault();
-
-        const trimmedName = username.trim();
-        const trimmedEmail = email.trim();
-        if (!trimmedName) {
+        if (!username.trim()) {
             toast.error('שם משתמש לא יכול להיות ריק');
             return;
         }
 
         if (!hasChanges) {
-            onClose(); // Just close if no changes
+            onClose();
             return;
         }
 
         setIsSaving(true);
         try {
-            const bodyData = { username: trimmedName };
-            if (isAvatarChanged) {
-                bodyData.profile_image = avatarPreview === '' ? null : avatarPreview;
-            }
-            if (isEmailChanged) {
-                bodyData.email = trimmedEmail === '' ? null : trimmedEmail;
-            }
-            if (isPhoneChanged) {
-                bodyData.phone = phone.trim() === '' ? null : phone.trim();
-            }
-            if (isWhatsappChanged) {
-                bodyData.whatsapp_enabled = whatsappEnabled;
-            }
+            const bodyData = { 
+                username: username.trim(),
+                profile_image: avatarPreview === '' ? null : avatarPreview,
+                email: email.trim() === '' ? null : email.trim(),
+                phone: phone.trim() === '' ? null : phone.trim(),
+                whatsapp_enabled: whatsappEnabled
+            };
 
             const res = await authFetch(`${API_URL}/users/current`, {
                 method: 'PUT',
@@ -261,46 +177,15 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
             if (res.ok) {
                 const updatedUser = await res.json();
                 updateUser(updatedUser);
-                
-                // Construct specific success message
-                let message = 'ההגדרות עודכנו בהצלחה!';
-                const changes = [];
-                if (isNameChanged) changes.push('שם המשתמש');
-                if (isAvatarChanged) changes.push('תמונת הפרופיל');
-                if (isEmailChanged) changes.push('האימייל');
-                if (isPhoneChanged) changes.push('מספר הטלפון');
-                if (isWhatsappChanged) changes.push('הגדרות הוואטסאפ');
-                
-                if (changes.length === 1) {
-                    const c = changes[0];
-                    if (c === 'תמונת הפרופיל') {
-                        message = `${c} עודכנה בהצלחה!`;
-                    } else if (c === 'הגדרות הוואטסאפ') {
-                        message = `${c} עודכנו בהצלחה!`;
-                    } else {
-                        message = `${c} עודכן בהצלחה!`;
-                    }
-                } else if (changes.length > 1) {
-                    const lastChange = changes.pop();
-                    message = `${changes.join(', ')} ו${lastChange} עודכנו בהצלחה!`;
-                }
-
-                toast.success(message, {
-                    style: {
-                        zIndex: 1000001,
-                        background: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-color)'
-                    }
-                });
+                toast.success('ההגדרות עודכנו בהצלחה!');
+                onClose();
             } else if (res.status === 409) {
-                toast.error('שם המשתמש כבר קיים במערכת, אנא בחר שם אחר.');
+                toast.error('שם המשתמש כבר קיים במערכת');
             } else {
-toast.error('אירעה שגיאה בעת עדכון ההגדרות.');
+                toast.error('אירעה שגיאה בעת עדכון ההגדרות');
             }
         } catch (error) {
-            console.error('Error updating user:', error);
-            toast.error('שגיאת רשת. אנא נסה שוב.');
+            toast.error('שגיאת רשת');
         } finally {
             setIsSaving(false);
         }
@@ -308,7 +193,6 @@ toast.error('אירעה שגיאה בעת עדכון ההגדרות.');
 
     const navItems = [
         { id: 'account', label: 'חשבון שלי', icon: User },
-        { id: 'friends', label: 'חברים', icon: Users },
         { id: 'quick_add', label: 'הוספה מהירה', icon: Sparkles },
         { id: 'general', label: 'כללי', icon: Settings },
         { id: 'subscription', label: 'מנוי', icon: CreditCard },
@@ -318,22 +202,16 @@ toast.error('אירעה שגיאה בעת עדכון ההגדרות.');
         { id: 'security', label: 'אבטחה', icon: ShieldCheck },
     ];
 
+    // On mobile, if we haven't picked a tab yet, we are in "mobile view mode" (sidebar only)
+    // If we picked a tab, we show the main area.
+    const showMobileMainArea = isMobileViewMode && activeTab !== null;
+
     return createPortal(
-        <div
-            className={`settings-modal-overlay ${isVisible ? 'visible' : ''}`}
-            onClick={onClose}
-        >
-            <div
-                className="settings-modal-container slide-up"
-                onClick={e => e.stopPropagation()}
-            >
-                {/* Desktop Sidebar Navigation */}
-                <div
-                    className="settings-sidebar"
-                    style={{
-                        display: (window.innerWidth > 992 || isMobileViewMode) ? 'flex' : 'none'
-                    }}
-                >
+        <div className={`settings-modal-overlay ${isVisible ? 'visible' : ''}`} onClick={onClose}>
+            <div className="settings-modal-container" onClick={e => e.stopPropagation()}>
+                
+                {/* Sidebar Navigation */}
+                <div className="settings-sidebar">
                     <div className="settings-sidebar-header">
                         <h2>הגדרות</h2>
                     </div>
@@ -342,79 +220,80 @@ toast.error('אירעה שגיאה בעת עדכון ההגדרות.');
                         {navItems.map(item => (
                             <button
                                 key={item.id}
-                                onClick={() => { setActiveTab(item.id); setIsMobileViewMode(false); }}
+                                onClick={() => setActiveTab(item.id)}
                                 className={`settings-nav-item ${activeTab === item.id ? 'active' : ''}`}
                             >
                                 <div className="settings-nav-icon">
-                                    <item.icon size={18} strokeWidth={activeTab === item.id ? 2 : 1.8} />
+                                    <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
                                 </div>
-                                <span style={{ fontSize: '0.95rem' }}>{item.label}</span>
+                                <span>{item.label}</span>
                             </button>
                         ))}
                     </nav>
-
                 </div>
 
                 {/* Main Content Area */}
-                <div
-                    className={`settings-main-area ${(window.innerWidth > 992 || !isMobileViewMode) ? '' : 'hidden'}`}
-                >
-                    {/* Unified Settings Header */}
+                <div className={`settings-main-area ${showMobileMainArea ? 'active' : ''}`}>
                     <div className="settings-header">
-                        <h2 className="fade-in">
-                            {navItems.find(i => i.id === activeTab)?.label}
-                        </h2>
-
-                        <div className="settings-header-actions">
-                            {window.innerWidth <= 992 && (
-                                <button
-                                    onClick={() => setIsMobileViewMode(true)}
-                                    className="btn-icon-soft"
-                                    title="תפריט הגדרות"
-                                >
-                                    <Menu size={22} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            {isMobileViewMode && (
+                                <button onClick={() => setActiveTab(null)} className="btn-icon-soft">
+                                    <ChevronRight size={24} />
                                 </button>
                             )}
-                            <button
-                                onClick={onClose}
-                                className="btn-icon-soft"
-                                title="סגור"
-                            >
+                            <h2 className="fade-in">
+                                {navItems.find(i => i.id === activeTab)?.label || 'בחר הגדרה'}
+                            </h2>
+                        </div>
+
+                        <div className="settings-header-actions">
+                            <button onClick={onClose} className="btn-icon-soft">
                                 <X size={22} />
                             </button>
                         </div>
                     </div>
 
-                    {/* Scrollable Content Body */}
                     <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                         <div className="settings-content-wrapper">
 
                             {activeTab === 'quick_add' && (
-                                <QuickAddSettings 
-                                    settings={user?.quick_add_settings ? JSON.parse(user.quick_add_settings) : null}
-                                    onSave={async (newSettings) => {
-                                        try {
-                                            const res = await authFetch(`${API_URL}/users/current`, {
-                                                method: 'PUT',
-                                                body: JSON.stringify({ quick_add_settings: newSettings })
-                                            });
-                                            if (res.ok) {
-                                                const updatedUser = await res.json();
-                                                updateUser(updatedUser);
+                                <div className="magic-reveal">
+                                    <QuickAddSettings 
+                                        settings={(() => {
+                                            try {
+                                                return typeof user?.quick_add_settings === 'string' 
+                                                    ? JSON.parse(user.quick_add_settings) 
+                                                    : user?.quick_add_settings;
+                                            } catch (e) {
+                                                return null;
                                             }
-                                        } catch (error) {
-                                            console.error('Error saving quick add settings:', error);
-                                        }
-                                    }}
-                                />
+                                        })()}
+                                        onSave={async (newSettings) => {
+                                            try {
+                                                const res = await authFetch(`${API_URL}/users/current`, {
+                                                    method: 'PUT',
+                                                    body: JSON.stringify({ quick_add_settings: newSettings })
+                                                });
+                                                if (res.ok) {
+                                                    const updatedUser = await res.json();
+                                                    updateUser(updatedUser);
+                                                    toast.success('הגדרות הוספה מהירה נשמרו');
+                                                } else {
+                                                    toast.error('שגיאה בשמירת ההגדרות');
+                                                }
+                                            } catch (err) {
+                                                console.error(err);
+                                                toast.error('שגיאת רשת בשמירת ההגדרות');
+                                            }
+                                        }}
+                                    />
+                                </div>
                             )}
 
-                            {/* Account Tab View */}
                             {activeTab === 'account' && (
-                                <div className="fade-in settings-page-container">
-                                    {/* Photo Section - Right Aligned */}
+                                <div className="magic-reveal settings-page-container">
                                     <div className="settings-section">
-                                        <h3 className="settings-section-title">תמונה</h3>
+                                        <h3 className="settings-section-title">תמונת פרופיל</h3>
                                         <div className="settings-avatar-section">
                                             <div 
                                                 className="settings-avatar-circle"
@@ -424,206 +303,122 @@ toast.error('אירעה שגיאה בעת עדכון ההגדרות.');
                                                     color: 'white'
                                                 }}
                                             >
-                                                {!avatarPreview && <User size={40} />}
+                                                {!avatarPreview && <User size={44} />}
                                             </div>
                                             <div className="settings-avatar-actions">
-                                                <button onClick={() => fileInputRef.current?.click()} className="btn-secondary" style={{ padding: '0.4rem 1.2rem', fontSize: '0.9rem', borderRadius: '8px', cursor: 'pointer' }}>
+                                                <button onClick={() => fileInputRef.current?.click()} className="btn-primary">
                                                     החלף תמונה
                                                 </button>
                                                 <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" style={{ display: 'none' }} />
-                                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>תמונה זו תהיה ציבורית (עד 5MB).</p>
+                                                <p className="text-secondary" style={{ fontSize: '0.85rem' }}>תמונה זו תהיה ציבורית.</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Name Section */}
                                     <div className="settings-section">
-                                        <h3 className="settings-section-title">שם</h3>
-                                        <input
-                                            type="text"
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                            placeholder="הכנס שם מלא"
-                                            className="settings-input"
-                                        />
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{username.length}/255</p>
-                                    </div>
-
-                                    {/* Email Section */}
-                                    <div className="settings-section">
-                                        <h3 className="settings-section-title">אימייל</h3>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <p style={{ margin: 0, fontSize: '1rem', color: email ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                                                {email || 'לא הוגדר אימייל'}
-                                            </p>
-                                            <button className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', borderRadius: '8px', cursor: 'pointer' }}>
-                                                החלף אימייל
-                                            </button>
+                                        <h3 className="settings-section-title">פרטים אישיים</h3>
+                                        <div className="settings-input-group">
+                                            <label className="settings-label">שם מלא</label>
+                                            <input
+                                                type="text"
+                                                value={username}
+                                                onChange={(e) => setUsername(e.target.value)}
+                                                className="settings-input"
+                                                placeholder="הכנס שם מלא"
+                                            />
                                         </div>
-                                        {user && !user.is_verified && email && (
-                                            <div style={{ 
-                                                marginTop: '0.75rem', 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                gap: '0.5rem', 
-                                                color: '#ef4444', 
-                                                fontSize: '0.85rem', 
-                                                fontWeight: 600,
-                                                background: 'rgba(239, 68, 68, 0.05)',
-                                                padding: '0.5rem 0.75rem',
-                                                borderRadius: '8px',
-                                                border: '1px solid rgba(239, 68, 68, 0.1)'
-                                            }}>
-                                                <ShieldCheck size={16} />
-                                                <span>האימייל טרם אומת. בדוק את תיבת המייל שלך או </span>
-                                                <button 
-                                                    onClick={resendVerification} 
-                                                    disabled={isResending}
-                                                    style={{ 
-                                                        background: 'none', 
-                                                        border: 'none', 
-                                                        color: 'var(--primary-color)', 
-                                                        padding: 0, 
-                                                        cursor: 'pointer', 
-                                                        fontWeight: 800, 
-                                                        fontSize: '0.85rem', 
-                                                        textDecoration: 'underline' 
-                                                    }}
-                                                >
-                                                    {isResending ? 'שולח...' : 'לחץ כאן לשליחה חוזרת'}
+                                        <div className="settings-input-group">
+                                            <label className="settings-label">אימייל</label>
+                                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                <input
+                                                    type="email"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    className="settings-input"
+                                                    disabled
+                                                />
+                                                <button className="btn-secondary">שנה</button>
+                                            </div>
+                                        </div>
+                                        {user && !user.is_verified && (
+                                            <div className="verification-banner">
+                                                <ShieldCheck size={18} />
+                                                <span>האימייל טרם אומת.</span>
+                                                <button onClick={resendVerification} disabled={isResending} className="btn-link">
+                                                    {isResending ? 'שולח...' : 'שלח שוב'}
                                                 </button>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Phone & WhatsApp Section */}
-                                    <div className="settings-section" style={{ padding: '1.5rem', background: 'rgba(37, 211, 102, 0.05)', borderRadius: '12px', border: '1px solid rgba(37, 211, 102, 0.2)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                    <div className="settings-whatsapp-box">
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <div>
-                                                <h3 className="settings-section-title" style={{ marginBottom: '0.25rem' }}>תזכורות בוואטסאפ</h3>
-                                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                    קבל הודעת וואטסאפ אוטומטית כשיש לך משימה.
+                                                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>תזכורות בוואטסאפ</h3>
+                                                <p className="text-secondary" style={{ margin: '0.25rem 0 0', fontSize: '0.85rem' }}>
+                                                    קבל הודעות אוטומטיות על משימות.
                                                 </p>
                                             </div>
-                                            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={whatsappEnabled}
-                                                    onChange={(e) => setWhatsappEnabled(e.target.checked)}
-                                                    style={{ opacity: 0, width: 0, height: 0 }}
-                                                />
-                                                <span style={{
-                                                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                                                    background: whatsappEnabled ? '#25D366' : 'var(--border-color)',
-                                                    transition: '.3s', borderRadius: '24px'
-                                                }}></span>
-                                                <span style={{
-                                                    position: 'absolute', content: '""', height: '18px', width: '18px',
-                                                    left: whatsappEnabled ? '4px' : '26px', bottom: '3px', background: 'white',
-                                                    transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                                }}></span>
+                                            <label className="premium-toggle">
+                                                <input type="checkbox" checked={whatsappEnabled} onChange={(e) => setWhatsappEnabled(e.target.checked)} />
+                                                <span className="premium-toggle-slider"></span>
                                             </label>
                                         </div>
                                         {whatsappEnabled && (
-                                            <div className="fade-in">
-                                                <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>מספר טלפון</h4>
+                                            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                <label className="settings-label">מספר טלפון</label>
                                                 <input
                                                     type="text"
                                                     value={phone}
                                                     onChange={(e) => setPhone(e.target.value)}
-                                                    placeholder="לדוגמה: 0541234567"
+                                                    placeholder="05XXXXXXXX"
                                                     className="settings-input"
                                                 />
-                                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem', margin: '0.5rem 0 0' }}>יש להזין מספר טלפון ישראלי על מנת לקבל תזכורות.</p>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Password Section */}
-                                    <div className="settings-section">
-                                        <h3 className="settings-section-title">סיסמה</h3>
-                                        <button className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', borderRadius: '8px', cursor: 'pointer' }}>
-                                            החלף סיסמה
-                                        </button>
-                                    </div>
-
-                                    {/* Danger Zone */}
-                                    <div style={{
-                                        marginTop: '4rem', padding: '2rem', borderRadius: '12px',
-                                        background: 'rgba(var(--danger-rgb), 0.05)', border: '1px solid var(--danger-color)'
-                                    }}>
-                                        <h3 style={{ fontSize: '1.05rem', margin: '0 0 0.5rem', color: 'var(--danger-color)' }}>מחק חשבון</h3>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '2rem' }}>
-                                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0, maxWidth: '400px' }}>
-                                                מחיקת חשבונך היא פעולה קבועה. אתה תאבד מיידית גישה לכל הנתונים שלך. הנתונים יישמרו במערכת למקרה של טעות אך לא תוכל להתחבר יותר.
-                                            </p>
-                                            <button 
-                                                type="button" 
-                                                className="btn" 
-                                                onClick={handleDeleteAccount}
-                                                disabled={isSaving}
-                                                style={{
-                                                    background: 'var(--danger-color)', border: '1px solid var(--danger-color)',
-                                                    color: 'white', padding: '0.6rem 1.2rem', fontSize: '0.9rem',
-                                                    whiteSpace: 'nowrap', borderRadius: '8px', fontWeight: 600, cursor: 'pointer'
-                                                }}
-                                            >
-                                                {isSaving ? 'מוחק...' : 'מחק חשבון'}
+                                    <div className="danger-zone">
+                                        <div className="danger-zone-header">
+                                            <div>
+                                                <h3 style={{ margin: 0, color: 'var(--danger-color)', fontSize: '1.1rem' }}>מחיקת חשבון</h3>
+                                                <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                                                    פעולה זו היא קבועה. כל הנתונים שלך יימחקו לצמיתות.
+                                                </p>
+                                            </div>
+                                            <button onClick={handleDeleteAccount} className="btn" style={{ background: 'var(--danger-color)', color: 'white' }}>
+                                                מחק חשבון
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                             {/* Notifications Tab */}
                              {activeTab === 'notifications' && (
-                                 <div className="fade-in settings-page-container">
+                                 <div className="magic-reveal settings-page-container">
                                      <div className="settings-section">
-                                         <h3 className="settings-section-title">התראות דפדפן (Push)</h3>
-                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                         <h3 className="settings-section-title">התראות דפדפן</h3>
+                                         <div className="settings-avatar-section" style={{ justifyContent: 'space-between' }}>
                                              <div>
-                                                 <h4 style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', color: 'var(--text-primary)' }}>קבלת התראות למכשיר</h4>
-                                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                     קבל התראות מערכת גם כאשר האפליקציה סגורה.
-                                                 </p>
+                                                 <h4 style={{ margin: 0 }}>התראות Push</h4>
+                                                 <p className="text-secondary" style={{ margin: '0.25rem 0 0', fontSize: '0.85rem' }}>קבל התראות גם כשהאתר סגור.</p>
                                              </div>
- 
-                                             {/* Beautiful Toggle Switch */}
-                                             <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px', cursor: 'pointer' }}>
-                                                 <input
-                                                     type="checkbox"
-                                                     checked={pushEnabled}
-                                                     onChange={handleTogglePushNotifications}
-                                                     style={{ opacity: 0, width: 0, height: 0 }}
-                                                 />
-                                                 <span style={{
-                                                     position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                                                     background: pushEnabled ? 'var(--primary-color)' : 'var(--border-color)',
-                                                     transition: '.3s', borderRadius: '24px'
-                                                 }}></span>
-                                                 <span style={{
-                                                     position: 'absolute', content: '""', height: '18px', width: '18px',
-                                                     left: pushEnabled ? '4px' : '26px', bottom: '3px', background: 'white',
-                                                     transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                                 }}></span>
+                                             <label className="premium-toggle">
+                                                 <input type="checkbox" checked={pushEnabled} onChange={handleTogglePushNotifications} />
+                                                 <span className="premium-toggle-slider"></span>
                                              </label>
                                          </div>
                                      </div>
                                  </div>
                              )}
 
-                             {/* Theme (עיצוב) Tab */}
                              {activeTab === 'theme' && (
-                                 <div className="fade-in settings-page-container">
-                                     <h3 className="settings-section-title">בחר ערכת נושא</h3>
-                                     <div style={{ 
-                                         display: 'grid', 
-                                         gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
-                                         gap: '1rem' 
-                                     }}>
+                                 <div className="magic-reveal settings-page-container">
+                                     <h3 className="settings-section-title">ערכת נושא</h3>
+                                     <div className="theme-grid">
                                          {[
                                              { id: 'light', label: 'בהיר', color: '#FFFFFF', icon: Sun },
-                                             { id: 'dark', label: 'כהה', color: '#1E293B', icon: Moon },
+                                             { id: 'dark', label: 'כהה', color: '#0F172A', icon: Moon },
                                              { id: 'relaxed', label: 'רגוע', color: '#FAF9F7', icon: Sparkles },
                                              { id: 'midnight', label: 'חצות', color: '#020617', icon: Sparkles },
                                              { id: 'forest', label: 'יער', color: '#064E3B', icon: Sparkles },
@@ -632,90 +427,36 @@ toast.error('אירעה שגיאה בעת עדכון ההגדרות.');
                                              <button
                                                  key={t.id}
                                                  onClick={() => changeTheme(t.id)}
-                                                 className={`theme-swatch ${theme === t.id ? 'active' : ''}`}
-                                                 style={{
-                                                     padding: '1rem',
-                                                     borderRadius: '12px',
-                                                     border: `2px solid ${theme === t.id ? 'var(--primary-color)' : 'var(--border-color)'}`,
-                                                     background: 'var(--bg-secondary)',
-                                                     cursor: 'pointer',
-                                                     display: 'flex',
-                                                     flexDirection: 'column',
-                                                     alignItems: 'center',
-                                                     gap: '0.75rem',
-                                                     transition: 'all 0.2s ease',
-                                                     boxShadow: theme === t.id ? '0 4px 12px rgba(var(--primary-rgb), 0.2)' : 'none',
-                                                     transform: theme === t.id ? 'scale(1.02)' : 'scale(1)'
-                                                 }}
+                                                 className={`theme-card ${theme === t.id ? 'active' : ''}`}
                                              >
-                                                 <div style={{
-                                                     width: '40px',
-                                                     height: '40px',
-                                                     borderRadius: '50%',
-                                                     background: t.color,
-                                                     border: '1px solid var(--border-color)',
-                                                     display: 'flex',
-                                                     alignItems: 'center',
-                                                     justifyContent: 'center',
-                                                     color: t.id === 'light' ? '#475569' : '#FFFFFF'
-                                                 }}>
-                                                     <t.icon size={20} />
+                                                 <div className="theme-preview-circle" style={{ background: t.color, color: t.id === 'light' ? '#475569' : '#FFFFFF' }}>
+                                                     <t.icon size={22} />
                                                  </div>
-                                                 <span style={{ 
-                                                     fontSize: '0.9rem', 
-                                                     fontWeight: 600, 
-                                                     color: 'var(--text-primary)' 
-                                                 }}>{t.label}</span>
+                                                 <span>{t.label}</span>
                                              </button>
                                          ))}
-                                     </div>
- 
-                                     <div className="settings-section" style={{ 
-                                         marginTop: '3rem', 
-                                         padding: '1.5rem', 
-                                         background: 'rgba(var(--primary-rgb), 0.05)', 
-                                         borderRadius: '12px',
-                                         border: '1px solid var(--border-color)'
-                                     }}>
-                                         <h4 style={{ margin: '0 0 0.5rem', color: 'var(--primary-color)' }}>טיפ לעיצוב</h4>
-                                         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                                             שינוי ערכת הנושא משפיע על כל חלקי האפליקציה. אנחנו ממליצים על גרסת ה"חצות" לעבודה בלילה כדי לשמור על העיניים.
-                                         </p>
                                      </div>
                                  </div>
                              )}
 
-                            {/* Other Tabs Placeholder */}
-                            {activeTab !== 'account' && activeTab !== 'notifications' && activeTab !== 'theme' && (
-                                <div className="fade-in" style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
-                                    <Settings size={48} opacity={0.2} style={{ margin: '0 auto 1rem' }} />
-                                    <h3>אזור בבנייה</h3>
-                                    <p>הגדרות עבור תפריט זה יהיו זמינות בקרוב.</p>
+                            {['general', 'subscription', 'sidebar', 'security'].includes(activeTab) && (
+                                <div className="fade-in" style={{ textAlign: 'center', padding: '4rem 0' }}>
+                                    <Settings size={48} className="text-secondary" style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
+                                    <h3>בקרוב</h3>
+                                    <p className="text-secondary">הגדרות אלו יהיו זמינות בעדכונים הבאים.</p>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                     {/* Truly Sticky Action Footer */}
-                     {hasChanges && (
-                         <div className="settings-footer fade-in slide-up">
-                             <button
-                                 onClick={() => { setUsername(user?.username || ''); setAvatarPreview(user?.profile_image || null); setEmail(user?.email || ''); setPhone(user?.phone || ''); setWhatsappEnabled(user?.whatsapp_enabled ? true : false); }}
-                                 className="btn-secondary"
-                                 style={{ width: '110px' }}
-                             >
-                                 ביטול
-                             </button>
-                             <button
-                                 onClick={handleSave}
-                                 className="btn-primary"
-                                 disabled={isSaving}
-                                 style={{ width: '110px' }}
-                             >
-                                 {isSaving ? 'שומר...' : 'שמור שינויים'}
-                             </button>
-                         </div>
-                     )}
+                    {hasChanges && (
+                        <div className="settings-footer fade-in slide-up">
+                            <button onClick={() => setUsername(user?.username || '')} className="btn-secondary">ביטול</button>
+                            <button onClick={handleSave} className="btn-primary" disabled={isSaving}>
+                                {isSaving ? 'שומר...' : 'שמור שינויים'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>,

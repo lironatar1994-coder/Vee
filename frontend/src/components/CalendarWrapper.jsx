@@ -34,6 +34,7 @@ const CalendarWrapper = ({
     onEventResize,
     onDatesSet,
     onMoreLinkClick,
+    initialDate,
     initialView = 'dayGridMonth',
     headerToolbar = {
         right: 'timeGridDay,timeGridWeek,dayGridMonth',
@@ -148,6 +149,7 @@ const CalendarWrapper = ({
             <FullCalendar
                 ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialDate={initialDate}
                 initialView={initialView}
                 locales={[DEFAULT_HE_LOCALE]}
                 locale="he"

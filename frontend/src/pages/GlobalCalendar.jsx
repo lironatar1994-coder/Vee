@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import CalendarWrapper from '../components/CalendarWrapper';
 import { ChevronDown, Loader2, X, Check, CheckCircle } from 'lucide-react';
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
+
+const getLocalDateString = (date) => {
+    if (!date) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
 
 // Helper to filter recurring tasks to only show "current or next" occurrence
 const filterRecurringTasks = (tasks) => {
@@ -79,7 +87,12 @@ const API_URL = '/api';
 const GlobalCalendar = () => {
     const { user, authFetch } = useUser();
     const navigate = useNavigate();
-    const [viewMode, setViewMode] = useState(() => localStorage.getItem('calendarViewMode') || 'weekly');
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const urlDate = searchParams.get('date');
+    const urlView = searchParams.get('view');
+
+    const [viewMode, setViewMode] = useState(() => urlView || localStorage.getItem('calendarViewMode') || 'weekly');
     const [events, setEvents] = useState(() => (user && cache.get(`calendar_events_monthly_${user.id}`)) || []);
     const [loading, setLoading] = useState(user ? !cache.get(`calendar_events_monthly_${user.id}`) : true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -90,6 +103,9 @@ const GlobalCalendar = () => {
     const viewDropdownRef = useRef(null);
     const calendarWrapperRef = useRef(null);
     const popoverRef = useRef(null);
+    
+    // Track if the current change was triggered by the URL sync to avoid pushState loops
+    const isURLSyncing = useRef(false);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -100,6 +116,34 @@ const GlobalCalendar = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Sync URL -> Calendar
+    useEffect(() => {
+        const api = calendarWrapperRef.current?.getApi();
+        if (!api) return;
+
+        // If the URL parameters have changed, update the calendar
+        const currentView = api.view.type;
+        const currentDate = getLocalDateString(api.getDate());
+
+        const targetView = urlView === 'monthly' ? 'dayGridMonth' : 
+                          urlView === 'weekly' ? 'timeGridWeek' : 
+                          urlView === 'daily' ? 'timeGridDay' : 
+                          (localStorage.getItem('calendarViewMode') === 'monthly' ? 'dayGridMonth' : 'timeGridWeek');
+
+        const targetDate = urlDate || getLocalDateString(new Date());
+
+        if (targetView && currentView !== targetView) {
+            isURLSyncing.current = true;
+            api.changeView(targetView);
+            setViewMode(urlView || (targetView === 'dayGridMonth' ? 'monthly' : 'weekly'));
+        }
+
+        if (targetDate && currentDate !== targetDate) {
+            isURLSyncing.current = true;
+            api.gotoDate(targetDate);
+        }
+    }, [urlDate, urlView]);
 
     const handleDragStart = (event) => {
         setActiveDragItem(event.active);
@@ -272,6 +316,25 @@ const GlobalCalendar = () => {
     };
 
     const handleDatesSet = useCallback((dateInfo) => {
+        const api = calendarWrapperRef.current?.getApi();
+        if (!api) return;
+
+        const visibleDate = getLocalDateString(api.getDate());
+        const visibleView = viewMode;
+
+        // Only update URL if this wasn't triggered by the URL sync itself
+        if (!isURLSyncing.current) {
+            if (visibleDate !== urlDate || visibleView !== urlView) {
+                // Determine if we should push or replace
+                // If there's no date in URL yet, it's the initial land, so replace.
+                const shouldReplace = !urlDate;
+                navigate(`/calendar?date=${visibleDate}&view=${visibleView}`, { replace: shouldReplace });
+            }
+        }
+        
+        // Reset the flag
+        isURLSyncing.current = false;
+
         // FullCalendar's datesSet gives us the visible range.
         const midDate = new Date((dateInfo.start.getTime() + dateInfo.end.getTime()) / 2);
         const y = midDate.getFullYear();
@@ -283,7 +346,7 @@ const GlobalCalendar = () => {
             setCurrentRange({ month: monthStr });
             fetchCalendarEvents(monthStr);
         }
-    }, [currentRange.month, authFetch, fetchCalendarEvents]);
+    }, [currentRange.month, urlDate, urlView, viewMode, navigate, fetchCalendarEvents]);
 
     useEffect(() => {
         const handleRefresh = () => {
@@ -662,6 +725,7 @@ const GlobalCalendar = () => {
                         isDraggingFAB={activeDragItem?.id === 'global-fab-draggable'}
                         events={finalEvents}
                         viewMode={viewMode}
+                        initialDate={urlDate || undefined}
                         onDateClick={(arg) => {
                             const dateStr = arg.dateStr.split('T')[0];
                             const timeStr = arg.dateStr.includes('T') ? arg.dateStr.split('T')[1].substring(0, 5) : null;
