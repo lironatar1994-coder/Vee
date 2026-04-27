@@ -635,7 +635,7 @@ const Inbox = () => {
                     </h1>
                 </div>
             }
-            headerActions={<div />}
+            headerActions={null}
 
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
@@ -650,6 +650,10 @@ const Inbox = () => {
                     <div style={{ padding: '0.5rem 0' }}>
                         <EmptyStateDropZone active={activeDragItem?.data?.current?.type === 'FAB'} checklistId="inbox" />
                         <ListDropSlot id="list-slot-0" activeType={activeDragItem?.data?.current?.type} />
+
+                        <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginTop: '1rem', opacity: 0.6 }}>
+                            תיבת המשימות שלך ריקה.
+                        </p>
 
                         {isCreatingList === true && (
                             <form 

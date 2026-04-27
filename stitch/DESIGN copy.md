@@ -59,7 +59,7 @@ typography:
     fontFamily: Manrope
     fontSize: 32px
     fontWeight: '700'
-    lineHeight: '1.2'
+    lineHeight: '1.2' 
     letterSpacing: -0.015em
   h2:
     fontFamily: Manrope
