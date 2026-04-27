@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
 import { subscribeToPushNotifications, unsubscribeFromPushNotifications } from '../services/NotificationService';
 import useHistoryModal from '../hooks/useHistoryModal';
+import QuickAddSettings from './TaskComponents/QuickAddSettings';
 
 const API_URL = '/api';
 
@@ -278,6 +279,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     const navItems = [
         { id: 'account', label: 'חשבון שלי', icon: User },
         { id: 'friends', label: 'חברים', icon: Users },
+        { id: 'quick_add', label: 'הוספה מהירה', icon: Sparkles },
         { id: 'general', label: 'כללי', icon: Settings },
         { id: 'subscription', label: 'מנוי', icon: CreditCard },
         { id: 'theme', label: 'עיצוב', icon: Palette },
@@ -450,6 +452,26 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                 }}>
                                     {navItems.find(i => i.id === activeTab)?.label}
                                 </h1>
+                            )}
+
+                            {activeTab === 'quick_add' && (
+                                <QuickAddSettings 
+                                    settings={user?.quick_add_settings ? JSON.parse(user.quick_add_settings) : null}
+                                    onSave={async (newSettings) => {
+                                        try {
+                                            const res = await authFetch(`${API_URL}/users/current`, {
+                                                method: 'PUT',
+                                                body: JSON.stringify({ quick_add_settings: newSettings })
+                                            });
+                                            if (res.ok) {
+                                                const updatedUser = await res.json();
+                                                updateUser(updatedUser);
+                                            }
+                                        } catch (error) {
+                                            console.error('Error saving quick add settings:', error);
+                                        }
+                                    }}
+                                />
                             )}
 
                             {/* Account Tab View */}

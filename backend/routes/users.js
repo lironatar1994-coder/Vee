@@ -69,6 +69,7 @@ router.put('/:id', async (req, res) => {
         if (email !== undefined) { updates.push('email = ?'); params.push(email); }
         if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
         if (whatsapp_enabled !== undefined) { updates.push('whatsapp_enabled = ?'); params.push(whatsapp_enabled ? 1 : 0); }
+        if (req.body.quick_add_settings !== undefined) { updates.push('quick_add_settings = ?'); params.push(JSON.stringify(req.body.quick_add_settings)); }
         
         if (password) { 
             const hash = await hashPassword(password);

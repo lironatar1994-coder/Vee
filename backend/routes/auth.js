@@ -125,7 +125,7 @@ router.post('/login', async (req, res) => {
     try {
         // 1. Find user by any identifier
         const user = db.prepare(
-            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded, failed_login_attempts, lockout_until, is_deleted FROM users WHERE email = ? OR phone = ? OR username = ?'
+            'SELECT id, username, email, phone, password_hash, profile_image, invited_by, whatsapp_enabled, is_onboarded, failed_login_attempts, lockout_until, is_deleted, quick_add_settings FROM users WHERE email = ? OR phone = ? OR username = ?'
         ).get(identifier, identifier, identifier);
 
         if (!user) {

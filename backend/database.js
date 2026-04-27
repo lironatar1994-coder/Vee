@@ -381,6 +381,12 @@ const initDb = () => {
     db.exec('ALTER TABLE users ADD COLUMN whatsapp_enabled BOOLEAN DEFAULT 0');
   }
 
+  // Migration: Add quick_add_settings to users if missing
+  const hasQuickAddSettings = tableInfoUsers.some(col => col.name === 'quick_add_settings');
+  if (!hasQuickAddSettings) {
+    db.exec('ALTER TABLE users ADD COLUMN quick_add_settings TEXT');
+  }
+
   // Migration: Add whatsapp_last_sent_date to checklist_items if missing
   const hasWhatsappLastSentDate = tableInfoItems.some(col => col.name === 'whatsapp_last_sent_date');
   if (!hasWhatsappLastSentDate) {

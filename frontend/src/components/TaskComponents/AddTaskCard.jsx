@@ -16,6 +16,11 @@ const AddTaskCard = ({ newItemContent: propContent, setNewItemContent: propSetCo
     const { user, authFetch } = useUser();
     const { theme } = useTheme();
 
+    const quickAddSettings = user?.quick_add_settings ? JSON.parse(user.quick_add_settings) : null;
+    const showLabels = quickAddSettings?.showLabels ?? true;
+    const enabledActions = quickAddSettings?.actions?.filter(a => a.enabled).map(a => a.id) || ['date', 'priority', 'reminders', 'description'];
+    const actionOrder = quickAddSettings?.actions?.map(a => a.id) || ['date', 'priority', 'reminders', 'description'];
+
     // Internal state if props are not provided
     const [internalContent, setInternalContent] = useState('');
     const [internalDate, setInternalDate] = useState('');
@@ -266,353 +271,386 @@ const AddTaskCard = ({ newItemContent: propContent, setNewItemContent: propSetCo
                     />
                 </div>
 
-                <textarea
-                    placeholder="תיאור..."
-                    value={description}
-                    onChange={e => {
-                        setDescription(e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onFocus={(e) => {
-                        setIsFocused(true);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onBlur={() => setIsFocused(false)}
-                    style={{ 
-                        width: '100%', border: 'none', outline: 'none', resize: 'none',
-                        fontSize: '0.85rem', fontWeight: 400, background: 'transparent', 
-                        color: 'var(--text-secondary)', padding: 0, margin: '2px 0 8px 0',
-                        minHeight: '1.4em',
-                        lineHeight: '1.4',
-                        overflow: 'hidden',
-                        fontFamily: 'inherit',
-                        opacity: description || isFocused ? 1 : 0.6,
-                        transition: 'opacity 0.2s ease',
-                    }}
-                    rows={1}
-                />
-            </div>
-
-            <div style={{ padding: '0.2rem 0.6rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-start', direction: 'rtl' }}>
-
-                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-color)', transition: 'var(--transition)' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-color)'}
-                    >
-                        <button
-                            ref={dateBtnRef}
-                            type="button"
-                            onClick={() => {
-                                setShowDateDropdown(!showDateDropdown);
-                                setShowPriorityMenu(false);
-                                setShowReminderMenu(false);
-                                setShowProjectSelector(false);
-                            }}
-                            style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                                padding: newItemDate ? '0.3rem 0.6rem 0.3rem 0.2rem' : '0.3rem 0.6rem',
-                                border: 'none',
-                                background: 'transparent',
-                                color: newItemDate ? getDateDisplayInfo(newItemDate).color : 'var(--text-secondary)',
-                                cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap',
-                                fontFamily: 'inherit',
-                                fontWeight: 500
-                            }}
-                        >
-                            <CalendarIcon size={14} style={{ opacity: 0.8 }} />
-                            {newItemDate ? getFullDateDisplay(newItemDate, repeatRule, time).text : 'תאריך'}
-                            {repeatRule && repeatRule !== 'none' && <RefreshCw size={12} style={{ opacity: 0.8, marginRight: '4px' }} />}
-                        </button>
-                        {newItemDate && (
-                            <div style={{ padding: '0 0.15rem 0 0.15rem', display: 'flex', alignItems: 'center' }}>
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setNewItemDate('');
-                                        setTime('');
-                                        setRepeatRule(null);
-                                        setShowDateDropdown(false);
-                                    }}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        padding: '0.15rem',
-                                        borderRadius: 'var(--radius-sm)',
-                                        border: 'none',
-                                        background: 'transparent',
-                                        color: 'var(--text-secondary)',
-                                        cursor: 'pointer',
-                                        transition: 'background 0.2s, color 0.2s',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = 'var(--hover-bg)';
-                                        e.currentTarget.style.color = 'var(--text-primary)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = 'transparent';
-                                        e.currentTarget.style.color = 'var(--text-secondary)';
-                                    }}
+                {enabledActions.includes('description') && (
+                    <textarea
+                        placeholder="תיאור..."
+                        value={description}
+                        onChange={e => {
+                            setDescription(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onFocus={(e) => {
+                            setIsFocused(true);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onBlur={() => setIsFocused(false)}
+                        style={{ 
+                            width: '100%', border: 'none', outline: 'none', resize: 'none',
+                            fontSize: '0.85rem', fontWeight: 400, background: 'transparent', 
+                            color: 'var(--text-secondary)', padding: 0, margin: '2px 0 8px 0',
+                            minHeight: '1.4em',
+                            lineHeight: '1.4',
+                            overflow: 'hidden',
+                            fontFamily: 'inherit',
+                            opacity: description || isFocused ? 1 : 0.6,
+                            transition: 'opacity 0.2s ease',
+                        }}
+                        rows={1}
+                    />
+                )}
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {actionOrder.filter(id => enabledActions.includes(id)).map(actionId => {
+                        if (actionId === 'date') {
+                            return (
+                                <div key="date" style={{ position: 'relative', display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-color)', transition: 'var(--transition)' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-color)'}
                                 >
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        )}
-
-                        <DatePickerDropdown
-                            isOpen={showDateDropdown}
-                            onClose={() => setShowDateDropdown(false)}
-                            anchorRef={dateBtnRef}
-                            selectedDate={newItemDate}
-                            selectedTime={time}
-                            onSelectDate={(date) => {
-                                setNewItemDate(date);
-                                setTimeout(() => {
-                                    if (inputContainerRef.current) {
-                                        const input = inputContainerRef.current.querySelector('.smart-input-area');
-                                        if (input) input.focus();
-                                    }
-                                }, 10);
-                            }}
-                        >
-                            <div style={{ padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                <div style={{ position: 'relative' }}>
-                                    <button type="button" onClick={(e) => { e.stopPropagation(); setShowTimeMenu(!showTimeMenu); setShowRepeatMenu(false); }}
-                                        ref={timeBtnRef}
-                                        style={bottomBtn(!!time)}
-                                        onMouseEnter={e => { if (!time) e.currentTarget.style.background = 'var(--hover-bg)'; }}
-                                        onMouseLeave={e => { if (!time) e.currentTarget.style.background = 'var(--bg-color)'; }}>
-                                        <Clock size={15} />
-                                        {time || 'זמן'}
+                                    <button
+                                        ref={dateBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowDateDropdown(!showDateDropdown);
+                                            setShowPriorityMenu(false);
+                                            setShowReminderMenu(false);
+                                            setShowProjectSelector(false);
+                                        }}
+                                        style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                                            padding: (newItemDate && showLabels) ? '0.3rem 0.6rem 0.3rem 0.2rem' : '0.3rem 0.6rem',
+                                            border: 'none',
+                                            background: 'transparent',
+                                            color: newItemDate ? getDateDisplayInfo(newItemDate).color : 'var(--text-secondary)',
+                                            cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap',
+                                            fontFamily: 'inherit',
+                                            fontWeight: 500
+                                        }}
+                                    >
+                                        <CalendarIcon size={14} style={{ opacity: 0.8 }} />
+                                        {(newItemDate || showLabels) && (
+                                            <>
+                                                {newItemDate ? getFullDateDisplay(newItemDate, repeatRule, time).text : 'תאריך'}
+                                            </>
+                                        )}
+                                        {repeatRule && repeatRule !== 'none' && <RefreshCw size={12} style={{ opacity: 0.8, marginRight: '4px' }} />}
                                     </button>
+                                    {newItemDate && (
+                                        <div style={{ padding: '0 0.15rem 0 0.15rem', display: 'flex', alignItems: 'center' }}>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setNewItemDate('');
+                                                    setTime('');
+                                                    setRepeatRule(null);
+                                                    setShowDateDropdown(false);
+                                                }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    padding: '0.15rem',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    color: 'var(--text-secondary)',
+                                                    cursor: 'pointer',
+                                                    transition: 'background 0.2s, color 0.2s',
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = 'var(--hover-bg)';
+                                                    e.currentTarget.style.color = 'var(--text-primary)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = 'transparent';
+                                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                                }}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    )}
 
-                                    <TimePickerDropdown
-                                        isOpen={showTimeMenu}
-                                        onClose={() => setShowTimeMenu(false)}
-                                        anchorRef={timeBtnRef}
-                                        initialTime={time}
-                                        timeOptions={TIME_OPTIONS}
-                                        onSave={(val) => setTime(val)}
-                                    />
+                                    <DatePickerDropdown
+                                        isOpen={showDateDropdown}
+                                        onClose={() => setShowDateDropdown(false)}
+                                        anchorRef={dateBtnRef}
+                                        selectedDate={newItemDate}
+                                        selectedTime={time}
+                                        onSelectDate={(date) => {
+                                            setNewItemDate(date);
+                                            setTimeout(() => {
+                                                if (inputContainerRef.current) {
+                                                    const input = inputContainerRef.current.querySelector('.smart-input-area');
+                                                    if (input) input.focus();
+                                                }
+                                            }, 10);
+                                        }}
+                                    >
+                                        <div style={{ padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                            <div style={{ position: 'relative' }}>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); setShowTimeMenu(!showTimeMenu); setShowRepeatMenu(false); }}
+                                                    ref={timeBtnRef}
+                                                    style={bottomBtn(!!time)}
+                                                    onMouseEnter={e => { if (!time) e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                                                    onMouseLeave={e => { if (!time) e.currentTarget.style.background = 'var(--bg-color)'; }}>
+                                                    <Clock size={15} />
+                                                    {time || 'זמן'}
+                                                </button>
+
+                                                <TimePickerDropdown
+                                                    isOpen={showTimeMenu}
+                                                    onClose={() => setShowTimeMenu(false)}
+                                                    anchorRef={timeBtnRef}
+                                                    initialTime={time}
+                                                    timeOptions={TIME_OPTIONS}
+                                                    onSave={(val) => setTime(val)}
+                                                />
+                                            </div>
+
+                                            <div style={{ position: 'relative' }}>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); setShowRepeatMenu(!showRepeatMenu); setShowTimeMenu(false); }}
+                                                    style={bottomBtn(!!repeatRule)}
+                                                    onMouseEnter={e => { if (!repeatRule) e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                                                    onMouseLeave={e => { if (!repeatRule) e.currentTarget.style.background = 'var(--bg-color)'; }}>
+                                                    <RefreshCw size={15} />
+                                                    {repeatRule ? repeatLabels[repeatRule] : 'חזרה'}
+                                                </button>
+
+                                                {showRepeatMenu && (
+                                                    <div style={{
+                                                        position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0,
+                                                        background: 'var(--bg-secondary)',
+                                                        border: '1px solid var(--border-color)',
+                                                        borderRadius: '10px',
+                                                        boxShadow: 'var(--card-shadow)',
+                                                        overflow: 'hidden', zIndex: 1000,
+                                                        backdropFilter: 'blur(10px)',
+                                                        WebkitBackdropFilter: 'blur(10px)',
+                                                    }}>
+                                                        {repeatOptions.map((opt, i) => (
+                                                            <button key={i} onClick={() => { setRepeatRule(opt.value === 'custom' ? null : opt.value); setShowRepeatMenu(false); }}
+                                                                style={{
+                                                                    display: 'block', width: '100%', padding: '0.6rem 1rem', border: 'none',
+                                                                    background: repeatRule === opt.value ? 'var(--dropdown-selected)' : 'transparent',
+                                                                    cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.87rem',
+                                                                    textAlign: 'right', fontFamily: 'inherit',
+                                                                    fontWeight: repeatRule === opt.value ? 600 : 400,
+                                                                    transition: 'background 0.1s',
+                                                                }}
+                                                                onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                                                                onMouseLeave={e => e.currentTarget.style.background = repeatRule === opt.value ? 'var(--hover-bg)' : 'transparent'}>
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                        {repeatRule && (
+                                                            <>
+                                                                <div style={{ height: '1px', background: 'var(--border-color)' }} />
+                                                                <button onClick={() => { setRepeatRule(null); setShowRepeatMenu(false); }}
+                                                                    style={{
+                                                                        display: 'block', width: '100%', padding: '0.6rem 1rem', border: 'none',
+                                                                        background: 'transparent', cursor: 'pointer', color: '#d1453b', fontSize: '0.87rem',
+                                                                        textAlign: 'right', fontWeight: 500, fontFamily: 'inherit',
+                                                                        transition: 'background 0.12s',
+                                                                    }}
+                                                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                                                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                                    הסר חזרה
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {time && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>משך (דקות):</span>
+                                                    <select
+                                                        value={duration}
+                                                        onChange={(e) => setDuration(parseInt(e.target.value))}
+                                                        style={{
+                                                            padding: '0.2rem',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid var(--border-color)',
+                                                            fontSize: '0.8rem',
+                                                            flexGrow: 1
+                                                        }}
+                                                    >
+                                                        <option value={15}>15 דק׳</option>
+                                                        <option value={30}>30 דק׳</option>
+                                                        <option value={45}>45 דק׳</option>
+                                                        <option value={60}>שעה</option>
+                                                        <option value={90}>שעה וחצי</option>
+                                                        <option value={120}>שעתיים</option>
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </DatePickerDropdown>
                                 </div>
+                            );
+                        }
 
-                                <div style={{ position: 'relative' }}>
-                                    <button type="button" onClick={(e) => { e.stopPropagation(); setShowRepeatMenu(!showRepeatMenu); setShowTimeMenu(false); }}
-                                        style={bottomBtn(!!repeatRule)}
-                                        onMouseEnter={e => { if (!repeatRule) e.currentTarget.style.background = 'var(--hover-bg)'; }}
-                                        onMouseLeave={e => { if (!repeatRule) e.currentTarget.style.background = 'var(--bg-color)'; }}>
-                                        <RefreshCw size={15} />
-                                        {repeatRule ? repeatLabels[repeatRule] : 'חזרה'}
+                        if (actionId === 'priority') {
+                            return (
+                                <div key="priority" style={{ position: 'relative' }}>
+                                    <button
+                                        ref={priorityBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowPriorityMenu(!showPriorityMenu);
+                                            setShowReminderMenu(false);
+                                            setShowDateDropdown(false);
+                                            setShowProjectSelector(false);
+                                        }}
+                                        style={{
+                                            ...pillStyle(priority !== 4, priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : priority === 3 ? 'var(--priority-3)' : null),
+                                            transition: 'var(--transition)'
+                                        }}
+                                        onMouseEnter={e => !showPriorityMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
+                                        onMouseLeave={e => !showPriorityMenu && (e.currentTarget.style.background = priority !== 4 ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
+                                    >
+                                        <Flag size={14} style={{ opacity: priority !== 4 ? 1 : 0.8 }} />
+                                        {(priority !== 4 || showLabels) && (
+                                            <>
+                                                {priority === 1 ? 'עדיפות 1' : priority === 2 ? 'עדיפות 2' : priority === 3 ? 'עדיפות 3' : 'עדיפות'}
+                                            </>
+                                        )}
                                     </button>
 
-                                    {showRepeatMenu && (
+                                    {showPriorityMenu && (
                                         <div style={{
-                                            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0,
+                                            position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
                                             background: 'var(--bg-secondary)',
                                             border: '1px solid var(--border-color)',
-                                            borderRadius: '10px',
+                                            borderRadius: '8px',
                                             boxShadow: 'var(--card-shadow)',
-                                            overflow: 'hidden', zIndex: 1000,
+                                            overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
+                                            minWidth: '150px',
                                             backdropFilter: 'blur(10px)',
                                             WebkitBackdropFilter: 'blur(10px)',
                                         }}>
-                                            {repeatOptions.map((opt, i) => (
-                                                <button key={i} onClick={() => { setRepeatRule(opt.value === 'custom' ? null : opt.value); setShowRepeatMenu(false); }}
-                                                    style={{
-                                                        display: 'block', width: '100%', padding: '0.6rem 1rem', border: 'none',
-                                                        background: repeatRule === opt.value ? 'var(--dropdown-selected)' : 'transparent',
-                                                        cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.87rem',
-                                                        textAlign: 'right', fontFamily: 'inherit',
-                                                        fontWeight: repeatRule === opt.value ? 600 : 400,
-                                                        transition: 'background 0.1s',
+                                            {[
+                                                { level: 1, label: 'עדיפות 1', color: 'var(--priority-1)' },
+                                                { level: 2, label: 'עדיפות 2', color: 'var(--priority-2)' },
+                                                { level: 3, label: 'עדיפות 3', color: 'var(--priority-3)' },
+                                                { level: 4, label: 'עדיפות 4', color: 'var(--text-secondary)' }
+                                            ].map(p => (
+                                                <button
+                                                    key={p.level}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setPriority(p.level);
+                                                        setShowPriorityMenu(false);
                                                     }}
-                                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                                                    onMouseLeave={e => e.currentTarget.style.background = repeatRule === opt.value ? 'var(--hover-bg)' : 'transparent'}>
-                                                    {opt.label}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                                        width: '100%', padding: '0.6rem 0.8rem', border: 'none',
+                                                        background: priority === p.level ? 'var(--dropdown-selected)' : 'transparent',
+                                                        cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
+                                                        borderBottom: p.level !== 4 ? '1px solid var(--border-color)' : 'none',
+                                                        transition: 'background 0.15s'
+                                                    }}
+                                                    onMouseEnter={e => {
+                                                        if (priority !== p.level) e.currentTarget.style.background = 'var(--dropdown-hover)';
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        if (priority !== p.level) e.currentTarget.style.background = 'transparent';
+                                                        else e.currentTarget.style.background = 'var(--dropdown-selected)';
+                                                    }}
+                                                >
+                                                    <Flag size={14} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
+                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: priority === p.level ? 600 : 400 }}>{p.label}</span>
                                                 </button>
                                             ))}
-                                            {repeatRule && (
-                                                <>
-                                                    <div style={{ height: '1px', background: 'var(--border-color)' }} />
-                                                    <button onClick={() => { setRepeatRule(null); setShowRepeatMenu(false); }}
-                                                        style={{
-                                                            display: 'block', width: '100%', padding: '0.6rem 1rem', border: 'none',
-                                                            background: 'transparent', cursor: 'pointer', color: '#d1453b', fontSize: '0.87rem',
-                                                            textAlign: 'right', fontWeight: 500, fontFamily: 'inherit',
-                                                            transition: 'background 0.12s',
-                                                        }}
-                                                        onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                                        הסר חזרה
-                                                    </button>
-                                                </>
-                                            )}
                                         </div>
                                     )}
                                 </div>
+                            );
+                        }
 
-                                {time && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>משך (דקות):</span>
-                                        <select
-                                            value={duration}
-                                            onChange={(e) => setDuration(parseInt(e.target.value))}
-                                            style={{
-                                                padding: '0.2rem',
-                                                borderRadius: '4px',
-                                                border: '1px solid var(--border-color)',
-                                                fontSize: '0.8rem',
-                                                flexGrow: 1
-                                            }}
-                                        >
-                                            <option value={15}>15 דק׳</option>
-                                            <option value={30}>30 דק׳</option>
-                                            <option value={45}>45 דק׳</option>
-                                            <option value={60}>שעה</option>
-                                            <option value={90}>שעה וחצי</option>
-                                            <option value={120}>שעתיים</option>
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-                        </DatePickerDropdown>
-                    </div>
-
-                    <div style={{ position: 'relative' }}>
-                        <button
-                            ref={priorityBtnRef}
-                            type="button"
-                            onClick={() => {
-                                setShowPriorityMenu(!showPriorityMenu);
-                                setShowReminderMenu(false);
-                                setShowDateDropdown(false);
-                                setShowProjectSelector(false);
-                            }}
-                            style={{
-                                ...pillStyle(priority !== 4, priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : priority === 3 ? 'var(--priority-3)' : null),
-                                transition: 'var(--transition)'
-                            }}
-                            onMouseEnter={e => !showPriorityMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
-                            onMouseLeave={e => !showPriorityMenu && (e.currentTarget.style.background = priority !== 4 ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
-                        >
-                            <Flag size={14} style={{ opacity: priority !== 4 ? 1 : 0.8 }} />
-                            {priority === 1 ? 'עדיפות 1' : priority === 2 ? 'עדיפות 2' : priority === 3 ? 'עדיפות 3' : 'עדיפות'}
-                        </button>
-
-                        {showPriorityMenu && (
-                            <div style={{
-                                position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
-                                background: 'var(--bg-secondary)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '8px',
-                                boxShadow: 'var(--card-shadow)',
-                                overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
-                                minWidth: '150px',
-                                backdropFilter: 'blur(10px)',
-                                WebkitBackdropFilter: 'blur(10px)',
-                            }}>
-                                {[
-                                    { level: 1, label: 'עדיפות 1', color: 'var(--priority-1)' },
-                                    { level: 2, label: 'עדיפות 2', color: 'var(--priority-2)' },
-                                    { level: 3, label: 'עדיפות 3', color: 'var(--priority-3)' },
-                                    { level: 4, label: 'עדיפות 4', color: 'var(--text-secondary)' }
-                                ].map(p => (
+                        if (actionId === 'reminders') {
+                            return (
+                                <div key="reminders" style={{ position: 'relative' }}>
                                     <button
-                                        key={p.level}
                                         type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setPriority(p.level);
+                                        onClick={() => {
+                                            setShowReminderMenu(!showReminderMenu);
                                             setShowPriorityMenu(false);
+                                            setShowDateDropdown(false);
+                                            setShowProjectSelector(false);
                                         }}
                                         style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.6rem',
-                                            width: '100%', padding: '0.6rem 0.8rem', border: 'none',
-                                            background: priority === p.level ? 'var(--dropdown-selected)' : 'transparent',
-                                            cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
-                                            borderBottom: p.level !== 4 ? '1px solid var(--border-color)' : 'none',
-                                            transition: 'background 0.15s'
+                                            ...pillStyle(reminderMinutes !== null),
+                                            transition: 'var(--transition)'
                                         }}
-                                        onMouseEnter={e => {
-                                            if (priority !== p.level) e.currentTarget.style.background = 'var(--dropdown-hover)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (priority !== p.level) e.currentTarget.style.background = 'transparent';
-                                            else e.currentTarget.style.background = 'var(--dropdown-selected)';
-                                        }}
+                                        onMouseEnter={e => !showReminderMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
+                                        onMouseLeave={e => !showReminderMenu && (e.currentTarget.style.background = reminderMinutes !== null ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
                                     >
-                                        <Flag size={14} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: priority === p.level ? 600 : 400 }}>{p.label}</span>
+                                        <Bell size={14} style={{ 
+                                            opacity: reminderMinutes !== null ? 1 : 0.8,
+                                            color: reminderMinutes !== null ? 'var(--primary-color)' : 'inherit'
+                                        }} />
+                                        {(reminderMinutes !== null || showLabels) && (
+                                            <>
+                                                {reminderMinutes === null ? 'תזכורת' : reminderOptions.find(o => o.value === reminderMinutes)?.label}
+                                            </>
+                                        )}
                                     </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
 
-                    <div style={{ position: 'relative' }}>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setShowReminderMenu(!showReminderMenu);
-                                setShowPriorityMenu(false);
-                                setShowDateDropdown(false);
-                                setShowProjectSelector(false);
-                            }}
-                            style={{
-                                ...pillStyle(reminderMinutes !== null),
-                                transition: 'var(--transition)'
-                            }}
-                            onMouseEnter={e => !showReminderMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
-                            onMouseLeave={e => !showReminderMenu && (e.currentTarget.style.background = reminderMinutes !== null ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
-                        >
-                            <Bell size={14} style={{ 
-                                opacity: reminderMinutes !== null ? 1 : 0.8,
-                                color: reminderMinutes !== null ? 'var(--primary-color)' : 'inherit'
-                            }} />
-                            {reminderMinutes === null ? 'תזכורת' : reminderOptions.find(o => o.value === reminderMinutes)?.label}
-                        </button>
+                                    {showReminderMenu && (
+                                        <div style={{
+                                            position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
+                                            background: theme === 'dark' ? '#1e293b' : '#ffffff',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '8px',
+                                            boxShadow: theme === 'dark' ? '0 15px 45px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.12)',
+                                            overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
+                                            minWidth: '150px',
+                                            backdropFilter: 'blur(10px)',
+                                            WebkitBackdropFilter: 'blur(10px)',
+                                        }}>
+                                            {reminderOptions.map(opt => (
+                                                <button
+                                                    key={opt.value === null ? 'null' : opt.value}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setReminderMinutes(opt.value);
+                                                        setShowReminderMenu(false);
+                                                    }}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                                        width: '100%', padding: '0.6rem 0.8rem', border: 'none',
+                                                        background: reminderMinutes === opt.value ? 'var(--dropdown-selected)' : 'transparent',
+                                                        cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
+                                                        borderBottom: opt.value !== 1440 ? '1px solid var(--border-color)' : 'none',
+                                                        transition: 'background 0.15s'
+                                                    }}
+                                                    onMouseEnter={e => {
+                                                        if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'var(--dropdown-hover)';
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'transparent';
+                                                        else e.currentTarget.style.background = 'var(--dropdown-selected)';
+                                                    }}
+                                                >
+                                                    <Bell size={14} style={{ color: reminderMinutes === opt.value ? 'var(--primary-color)' : 'var(--text-secondary)' }} />
+                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
 
-                        {showReminderMenu && (
-                            <div style={{
-                                position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
-                                background: theme === 'dark' ? '#1e293b' : '#ffffff',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '8px',
-                                boxShadow: theme === 'dark' ? '0 15px 45px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.12)',
-                                overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
-                                minWidth: '150px',
-                                backdropFilter: 'blur(10px)',
-                                WebkitBackdropFilter: 'blur(10px)',
-                            }}>
-                                {reminderOptions.map(opt => (
-                                    <button
-                                        key={opt.value === null ? 'null' : opt.value}
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setReminderMinutes(opt.value);
-                                            setShowReminderMenu(false);
-                                        }}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.6rem',
-                                            width: '100%', padding: '0.6rem 0.8rem', border: 'none',
-                                            background: reminderMinutes === opt.value ? 'var(--dropdown-selected)' : 'transparent',
-                                            cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
-                                            borderBottom: opt.value !== 1440 ? '1px solid var(--border-color)' : 'none',
-                                            transition: 'background 0.15s'
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'var(--dropdown-hover)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'transparent';
-                                            else e.currentTarget.style.background = 'var(--dropdown-selected)';
-                                        }}
-                                    >
-                                        <Bell size={14} style={{ color: reminderMinutes === opt.value ? 'var(--primary-color)' : 'var(--text-secondary)' }} />
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
+                        return null;
+                    })}
+                </div>
+--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
                                     </button>
                                 ))}
                             </div>
