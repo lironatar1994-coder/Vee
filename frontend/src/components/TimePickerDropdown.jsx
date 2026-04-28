@@ -182,9 +182,12 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                 position: 'fixed', top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px`,
                 width: isMobile ? 'calc(100vw - 32px)' : '320px', maxWidth: '320px',
                 background: theme === 'dark' ? '#1e293b' : '#ffffff', border: '1px solid var(--border-color)',
-                borderRadius: '12px', boxShadow: theme === 'dark' ? '0 15px 50px rgba(0,0,0,0.6)' : '0 10px 30px rgba(0,0,0,0.12)',
+                borderRadius: '12px', boxShadow: 'var(--card-shadow)',
                 zIndex: 99999, display: 'flex', flexDirection: 'column', padding: '0',
-                fontFamily: 'inherit', direction: 'rtl', visibility: dropdownPos.visible ? 'visible' : 'hidden', animation: 'fadeIn 0.1s ease',
+                fontFamily: 'inherit', direction: 'rtl', visibility: dropdownPos.visible ? 'visible' : 'hidden', 
+                animation: 'slideUpFade 0.2s var(--ease-premium)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
             }}
             onClick={(e) => e.stopPropagation()}
         >

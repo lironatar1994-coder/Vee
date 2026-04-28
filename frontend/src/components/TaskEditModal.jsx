@@ -10,7 +10,10 @@ import {
 import DatePickerDropdown from './DatePickerDropdown';
 import TimePickerDropdown from './TimePickerDropdown';
 import SmartInput from './SmartInput';
-import { renderFormattedDate, TIME_OPTIONS, repeatOptions, repeatLabels, getFullDateDisplay, getDateDisplayInfo } from './TaskComponents/index.jsx';
+import {
+    renderFormattedDate, TIME_OPTIONS, repeatOptions, repeatLabels, getFullDateDisplay, getDateDisplayInfo,
+    PrioritySelectorDropdown, ReminderSelectorDropdown, RepeatSelectorDropdown
+} from './TaskComponents/index.jsx';
 import useHistoryModal from '../hooks/useHistoryModal';
 import ProjectSelectorDropdown from './TaskComponents/ProjectSelectorDropdown';
 import ActionMenu from './TaskComponents/ActionMenu';
@@ -806,31 +809,16 @@ export default function TaskEditModal({
                                     {repeatRule ? repeatLabels[repeatRule] : 'חזרה'}
                                 </button>
 
-                                {showRepeatMenu && (
-                                    <div style={{
-                                        position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0,
-                                        background: 'var(--bg-color)', border: '1px solid var(--border-color)',
-                                        borderRadius: '10px', boxShadow: '0 -6px 24px rgba(0,0,0,0.12)',
-                                        overflow: 'hidden', zIndex: 220,
-                                    }}>
-                                        {repeatOptions.map((opt, i) => (
-                                            <button key={i} onClick={() => {
-                                                const val = opt.value === 'none' ? null : opt.value;
-                                                setRepeatRule(val);
-                                                setShowRepeatMenu(false);
-                                                if (onSave) onSave({ content, description, target_date: targetDate || null, time, repeat_rule: val });
-                                            }}
-                                                style={{
-                                                    display: 'block', width: '100%', padding: '0.6rem 1rem', border: 'none',
-                                                    background: repeatRule === opt.value ? 'var(--bg-secondary)' : 'transparent',
-                                                    cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.87rem',
-                                                    textAlign: 'right', fontFamily: 'inherit', fontWeight: repeatRule === opt.value ? 600 : 400
-                                                }}>
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                                <RepeatSelectorDropdown
+                                    isOpen={showRepeatMenu}
+                                    onClose={() => setShowRepeatMenu(false)}
+                                    anchorRef={timeBtnRef} // Reusing timeBtnRef or similar
+                                    repeatRule={repeatRule}
+                                    onSelect={(val) => {
+                                        setRepeatRule(val);
+                                        if (onSave) onSave({ content, description, target_date: targetDate || null, time, repeat_rule: val });
+                                    }}
+                                />
                             </div>
                         </div>
                     </DatePickerDropdown>
@@ -858,48 +846,16 @@ export default function TaskEditModal({
                             </span>
                         </button>
 
-                        {showPriorityMenu && (
-                            <div ref={priorityMenuRef} style={{
-                                position: 'absolute', top: 'calc(100% - 4px)', left: '1.25rem', right: '1.25rem',
-                                background: 'var(--bg-color)', border: '1px solid var(--border-color)',
-                                borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                                overflow: 'hidden', zIndex: 1000, display: 'flex', flexDirection: 'column'
-                            }}>
-                                {[
-                                    { level: 1, label: 'עדיפות 1', color: 'var(--priority-1)' },
-                                    { level: 2, label: 'עדיפות 2', color: 'var(--priority-2)' },
-                                    { level: 3, label: 'עדיפות 3', color: 'var(--priority-3)' },
-                                    { level: 4, label: 'עדיפות 4', color: 'var(--text-secondary)' }
-                                ].map(p => (
-                                    <button
-                                        key={p.level}
-                                        onClick={() => {
-                                            setPriority(p.level);
-                                            setShowPriorityMenu(false);
-                                            if (onSave) onSave({ priority: p.level });
-                                        }}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                            width: '100%', padding: '0.75rem 1rem', border: 'none',
-                                            background: priority === p.level ? 'var(--dropdown-selected)' : 'transparent',
-                                            cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
-                                            borderBottom: p.level !== 4 ? '1px solid var(--border-color)' : 'none',
-                                            transition: 'background 0.15s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (priority !== p.level) e.currentTarget.style.background = 'var(--dropdown-hover)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (priority !== p.level) e.currentTarget.style.background = 'transparent';
-                                            else e.currentTarget.style.background = 'var(--dropdown-selected)';
-                                        }}
-                                    >
-                                        <Flag size={16} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
-                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: priority === p.level ? 600 : 400 }}>{p.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                        <PrioritySelectorDropdown
+                            isOpen={showPriorityMenu}
+                            onClose={() => setShowPriorityMenu(false)}
+                            anchorRef={priorityBtnRef}
+                            priority={priority}
+                            onSelect={(val) => {
+                                setPriority(val);
+                                if (onSave) onSave({ priority: val });
+                            }}
+                        />
                     </div>
 
                     {/* Reminder Dropdown */}
@@ -927,51 +883,16 @@ export default function TaskEditModal({
                             </span>
                         </button>
 
-                        {showReminderMenu && (
-                            <div ref={reminderMenuRef} style={{
-                                position: 'absolute', top: 'calc(100% - 4px)', left: '1.25rem', right: '1.25rem',
-                                background: 'var(--bg-color)', border: '1px solid var(--border-color)',
-                                borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                                overflow: 'hidden', zIndex: 1000, display: 'flex', flexDirection: 'column'
-                            }}>
-                                {[
-                                    { value: null, label: 'ללא תזכורת' },
-                                    { value: 0, label: 'בזמן האירוע' },
-                                    { value: 5, label: '5 דקות לפני' },
-                                    { value: 15, label: '15 דקות לפני' },
-                                    { value: 30, label: '30 דקות לפני' },
-                                    { value: 60, label: 'שעה לפני' },
-                                    { value: 1440, label: 'יום לפני' }
-                                ].map(opt => (
-                                    <button
-                                        key={opt.value === null ? 'null' : opt.value}
-                                        onClick={() => {
-                                            setReminderMinutes(opt.value);
-                                            setShowReminderMenu(false);
-                                            if (onSave) onSave({ reminder_minutes: opt.value });
-                                        }}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                            width: '100%', padding: '0.75rem 1rem', border: 'none',
-                                            background: reminderMinutes === opt.value ? 'var(--dropdown-selected)' : 'transparent',
-                                            cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
-                                            borderBottom: opt.value !== 1440 ? '1px solid var(--border-color)' : 'none',
-                                            transition: 'background 0.15s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'var(--dropdown-hover)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'transparent';
-                                            else e.currentTarget.style.background = 'var(--dropdown-selected)';
-                                        }}
-                                    >
-                                        <Bell size={16} style={{ color: reminderMinutes === opt.value ? 'var(--primary-color)' : 'var(--text-secondary)' }} />
-                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                        <ReminderSelectorDropdown
+                            isOpen={showReminderMenu}
+                            onClose={() => setShowReminderMenu(false)}
+                            anchorRef={reminderBtnRef}
+                            reminderMinutes={reminderMinutes}
+                            onSelect={(val) => {
+                                setReminderMinutes(val);
+                                if (onSave) onSave({ reminder_minutes: val });
+                            }}
+                        />
                     </div>
 
                     <button style={actionRowStyle} onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}><Tag size={18} /><span>תוויות</span></button>

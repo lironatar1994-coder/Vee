@@ -11,3 +11,6 @@ export { default as GlobalFAB } from '../GlobalFAB';
 export { GlobalFABOverlay } from '../GlobalFAB';
 export { default as CompletedTaskList } from './CompletedTaskList';
 export { default as ReminderBadge } from './ReminderBadge';
+export { default as PrioritySelectorDropdown } from './PrioritySelectorDropdown';
+export { default as ReminderSelectorDropdown } from './ReminderSelectorDropdown';
+export { default as RepeatSelectorDropdown } from './RepeatSelectorDropdown';

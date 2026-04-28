@@ -11,6 +11,49 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
     const [checklists, setChecklists] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = React.useRef(null);
+    const [pos, setPos] = useState({ top: 0, left: 0, visible: false });
+
+    useEffect(() => {
+        if (!isOpen) {
+            setPos(p => ({ ...p, visible: false }));
+            return;
+        }
+
+        const updatePosition = () => {
+            if (anchorRef?.current && dropdownRef.current) {
+                const rect = anchorRef.current.getBoundingClientRect();
+                const menuRect = dropdownRef.current.getBoundingClientRect();
+                const PANEL_W = menuRect.width || 275;
+                const PANEL_H = menuRect.height || 400;
+
+                // Horizontal: Try to align right edges (RTL), clamp to viewport
+                let left = rect.right - PANEL_W;
+                if (left < 10) left = 10;
+                if (left + PANEL_W > window.innerWidth - 10) {
+                    left = window.innerWidth - PANEL_W - 10;
+                }
+
+                // Vertical: Check space below vs above
+                const spaceBelow = window.innerHeight - rect.bottom - 16;
+                const spaceAbove = rect.top - 16;
+
+                let top;
+                if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
+                    top = rect.bottom + 6;
+                } else {
+                    top = rect.top - PANEL_H - 6;
+                }
+
+                if (top < 8) top = 8;
+                
+                setPos({ top, left, visible: true });
+            }
+        };
+
+        updatePosition();
+        const timer = setTimeout(updatePosition, 10);
+        return () => clearTimeout(timer);
+    }, [isOpen, anchorRef, searchQuery, projects, checklists]);
 
     useEffect(() => {
         if (!isOpen || !user) return;
@@ -164,35 +207,29 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
     };
 
     return createPortal(
-        <div ref={dropdownRef} className="dropdown-menu slide-down fade-in" style={{
-            position: 'absolute',
-            top: anchorRef.current ? anchorRef.current.getBoundingClientRect().bottom + window.scrollY + 4 : 0,
-            left: anchorRef.current ? (
-                (() => {
-                    const rect = anchorRef.current.getBoundingClientRect();
-                    const dropdownWidth = 275;
-                    // Aligned more to the right side (where labels are in RTL) and shifted a bit left
-                    let left = rect.right + window.scrollX - dropdownWidth - 20;
-                    // Prevent going off screen left
-                    if (left < 10) left = 10;
-                    // Prevent going off screen right
-                    if (left + dropdownWidth > window.innerWidth - 10) {
-                        left = window.innerWidth - dropdownWidth - 10;
-                    }
-                    return left;
-                })()
-            ) : 0,
-            width: '275px',
-            maxHeight: '400px',
-            background: 'var(--bg-color)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-        }}>
+        <div ref={dropdownRef} 
+            className="dropdown-menu" 
+            style={{
+                position: 'fixed',
+                top: pos.top,
+                left: pos.left,
+                width: '275px',
+                maxHeight: '400px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                boxShadow: 'var(--card-shadow)',
+                zIndex: 99999,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                visibility: pos.visible ? 'visible' : 'hidden',
+                direction: 'rtl',
+                animation: 'slideUpFade 0.2s var(--ease-premium)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+            }}
+        >
             <div style={{ padding: '0.6rem', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color)', zIndex: 2 }}>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <Search size={14} style={{ position: 'absolute', right: '0.75rem', color: 'var(--text-secondary)', zIndex: 1 }} />

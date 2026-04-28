@@ -6,19 +6,38 @@
     box-shadow: var(--card-shadow);
     padding: 1rem;
     margin-bottom: 1rem;
-    transition: all 0.3s var(--transition-premium);
+    transition: var(--transition-premium);
     overflow: visible;
     position: relative;
 }
 
-.add-task-card-container:focus-within {
+.add-task-card-container:focus-within,
+.add-task-card-container.menu-open {
     border-color: var(--primary-color);
     box-shadow: 0 8px 30px rgba(var(--primary-rgb), 0.12);
-    transform: translateY(-2px);
 }
 
 .task-input-wrapper {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.4rem;
+}
+
+.smart-input-container {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.smart-input-field {
+    min-width: 80px;
+    flex-grow: 1;
+    border: none;
+    outline: none;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0;
 }
 
 .task-main-input {
@@ -33,10 +52,7 @@
     margin-bottom: 0.5rem;
 }
 
-.task-main-input::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.5;
-}
+
 
 .task-description-textarea {
     width: 100%;
@@ -48,8 +64,23 @@
     resize: none;
     padding: 0;
     min-height: 20px;
-    margin-bottom: 0.75rem;
-    transition: opacity 0.2s ease;
+    margin-bottom: 0.2rem;
+    opacity: 0.45;
+    transition: opacity 0.2s var(--ease-premium);
+}
+
+.task-description-textarea.active {
+    opacity: 1;
+}
+
+.task-description-textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.4;
+}
+
+.task-main-input::placeholder {
+    color: var(--text-primary);
+    opacity: 0.3;
 }
 
 .actions-pills-row {
@@ -72,7 +103,7 @@
     font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     white-space: nowrap;
 }
 
@@ -125,7 +156,7 @@
     font-weight: 700;
     font-size: 0.87rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 2px 6px rgba(var(--primary-rgb), 0.2);
 }
 
@@ -156,4 +187,39 @@
 .btn-cancel-task:hover {
     background: var(--hover-bg);
     color: var(--text-primary);
+}
+
+/* More Actions Menu */
+.more-actions-menu {
+    animation: slideUpFade 0.2s ease-out;
+}
+
+.action-pill.in-menu {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    justify-content: flex-start;
+    font-size: 0.9rem;
+}
+
+.action-pill.in-menu:hover {
+    background: var(--dropdown-hover);
+}
+
+.action-pill.in-menu.active {
+    background: var(--dropdown-selected);
+    color: var(--primary-color);
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

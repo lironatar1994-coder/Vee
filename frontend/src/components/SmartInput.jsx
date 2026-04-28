@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { parse } from 'date-fns';
 
-const SmartInput = ({ html, setHtml, placeholder, autoFocus, style, onKeyDown, date, setDate, time, setTime, showSpan = true, ref }) => {
+const SmartInput = ({ html, setHtml, placeholder, autoFocus, style, onKeyDown, date, setDate, time, setTime, showSpan = true, ref, className }) => {
     const contentEditable = useRef(null);
     const [lastSyncText, setLastSyncText] = useState('');
     const hebrewMonthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
@@ -60,7 +60,7 @@ const SmartInput = ({ html, setHtml, placeholder, autoFocus, style, onKeyDown, d
             }}
             onKeyDown={onKeyDown}
             data-placeholder={placeholder}
-            className={`smart-input-area ${(!html || html === '<br>') ? 'is-empty' : ''}`}
+            className={`smart-input-area ${className || ''} ${(!html || html === '<br>') ? 'is-empty' : ''}`}
         />
     );
 };

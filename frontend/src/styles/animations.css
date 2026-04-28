@@ -132,6 +132,24 @@
   display: inline-block;
 }
 
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDownFade {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up-fade {
+  animation: slideUpFade 0.2s var(--ease-premium) forwards;
+}
+
+.slide-down-fade {
+  animation: slideDownFade 0.2s var(--ease-premium) forwards;
+}
+
 /* Staggered Animations */
 .stagger-1 { animation-delay: 0.05s; animation-fill-mode: both; }
 .stagger-2 { animation-delay: 0.10s; animation-fill-mode: both; }

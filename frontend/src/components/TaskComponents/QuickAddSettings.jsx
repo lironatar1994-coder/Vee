@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Calendar, Clock, Folder, Flag, Bell, RefreshCw, AlignLeft, 
-    GripVertical, Check, Eye, EyeOff 
+    GripVertical, Check, Eye, EyeOff, MoreHorizontal 
 } from 'lucide-react';
 import {
     DndContext,
@@ -26,8 +26,7 @@ const ACTION_ICONS = {
     project: Folder,
     priority: Flag,
     reminders: Bell,
-    repeat: RefreshCw,
-    description: AlignLeft
+    repeat: RefreshCw
 };
 
 const ACTION_LABELS = {
@@ -36,19 +35,17 @@ const ACTION_LABELS = {
     project: 'פרויקט',
     priority: 'עדיפות',
     reminders: 'תזכורות',
-    repeat: 'חזרה',
-    description: 'תיאור'
+    repeat: 'חזרה'
 };
 
 const DEFAULT_SETTINGS = {
     actions: [
         { id: 'date', enabled: true },
         { id: 'time', enabled: true },
+        { id: 'reminders', enabled: true },
         { id: 'project', enabled: true },
         { id: 'priority', enabled: true },
-        { id: 'reminders', enabled: true },
-        { id: 'repeat', enabled: true },
-        { id: 'description', enabled: true }
+        { id: 'repeat', enabled: true }
     ],
     showLabels: true
 };
@@ -100,8 +97,11 @@ const SortableItem = ({ action, onToggle }) => {
 
 const QuickAddSettings = ({ settings, onSave }) => {
     const [localSettings, setLocalSettings] = useState(() => {
-        if (!settings) return DEFAULT_SETTINGS;
-        return { ...DEFAULT_SETTINGS, ...settings };
+        const base = settings ? { ...DEFAULT_SETTINGS, ...settings } : DEFAULT_SETTINGS;
+        return {
+            ...base,
+            actions: base.actions.filter(a => a.id !== 'description')
+        };
     });
 
     useEffect(() => {
@@ -109,7 +109,7 @@ const QuickAddSettings = ({ settings, onSave }) => {
             setLocalSettings(prev => ({
                 ...prev,
                 ...settings,
-                actions: settings.actions || prev.actions
+                actions: (settings.actions || prev.actions).filter(a => a.id !== 'description')
             }));
         }
     }, [settings]);
@@ -183,15 +183,31 @@ const QuickAddSettings = ({ settings, onSave }) => {
             <div className="quick-add-preview">
                 <span className="settings-section-title">תצוגה מקדימה</span>
                 <div className="quick-add-pills">
-                    {localSettings.actions.filter(a => a.enabled).map(action => {
-                        const Icon = ACTION_ICONS[action.id];
+                    {(() => {
+                        const enabledActions = localSettings.actions.filter(a => a.enabled);
+                        const visible = enabledActions.slice(0, 3);
+                        const hasMore = enabledActions.length > 3;
+
                         return (
-                            <div key={action.id} className="quick-add-pill">
-                                <Icon size={14} />
-                                {localSettings.showLabels && <span>{ACTION_LABELS[action.id]}</span>}
-                            </div>
+                            <>
+                                {visible.map(action => {
+                                    const Icon = ACTION_ICONS[action.id];
+                                    return (
+                                        <div key={action.id} className="quick-add-pill">
+                                            <Icon size={14} />
+                                            {localSettings.showLabels && <span>{ACTION_LABELS[action.id]}</span>}
+                                        </div>
+                                    );
+                                })}
+                                {hasMore && (
+                                    <div className="quick-add-pill">
+                                        <MoreHorizontal size={14} />
+                                        {localSettings.showLabels && <span>עוד</span>}
+                                    </div>
+                                )}
+                            </>
                         );
-                    })}
+                    })()}
                 </div>
                 <div className="quick-add-input-placeholder">
                     הקלד משימה חדשה...

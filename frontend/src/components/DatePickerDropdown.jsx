@@ -192,11 +192,13 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                 zIndex: 20000,
                 background: theme === 'dark' ? '#1e293b' : '#ffffff',
                 border: '1px solid var(--border-color)',
-                borderRadius: '14px',
-                boxShadow: theme === 'dark' ? '0 15px 50px rgba(0,0,0,0.6)' : '0 10px 30px rgba(0,0,0,0.1)',
+                borderRadius: '12px',
+                boxShadow: 'var(--card-shadow)',
                 direction: 'rtl',
                 visibility: pos.visible ? 'visible' : 'hidden',
-                animation: 'fadeIn 0.12s ease',
+                animation: 'slideUpFade 0.2s var(--ease-premium)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
                 maxHeight: 'calc(100vh - 16px)',
                 overflowY: 'auto'
             }}

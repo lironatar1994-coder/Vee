@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
     Calendar as CalendarIcon, Bell, RefreshCw, X, ArrowLeft, ChevronDown, 
-    Inbox, List, Flag, SendHorizontal, Clock, AlignLeft 
+    Inbox, List, Flag, SendHorizontal, Clock, AlignLeft, MoreHorizontal 
 } from 'lucide-react';
 import SmartInput from '../SmartInput';
 import DatePickerDropdown from '../DatePickerDropdown';
@@ -12,6 +13,9 @@ import { hebrewDayNames, hebrewMonthNames, TIME_OPTIONS, getDateDisplayInfo, get
 import { useUser } from '../../context/UserContext';
 import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'sonner';
+import PrioritySelectorDropdown from './PrioritySelectorDropdown';
+import ReminderSelectorDropdown from './ReminderSelectorDropdown';
+import RepeatSelectorDropdown from './RepeatSelectorDropdown';
 import '../../styles/task-card.css';
 
 const API_URL = '/api';
@@ -33,8 +37,9 @@ const AddTaskCard = ({
 
     const quickAddSettings = user?.quick_add_settings ? (typeof user.quick_add_settings === 'string' ? JSON.parse(user.quick_add_settings) : user.quick_add_settings) : null;
     const showLabels = quickAddSettings?.showLabels ?? true;
-    const enabledActions = quickAddSettings?.actions?.filter(a => a.enabled).map(a => a.id) || ['date', 'time', 'project', 'priority', 'reminders', 'repeat', 'description'];
-    const actionOrder = quickAddSettings?.actions?.map(a => a.id) || ['date', 'time', 'project', 'priority', 'reminders', 'repeat', 'description'];
+    const DEFAULT_ACTIONS = ['date', 'time', 'reminders', 'project', 'priority', 'repeat'];
+    const enabledActions = quickAddSettings?.actions?.filter(a => a.enabled).map(a => a.id) || DEFAULT_ACTIONS;
+    const actionOrder = quickAddSettings?.actions?.map(a => a.id) || DEFAULT_ACTIONS;
 
     // Internal state if props are not provided
     const [internalContent, setInternalContent] = useState('');
@@ -52,7 +57,7 @@ const AddTaskCard = ({
     const [repeatRule, setRepeatRule] = useState(null);
     const [time, setTime] = useState(initialTime || '');
     const [duration, setDuration] = useState(0);
-    const [dynamicPlaceholder, setDynamicPlaceholder] = useState(() => getRandomTaskPlaceholder());
+    const [dynamicPlaceholder, setDynamicPlaceholder] = useState('שם המשימה');
     const [selectedChecklist, setSelectedChecklist] = useState(checklist);
     const [selectedProject, setSelectedProject] = useState(defaultProject || null);
     const [showProjectSelector, setShowProjectSelector] = useState(false);
@@ -60,8 +65,10 @@ const AddTaskCard = ({
     const [showPriorityMenu, setShowPriorityMenu] = useState(false);
     const [reminderMinutes, setReminderMinutes] = useState(null);
     const [showReminderMenu, setShowReminderMenu] = useState(false);
-    const [showDescription, setShowDescription] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const [showMoreMenu, setShowMoreMenu] = useState(false);
+    
+    const isMenuOpen = showDateDropdown || showRepeatMenu || showTimeMenu || showProjectSelector || showPriorityMenu || showReminderMenu || showMoreMenu;
     
     const cardRef = useRef(null);
     const inputContainerRef = useRef(null);
@@ -69,6 +76,9 @@ const AddTaskCard = ({
     const timeBtnRef = useRef(null);
     const projectBtnRef = useRef(null);
     const priorityBtnRef = useRef(null);
+    const reminderBtnRef = useRef(null);
+    const repeatBtnRef = useRef(null);
+    const moreBtnRef = useRef(null);
     const smartInputRef = useRef(null);
 
     useEffect(() => {
@@ -91,6 +101,7 @@ const AddTaskCard = ({
                 setShowProjectSelector(false);
                 setShowRepeatMenu(false);
                 setShowTimeMenu(false);
+                setShowMoreMenu(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -188,7 +199,6 @@ const AddTaskCard = ({
         setPriority(4);
         setReminderMinutes(null);
         setDynamicPlaceholder(getRandomTaskPlaceholder());
-        setShowDescription(false);
 
         if (smartInputRef.current) {
             smartInputRef.current.focus();
@@ -198,7 +208,7 @@ const AddTaskCard = ({
     return (
         <div 
             ref={cardRef} 
-            className="add-task-card-container" 
+            className={`add-task-card-container ${isMenuOpen ? 'menu-open' : ''}`}
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
         >
@@ -206,7 +216,6 @@ const AddTaskCard = ({
                 <div 
                     ref={inputContainerRef}
                     className="smart-input-container"
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}
                 >
                     {newItemDate && !suppressDateSpan && (
                         <div 
@@ -242,380 +251,260 @@ const AddTaskCard = ({
                         }}
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
-                        style={{ minWidth: '80px', flexGrow: 1, border: 'none', outline: 'none', fontSize: '1.1rem', fontWeight: 600, background: 'transparent', color: 'var(--text-primary)', padding: 0 }}
+                        className="smart-input-field"
                     />
                 </div>
                 
-                {(description || showDescription || isFocused) && (
-                    <textarea
-                        className="task-description-textarea"
-                        placeholder="תיאור נוסף..."
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        style={{ opacity: description || showDescription || isFocused ? 1 : 0.6 }}
-                        rows={1}
-                    />
-                )}
+                <textarea
+                    className={`task-description-textarea ${(description || isFocused || isMenuOpen) ? 'active' : ''}`}
+                    placeholder="תיאור"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    rows={1}
+                />
             </div>
 
             <div className="actions-pills-row">
-                {actionOrder.filter(id => enabledActions.includes(id)).map(actionId => {
-                    if (actionId === 'date') {
-                        return (
-                            <div key="date" style={{ position: 'relative' }}>
-                                <button
-                                    ref={dateBtnRef}
-                                    type="button"
-                                    onClick={() => {
-                                        setShowDateDropdown(!showDateDropdown);
-                                        setShowPriorityMenu(false);
-                                        setShowReminderMenu(false);
-                                        setShowProjectSelector(false);
-                                        setShowTimeMenu(false);
-                                        setShowRepeatMenu(false);
-                                    }}
-                                    className={`action-pill ${newItemDate ? 'active' : ''}`}
-                                >
-                                    <CalendarIcon size={14} className="action-pill-icon" />
-                                    {(newItemDate || showLabels) && (
-                                        <span>{newItemDate ? getFullDateDisplay(newItemDate, repeatRule, time).text : 'תאריך'}</span>
-                                    )}
-                                    {repeatRule && repeatRule !== 'none' && <RefreshCw size={12} className="action-pill-icon" style={{ marginRight: '4px' }} />}
-                                </button>
-                                
-                                {newItemDate && (
-                                    <div style={{ position: 'absolute', top: '-8px', left: '-8px', zIndex: 10 }}>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setNewItemDate('');
-                                                setTime('');
-                                                setRepeatRule(null);
-                                                setShowDateDropdown(false);
-                                            }}
-                                            className="btn-icon-soft"
-                                            style={{ background: 'var(--bg-secondary)', padding: '2px', borderRadius: '50%', border: '1px solid var(--border-color)', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            <X size={10} />
-                                        </button>
-                                    </div>
-                                )}
+                {(() => {
+                    const enabledActionIds = actionOrder.filter(id => enabledActions.includes(id));
+                    const visibleActions = enabledActionIds.slice(0, 3);
+                    const hiddenActions = enabledActionIds.slice(3);
 
-                                <DatePickerDropdown
-                                    isOpen={showDateDropdown}
-                                    onClose={() => setShowDateDropdown(false)}
-                                    anchorRef={dateBtnRef}
-                                    selectedDate={newItemDate}
-                                    selectedTime={time}
-                                    onSelectDate={(date) => {
-                                        setNewItemDate(date);
-                                        setTimeout(() => {
-                                            if (smartInputRef.current) smartInputRef.current.focus();
-                                        }, 10);
-                                    }}
-                                />
-                            </div>
-                        );
-                    }
-
-                    if (actionId === 'time') {
-                        return (
-                            <div key="time" style={{ position: 'relative' }}>
-                                <button
-                                    ref={timeBtnRef}
-                                    type="button"
-                                    onClick={() => {
-                                        setShowTimeMenu(!showTimeMenu);
-                                        setShowDateDropdown(false);
-                                        setShowPriorityMenu(false);
-                                        setShowReminderMenu(false);
-                                        setShowProjectSelector(false);
-                                        setShowRepeatMenu(false);
-                                    }}
-                                    className={`action-pill ${time ? 'active' : ''}`}
-                                >
-                                    <Clock size={14} className="action-pill-icon" />
-                                    {(time || showLabels) && (
-                                        <span>{time || 'זמן'}</span>
-                                    )}
-                                </button>
-                                
-                                <TimePickerDropdown
-                                    isOpen={showTimeMenu}
-                                    onClose={() => setShowTimeMenu(false)}
-                                    anchorRef={timeBtnRef}
-                                    initialTime={time}
-                                    initialDuration={duration}
-                                    timeOptions={TIME_OPTIONS}
-                                    onSave={(val, dur) => {
-                                        setTime(val);
-                                        setDuration(dur);
-                                    }}
-                                />
-                            </div>
-                        );
-                    }
-
-                    if (actionId === 'project') {
-                        return (
-                            <div key="project" style={{ position: 'relative' }}>
-                                <button
-                                    ref={projectBtnRef}
-                                    type="button"
-                                    onClick={() => {
-                                        setShowProjectSelector(!showProjectSelector);
-                                        setShowDateDropdown(false);
-                                        setShowPriorityMenu(false);
-                                        setShowReminderMenu(false);
-                                        setShowTimeMenu(false);
-                                        setShowRepeatMenu(false);
-                                    }}
-                                    className={`action-pill ${(!selectedProject || selectedProject.id === 'inbox') ? '' : 'active'}`}
-                                >
-                                    {(() => {
-                                        const isInbox = !selectedProject || selectedProject.id === 'inbox' || !selectedChecklist?.project_id;
-                                        const Icon = isInbox ? Inbox : List;
-                                        return <Icon size={14} className="action-pill-icon" />;
-                                    })()}
-                                    {(selectedProject?.title || showLabels) && (
-                                        <span>{selectedProject?.title || 'פרויקט'}</span>
-                                    )}
-                                </button>
-                            </div>
-                        );
-                    }
-
-                    if (actionId === 'priority') {
-                        return (
-                            <div key="priority" style={{ position: 'relative' }}>
-                                <button
-                                    ref={priorityBtnRef}
-                                    type="button"
-                                    onClick={() => {
-                                        setShowPriorityMenu(!showPriorityMenu);
-                                        setShowReminderMenu(false);
-                                        setShowDateDropdown(false);
-                                        setShowProjectSelector(false);
-                                        setShowTimeMenu(false);
-                                        setShowRepeatMenu(false);
-                                    }}
-                                    className={`action-pill ${priority !== 4 ? 'active' : ''}`}
-                                    style={priority !== 4 ? { color: priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : 'var(--priority-3)', borderColor: 'currentColor' } : {}}
-                                >
-                                    <Flag size={14} className="action-pill-icon" fill={priority !== 4 ? 'currentColor' : 'transparent'} />
-                                    {(priority !== 4 || showLabels) && (
-                                        <span>{priority === 4 ? 'עדיפות' : `עדיפות ${priority}`}</span>
-                                    )}
-                                </button>
-
-                                {showPriorityMenu && (
-                                    <div style={{
-                                        position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
-                                        background: 'var(--bg-secondary)',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '8px',
-                                        boxShadow: 'var(--card-shadow)',
-                                        overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
-                                        minWidth: '150px',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)',
-                                    }}>
-                                        {[
-                                            { level: 1, label: 'עדיפות 1', color: 'var(--priority-1)' },
-                                            { level: 2, label: 'עדיפות 2', color: 'var(--priority-2)' },
-                                            { level: 3, label: 'עדיפות 3', color: 'var(--priority-3)' },
-                                            { level: 4, label: 'עדיפות 4', color: 'var(--text-secondary)' }
-                                        ].map(p => (
+                    const renderAction = (actionId, isHidden = false) => {
+                        if (actionId === 'date') {
+                            return (
+                                <div key="date" style={{ position: 'relative' }}>
+                                    <button
+                                        ref={dateBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowDateDropdown(!showDateDropdown);
+                                            setShowPriorityMenu(false);
+                                            setShowReminderMenu(false);
+                                            setShowProjectSelector(false);
+                                            setShowTimeMenu(false);
+                                            setShowRepeatMenu(false);
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className={`action-pill ${newItemDate ? 'active' : ''} ${isHidden ? 'in-menu' : ''}`}
+                                    >
+                                        <CalendarIcon size={14} className="action-pill-icon" />
+                                        {(newItemDate || showLabels || isHidden) && (
+                                            <span>{newItemDate ? getFullDateDisplay(newItemDate, repeatRule, time).text : 'תאריך'}</span>
+                                        )}
+                                        {repeatRule && repeatRule !== 'none' && <RefreshCw size={12} className="action-pill-icon" style={{ marginRight: '4px' }} />}
+                                    </button>
+                                    
+                                    {!isHidden && newItemDate && (
+                                        <div style={{ position: 'absolute', top: '-8px', left: '-8px', zIndex: 10 }}>
                                             <button
-                                                key={p.level}
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setPriority(p.level);
-                                                    setShowPriorityMenu(false);
+                                                    setNewItemDate('');
+                                                    setTime('');
+                                                    setRepeatRule(null);
+                                                    setShowDateDropdown(false);
                                                 }}
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', gap: '0.6rem',
-                                                    width: '100%', padding: '0.6rem 0.8rem', border: 'none',
-                                                    background: priority === p.level ? 'var(--dropdown-selected)' : 'transparent',
-                                                    cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
-                                                    borderBottom: p.level !== 4 ? '1px solid var(--border-color)' : 'none',
-                                                    transition: 'background 0.15s'
-                                                }}
-                                                onMouseEnter={e => {
-                                                    if (priority !== p.level) e.currentTarget.style.background = 'var(--dropdown-hover)';
-                                                }}
-                                                onMouseLeave={e => {
-                                                    if (priority !== p.level) e.currentTarget.style.background = 'transparent';
-                                                    else e.currentTarget.style.background = 'var(--dropdown-selected)';
-                                                }}
+                                                className="btn-icon-soft"
+                                                style={{ background: 'var(--bg-secondary)', padding: '2px', borderRadius: '50%', border: '1px solid var(--border-color)', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             >
-                                                <Flag size={14} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
-                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: priority === p.level ? 600 : 400 }}>{p.label}</span>
+                                                <X size={10} />
                                             </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    }
-
-                    if (actionId === 'reminders') {
-                        return (
-                            <div key="reminders" style={{ position: 'relative' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowReminderMenu(!showReminderMenu);
-                                        setShowPriorityMenu(false);
-                                        setShowDateDropdown(false);
-                                        setShowProjectSelector(false);
-                                        setShowTimeMenu(false);
-                                        setShowRepeatMenu(false);
-                                    }}
-                                    className={`action-pill ${reminderMinutes !== null ? 'active' : ''}`}
-                                >
-                                    <Bell size={14} className="action-pill-icon" />
-                                    {(reminderMinutes !== null || showLabels) && (
-                                        <span>{reminderMinutes === null ? 'תזכורת' : reminderOptions.find(o => o.value === reminderMinutes)?.label}</span>
+                                        </div>
                                     )}
-                                </button>
 
-                                {showReminderMenu && (
-                                    <div style={{
-                                        position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
-                                        background: 'var(--bg-secondary)',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '8px',
-                                        boxShadow: 'var(--card-shadow)',
-                                        overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
-                                        minWidth: '150px',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)',
-                                    }}>
-                                        {reminderOptions.map(opt => (
-                                            <button
-                                                key={opt.value === null ? 'null' : opt.value}
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setReminderMinutes(opt.value);
-                                                    setShowReminderMenu(false);
-                                                }}
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', gap: '0.6rem',
-                                                    width: '100%', padding: '0.6rem 0.8rem', border: 'none',
-                                                    background: reminderMinutes === opt.value ? 'var(--dropdown-selected)' : 'transparent',
-                                                    cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
-                                                    borderBottom: opt.value !== 1440 ? '1px solid var(--border-color)' : 'none',
-                                                    transition: 'background 0.15s'
-                                                }}
-                                                onMouseEnter={e => {
-                                                    if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'var(--dropdown-hover)';
-                                                }}
-                                                onMouseLeave={e => {
-                                                    if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'transparent';
-                                                    else e.currentTarget.style.background = 'var(--dropdown-selected)';
-                                                }}
-                                            >
-                                                <Bell size={14} style={{ color: reminderMinutes === opt.value ? 'var(--primary-color)' : 'var(--text-secondary)' }} />
-                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    }
+                                </div>
+                            );
+                        }
 
-                    if (actionId === 'repeat') {
-                        return (
-                            <div key="repeat" style={{ position: 'relative' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowRepeatMenu(!showRepeatMenu);
-                                        setShowDateDropdown(false);
-                                        setShowPriorityMenu(false);
-                                        setShowReminderMenu(false);
-                                        setShowProjectSelector(false);
-                                        setShowTimeMenu(false);
-                                    }}
-                                    className={`action-pill ${repeatRule && repeatRule !== 'none' ? 'active' : ''}`}
-                                >
-                                    <RefreshCw size={14} className="action-pill-icon" />
-                                    {(repeatRule || showLabels) && (
-                                        <span>{repeatRule ? (repeatOptions.find(o => o.value === repeatRule)?.label || 'חזרה') : 'חזרה'}</span>
+                        if (actionId === 'time') {
+                            return (
+                                <div key="time" style={{ position: 'relative' }}>
+                                    <button
+                                        ref={timeBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowTimeMenu(!showTimeMenu);
+                                            setShowDateDropdown(false);
+                                            setShowPriorityMenu(false);
+                                            setShowReminderMenu(false);
+                                            setShowProjectSelector(false);
+                                            setShowRepeatMenu(false);
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className={`action-pill ${time ? 'active' : ''} ${isHidden ? 'in-menu' : ''}`}
+                                    >
+                                        <Clock size={14} className="action-pill-icon" />
+                                        {(time || showLabels || isHidden) && (
+                                            <span>{time || 'זמן'}</span>
+                                        )}
+                                    </button>
+                                    
+                                </div>
+                            );
+                        }
+
+                        if (actionId === 'project') {
+                            return (
+                                <div key="project" style={{ position: 'relative' }}>
+                                    <button
+                                        ref={projectBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowProjectSelector(!showProjectSelector);
+                                            setShowDateDropdown(false);
+                                            setShowPriorityMenu(false);
+                                            setShowReminderMenu(false);
+                                            setShowTimeMenu(false);
+                                            setShowRepeatMenu(false);
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className={`action-pill ${(!selectedProject || selectedProject.id === 'inbox') ? '' : 'active'} ${isHidden ? 'in-menu' : ''}`}
+                                    >
+                                        {(() => {
+                                            const isInbox = !selectedProject || selectedProject.id === 'inbox' || !selectedChecklist?.project_id;
+                                            const Icon = isInbox ? Inbox : List;
+                                            return <Icon size={14} className="action-pill-icon" />;
+                                        })()}
+                                        {(selectedProject?.title || showLabels || isHidden) && (
+                                            <span>{selectedProject?.title || 'פרויקט'}</span>
+                                        )}
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        if (actionId === 'priority') {
+                            return (
+                                <div key="priority" style={{ position: 'relative' }}>
+                                    <button
+                                        ref={priorityBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowPriorityMenu(!showPriorityMenu);
+                                            setShowReminderMenu(false);
+                                            setShowDateDropdown(false);
+                                            setShowProjectSelector(false);
+                                            setShowTimeMenu(false);
+                                            setShowRepeatMenu(false);
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className={`action-pill ${priority !== 4 ? 'active' : ''} ${isHidden ? 'in-menu' : ''}`}
+                                        style={priority !== 4 ? { color: priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : 'var(--priority-3)', borderColor: 'currentColor' } : {}}
+                                    >
+                                        <Flag size={14} className="action-pill-icon" fill={priority !== 4 ? 'currentColor' : 'transparent'} />
+                                        {(priority !== 4 || showLabels || isHidden) && (
+                                            <span>{priority === 4 ? 'עדיפות' : `עדיפות ${priority}`}</span>
+                                        )}
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        if (actionId === 'reminders') {
+                            return (
+                                <div key="reminders" style={{ position: 'relative' }}>
+                                    <button
+                                        ref={reminderBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowReminderMenu(!showReminderMenu);
+                                            setShowPriorityMenu(false);
+                                            setShowDateDropdown(false);
+                                            setShowProjectSelector(false);
+                                            setShowTimeMenu(false);
+                                            setShowRepeatMenu(false);
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className={`action-pill ${reminderMinutes !== null ? 'active' : ''} ${isHidden ? 'in-menu' : ''}`}
+                                    >
+                                        <Bell size={14} className="action-pill-icon" />
+                                        {(reminderMinutes !== null || showLabels || isHidden) && (
+                                            <span>{reminderMinutes === null ? 'תזכורת' : reminderOptions.find(o => o.value === reminderMinutes)?.label}</span>
+                                        )}
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        if (actionId === 'repeat') {
+                            return (
+                                <div key="repeat" style={{ position: 'relative' }}>
+                                    <button
+                                        ref={repeatBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowRepeatMenu(!showRepeatMenu);
+                                            setShowDateDropdown(false);
+                                            setShowPriorityMenu(false);
+                                            setShowReminderMenu(false);
+                                            setShowProjectSelector(false);
+                                            setShowTimeMenu(false);
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className={`action-pill ${repeatRule && repeatRule !== 'none' ? 'active' : ''} ${isHidden ? 'in-menu' : ''}`}
+                                    >
+                                        <RefreshCw size={14} className="action-pill-icon" />
+                                        {(repeatRule || showLabels || isHidden) && (
+                                            <span>{repeatRule ? (repeatOptions.find(o => o.value === repeatRule)?.label || 'חזרה') : 'חזרה'}</span>
+                                        )}
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        return null;
+                    };
+
+                    return (
+                        <>
+                            {visibleActions.map(id => renderAction(id))}
+                            {hiddenActions.length > 0 && (
+                                <div style={{ position: 'relative' }}>
+                                    <button
+                                        ref={moreBtnRef}
+                                        type="button"
+                                        onClick={() => {
+                                            setShowMoreMenu(!showMoreMenu);
+                                            setShowDateDropdown(false);
+                                            setShowPriorityMenu(false);
+                                            setShowReminderMenu(false);
+                                            setShowProjectSelector(false);
+                                            setShowTimeMenu(false);
+                                            setShowRepeatMenu(false);
+                                        }}
+                                        className={`action-pill ${showMoreMenu ? 'active' : ''}`}
+                                    >
+                                        <MoreHorizontal size={14} className="action-pill-icon" />
+                                        {showLabels && <span>עוד</span>}
+                                    </button>
+
+                                    {showMoreMenu && (
+                                        <div className="more-actions-menu" style={{
+                                            position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
+                                            background: 'var(--bg-secondary)',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '8px',
+                                            boxShadow: 'var(--card-shadow)',
+                                            zIndex: 2000, display: 'flex', flexDirection: 'column',
+                                            minWidth: '180px', padding: '4px',
+                                            backdropFilter: 'blur(10px)',
+                                            WebkitBackdropFilter: 'blur(10px)',
+                                        }}>
+                                            {hiddenActions.map(id => renderAction(id, true))}
+                                        </div>
                                     )}
-                                </button>
-
-                                {showRepeatMenu && (
-                                    <div style={{
-                                        position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
-                                        background: 'var(--bg-secondary)',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '8px',
-                                        boxShadow: 'var(--card-shadow)',
-                                        overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
-                                        minWidth: '150px',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)',
-                                    }}>
-                                        {repeatOptions.map((opt, i) => (
-                                            <button key={i} onClick={() => { setRepeatRule(opt.value === 'custom' ? null : opt.value); setShowRepeatMenu(false); }}
-                                                style={{
-                                                    display: 'block', width: '100%', padding: '0.6rem 1rem', border: 'none',
-                                                    background: repeatRule === opt.value ? 'var(--dropdown-selected)' : 'transparent',
-                                                    cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.87rem',
-                                                    textAlign: 'right', fontFamily: 'inherit',
-                                                    fontWeight: repeatRule === opt.value ? 600 : 400,
-                                                    transition: 'background 0.1s',
-                                                }}
-                                                onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                                                onMouseLeave={e => e.currentTarget.style.background = repeatRule === opt.value ? 'var(--hover-bg)' : 'transparent'}>
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    }
-
-                    if (actionId === 'description') {
-                        return (
-                            <button
-                                key="description"
-                                type="button"
-                                onClick={() => setShowDescription(!showDescription)}
-                                className={`action-pill ${description || showDescription ? 'active' : ''}`}
-                            >
-                                <AlignLeft size={14} className="action-pill-icon" />
-                                {showLabels && <span>תיאור</span>}
-                            </button>
-                        );
-                    }
-
-                    return null;
-                })}
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
             </div>
 
-            <ProjectSelectorDropdown
-                isOpen={showProjectSelector}
-                onClose={() => setShowProjectSelector(false)}
-                anchorRef={projectBtnRef}
-                selectedChecklistId={selectedChecklist?.id}
-                selectedProject={selectedProject}
-                selectedChecklist={selectedChecklist}
-                onSelect={(cl, proj) => {
-                    setSelectedChecklist(cl);
-                    setSelectedProject(proj);
-                    setShowProjectSelector(false);
-                }}
-            />
+
 
             <div className="task-card-footer">
                 <div className="footer-left">
@@ -679,6 +568,76 @@ const AddTaskCard = ({
                     </button>
                 </div>
             </div>
+
+            {/* Dropdowns declared at top level to avoid unmounting when menus close */}
+            <ProjectSelectorDropdown
+                isOpen={showProjectSelector}
+                onClose={() => setShowProjectSelector(false)}
+                anchorRef={enabledActions.indexOf('project') >= 3 ? moreBtnRef : projectBtnRef}
+                selectedChecklistId={selectedChecklist?.id}
+                selectedProject={selectedProject}
+                selectedChecklist={selectedChecklist}
+                onSelect={(cl, proj) => {
+                    setSelectedChecklist(cl);
+                    setSelectedProject(proj);
+                    setShowProjectSelector(false);
+                }}
+            />
+            <PrioritySelectorDropdown
+                isOpen={showPriorityMenu}
+                onClose={() => setShowPriorityMenu(false)}
+                anchorRef={enabledActions.indexOf('priority') >= 3 ? moreBtnRef : priorityBtnRef}
+                priority={priority}
+                onSelect={(val) => {
+                    setPriority(val);
+                    setTimeout(() => smartInputRef.current?.focus(), 10);
+                }}
+            />
+            <ReminderSelectorDropdown
+                isOpen={showReminderMenu}
+                onClose={() => setShowReminderMenu(false)}
+                anchorRef={enabledActions.indexOf('reminders') >= 3 ? moreBtnRef : reminderBtnRef}
+                reminderMinutes={reminderMinutes}
+                onSelect={(val) => {
+                    setReminderMinutes(val);
+                    setTimeout(() => smartInputRef.current?.focus(), 10);
+                }}
+            />
+            <RepeatSelectorDropdown
+                isOpen={showRepeatMenu}
+                onClose={() => setShowRepeatMenu(false)}
+                anchorRef={enabledActions.indexOf('repeat') >= 3 ? moreBtnRef : repeatBtnRef}
+                repeatRule={repeatRule}
+                onSelect={(val) => {
+                    setRepeatRule(val);
+                    setTimeout(() => smartInputRef.current?.focus(), 10);
+                }}
+            />
+            <DatePickerDropdown
+                isOpen={showDateDropdown}
+                onClose={() => setShowDateDropdown(false)}
+                anchorRef={enabledActions.indexOf('date') >= 3 ? moreBtnRef : dateBtnRef}
+                selectedDate={newItemDate}
+                selectedTime={time}
+                onSelectDate={(date) => {
+                    setNewItemDate(date);
+                    setTimeout(() => {
+                        if (smartInputRef.current) smartInputRef.current.focus();
+                    }, 10);
+                }}
+            />
+            <TimePickerDropdown
+                isOpen={showTimeMenu}
+                onClose={() => setShowTimeMenu(false)}
+                anchorRef={enabledActions.indexOf('time') >= 3 ? moreBtnRef : timeBtnRef}
+                initialTime={time}
+                initialDuration={duration}
+                timeOptions={TIME_OPTIONS}
+                onSave={(val, dur) => {
+                    setTime(val);
+                    setDuration(dur);
+                }}
+            />
         </div>
     );
 };
