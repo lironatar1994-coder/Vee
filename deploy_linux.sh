@@ -58,15 +58,31 @@ log "Cleanup COMPLETE." "SUCCESS"
 # 4. Frontend Setup
 log "Processing Frontend..."
 cd "$FRONTEND_DIR"
-npm install -s
-npm run build > ../frontend_build.log 2>&1
+if ! npm install -s; then
+    log "Frontend npm install FAILED!" "ERROR"
+    exit 1
+fi
+
+if ! npm run build > ../frontend_build.log 2>&1; then
+    log "Frontend build FAILED! Showing last 30 lines of build log:" "ERROR"
+    tail -n 30 ../frontend_build.log
+    exit 1
+fi
 cd ..
 
 # 5. Backend Setup
 log "Processing Backend..."
 cd "$BACKEND_DIR"
-npm install -s
-npm rebuild better-sqlite3 > /dev/null 2>&1
+if ! npm install -s; then
+    log "Backend npm install FAILED!" "ERROR"
+    exit 1
+fi
+
+if ! npm rebuild better-sqlite3 > ../backend_rebuild.log 2>&1; then
+    log "Backend rebuild FAILED! Showing rebuild log:" "ERROR"
+    cat ../backend_rebuild.log
+    exit 1
+fi
 cd ..
 
 # 6. PM2 Start (With explicit CWD and ENV)
