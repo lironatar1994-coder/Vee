@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Calendar as CalendarIcon, Sun, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sun, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import DynamicTodayIcon from './DynamicTodayIcon';
 
@@ -12,8 +12,6 @@ const HEB_DAY_HEADERS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']; // Sun=א ..
 
 /**
  * Builds calendar day grid for a given month.
- * Returns an array of 7-column rows. Each cell is either a day number or null (empty).
- * Here Sunday = column 0 (rightmost in RTL).
  */
 function buildCalRows(year, month) {
     const dim = new Date(year, month + 1, 0).getDate();
@@ -22,19 +20,153 @@ function buildCalRows(year, month) {
     for (let i = 0; i < firstDow; i++) cells.push(null);
     for (let d = 1; d <= dim; d++) cells.push(d);
     while (cells.length % 7 !== 0) cells.push(null);
-    // Split into rows of 7
     const rows = [];
     for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
     return rows;
 }
 
+const MonthView = ({ year, month, selectedDate, onSelectDate, theme, isFirst }) => {
+    const today = new Date();
+    let rows = buildCalRows(year, month);
+
+    if (isFirst && year === today.getFullYear() && month === today.getMonth()) {
+        const todayDate = today.getDate();
+        const rowIndex = rows.findIndex(row => row.includes(todayDate));
+        if (rowIndex !== -1) {
+            rows = rows.slice(rowIndex);
+        }
+    }
+
+    const isTodayFn = (d) => d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    const isSelFn = (d) => {
+        if (!d || !selectedDate) return false;
+        const s = new Date(selectedDate);
+        return d === s.getDate() && month === s.getMonth() && year === s.getFullYear();
+    };
+
+    return (
+        <div 
+            className="month-block" 
+            data-month={month} 
+            data-year={year}
+            style={{ padding: '0.2rem 0.7rem 1rem' }}
+        >
+            {/* Minimal Month Marker (Numbers only) */}
+            <div style={{ marginBottom: '0.4rem', textAlign: 'right', paddingRight: '0.4rem' }}>
+                <span style={{ 
+                    display: 'inline-block',
+                    fontWeight: 800, 
+                    fontSize: '0.85rem', 
+                    color: 'var(--text-primary)',
+                    opacity: 0.8
+                }}>
+                    {hebrewMonthNames[month]}
+                </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                {rows.map((row, ri) => (
+                    <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center' }}>
+                        {row.map((d, ci) => (
+                            <button key={ci}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!d) return;
+                                    const s = new Date(year, month, d);
+                                    const y = s.getFullYear();
+                                    const m = String(s.getMonth() + 1).padStart(2, '0');
+                                    const day = String(s.getDate()).padStart(2, '0');
+                                    onSelectDate(`${y}-${m}-${day}`);
+                                }}
+                                onMouseDown={e => e.stopPropagation()}
+                                disabled={!d}
+                                style={{
+                                    border: 'none',
+                                    background: isSelFn(d) ? 'var(--primary-color)' : 'transparent',
+                                    color: isSelFn(d) ? 'white' : isTodayFn(d) ? '#d1453b' : d ? 'var(--text-primary)' : 'transparent',
+                                    fontWeight: isTodayFn(d) ? 700 : 400,
+                                    fontSize: '0.8rem',
+                                    cursor: d ? 'pointer' : 'default',
+                                    borderRadius: '50%',
+                                    width: 32, height: 32,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    margin: '0 auto',
+                                    transition: 'background 0.1s',
+                                    fontFamily: 'inherit',
+                                }}
+                                onMouseEnter={e => { if (d && !isSelFn(d)) e.currentTarget.style.background = 'var(--dropdown-hover)'; }}
+                                onMouseLeave={e => { if (d && !isSelFn(d)) e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                {d || ''}
+                            </button>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selectedDate, selectedTime, onSelectDate, children }) {
     const { theme } = useTheme();
     const dropRef = useRef(null);
+    const scrollRef = useRef(null);
     const [pos, setPos] = useState({ top: 0, left: 0, width: 300, visible: false });
-    const [calMonth, setCalMonth] = useState(new Date().getMonth());
-    const [calYear, setCalYear] = useState(new Date().getFullYear());
-    const isMobileScreen = () => window.innerWidth <= 600;
+    
+    // Infinite Scroll State
+    const [months, setMonths] = useState([]);
+    const [activeMY, setActiveMY] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() });
+    
+    useEffect(() => {
+        if (isOpen) {
+            const today = new Date();
+            const initialMonths = [];
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+                initialMonths.push({ month: d.getMonth(), year: d.getFullYear() });
+            }
+            setMonths(initialMonths);
+            setActiveMY({ month: today.getMonth(), year: today.getFullYear() });
+        }
+    }, [isOpen]);
+
+    const loadMore = () => {
+        setMonths(prev => {
+            const last = prev[prev.length - 1];
+            const next = [];
+            for (let i = 1; i <= 6; i++) {
+                const d = new Date(last.year, last.month + i, 1);
+                next.push({ month: d.getMonth(), year: d.getFullYear() });
+            }
+            return [...prev, ...next];
+        });
+    };
+
+    const handleScroll = (e) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.target;
+        
+        // Infinite scroll loading
+        if (scrollHeight - scrollTop - clientHeight < 300) {
+            loadMore();
+        }
+
+        // Dynamic Header Update
+        const children = e.target.querySelectorAll('.month-block');
+        const containerRect = e.target.getBoundingClientRect();
+        
+        for (const child of children) {
+            const rect = child.getBoundingClientRect();
+            // If the block is visible at the top of the scroll container
+            if (rect.bottom > containerRect.top + 40) {
+                const m = parseInt(child.dataset.month);
+                const y = parseInt(child.dataset.year);
+                if (m !== activeMY.month || y !== activeMY.year) {
+                    setActiveMY({ month: m, year: y });
+                }
+                break;
+            }
+        }
+    };
 
     // ---- Position calculation ----
     useEffect(() => {
@@ -45,53 +177,58 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
 
         const updatePosition = () => {
             const PANEL_W = Math.min(300, window.innerWidth - 16);
-            let PANEL_H = 420; // Default estimate
-
-            if (dropRef.current) {
-                PANEL_H = dropRef.current.offsetHeight;
-            }
+            const PANEL_H = Math.min(500, window.innerHeight - 32);
 
             if (anchorRef?.current) {
                 const rect = anchorRef.current.getBoundingClientRect();
-                
-                // Horizontal: Try to align right edges (RTL standard), but clamp to viewport
-                let left = rect.right - PANEL_W;
-                if (left < 8) left = 8;
-                if (left + PANEL_W > window.innerWidth - 8) {
-                    left = window.innerWidth - PANEL_W - 8;
-                }
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
 
-                // Vertical: Check space below vs above
-                const spaceBelow = window.innerHeight - rect.bottom - 16;
-                const spaceAbove = rect.top - 16;
+                const spaceRight = screenW - rect.right - 12;
+                const spaceLeft = rect.left - 12;
+                const spaceBelow = screenH - rect.bottom - 12;
+                const spaceAbove = rect.top - 12;
 
-                let top;
-                if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
-                    // Fits below
-                    top = rect.bottom + 6;
+                let top, left;
+
+                if (spaceLeft >= PANEL_W) {
+                    left = rect.left - PANEL_W - 2;
+                    top = rect.top;
+                } else if (spaceRight >= PANEL_W) {
+                    left = rect.right + 2;
+                    top = rect.top;
                 } else {
-                    // Fits above
-                    top = rect.top - PANEL_H - 6;
+                    const screenMid = screenW / 2;
+                    const anchorMid = rect.left + rect.width / 2;
+
+                    if (anchorMid > screenMid) {
+                        left = rect.right - PANEL_W;
+                    } else {
+                        left = rect.left;
+                    }
+
+                    if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
+                        top = rect.bottom + 2;
+                    } else {
+                        top = rect.top - PANEL_H - 2;
+                    }
                 }
 
-                // Final safety clamp for vertical
+                if (left < 8) left = 8;
+                if (left + PANEL_W > screenW - 8) left = screenW - PANEL_W - 8;
                 if (top < 8) top = 8;
-                if (top + PANEL_H > window.innerHeight - 8) {
-                    top = window.innerHeight - PANEL_H - 8;
-                }
+                if (top + PANEL_H > screenH - 8) top = screenH - PANEL_H - 8;
 
                 setPos({ top, left, width: PANEL_W, visible: true });
             } else {
-                const left = Math.max(8, (window.innerWidth - PANEL_W) / 2);
-                setPos({ top: 80, left, width: PANEL_W, visible: true });
+                setPos({ top: 80, left: (window.innerWidth - PANEL_W) / 2, width: PANEL_W, visible: true });
             }
         };
 
-        // Run once immediately, then again after a short delay to account for layout
         updatePosition();
         const timer = setTimeout(updatePosition, 10);
         return () => clearTimeout(timer);
-    }, [isOpen, anchorRef, children]);
+    }, [isOpen, anchorRef]);
 
     // ---- Click-outside ----
     useEffect(() => {
@@ -105,20 +242,8 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
         return () => document.removeEventListener('mousedown', handler);
     }, [isOpen, onClose, anchorRef]);
 
-    // ---- Listen for Enter to close manually ----
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (isOpen && e.key === 'Enter') {
-                onClose();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
-
     if (!isOpen) return null;
 
-    // ---- Quick picks ----
     const today = new Date();
     const todayStr = today.toLocaleDateString('en-CA');
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
@@ -140,47 +265,7 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
         { label: 'שבוע הבא', sub: fmtFull(nextMonday), icon: <span style={iconWrap('rgba(155,89,182,0.12)')}><ArrowLeft size={14} style={{ color: '#9b59b6' }} /></span>, date: nextMonday.toLocaleDateString('en-CA') },
     ];
 
-    // ---- Month navigation (stop propagation so parent modal doesn't close) ----
-    const goPrev = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        setCalMonth(m => { if (m === 0) { setCalYear(y => y - 1); return 11; } return m - 1; });
-    };
-    const goNext = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        setCalMonth(m => { if (m === 11) { setCalYear(y => y + 1); return 0; } return m + 1; });
-    };
-    const goToday = (e) => {
-        e.stopPropagation();
-        setCalMonth(today.getMonth());
-        setCalYear(today.getFullYear());
-    };
-
-    // ---- Calendar grid ----
-    const rows = buildCalRows(calYear, calMonth);
-
-    const isTodayFn = (d) => d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
-    const isSelFn = (d) => {
-        if (!d || !selectedDate) return false;
-        const s = new Date(selectedDate);
-        return d === s.getDate() && calMonth === s.getMonth() && calYear === s.getFullYear();
-    };
-
-    const handleDayClick = (e, d) => {
-        e.stopPropagation();
-        if (!d) return;
-        // Construct date in local time
-        const s = new Date(calYear, calMonth, d);
-        // Format YYYY-MM-DD manually to avoid UTC shift
-        const year = s.getFullYear();
-        const month = String(s.getMonth() + 1).padStart(2, '0');
-        const day = String(s.getDate()).padStart(2, '0');
-        onSelectDate(`${year}-${month}-${day}`);
-    };
-
-    // ---- Render ----
-    const panel = (
+    return createPortal(
         <div
             ref={dropRef}
             onMouseDown={e => e.stopPropagation()}
@@ -199,18 +284,21 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                 animation: 'slideUpFade 0.2s var(--ease-premium)',
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)',
-                maxHeight: 'calc(100vh - 16px)',
-                overflowY: 'auto'
+                maxHeight: 'calc(100vh - 32px)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
             }}
         >
-            {/* Header Summary (Always Visible) */}
+            {/* 1. Header Summary */}
             <div style={{
-                padding: '0.6rem 1rem 0.5rem',
+                padding: '0.8rem 1rem 0.6rem',
                 borderBottom: '1px solid var(--border-color)',
-                fontSize: '0.9rem',
-                fontWeight: 600,
+                fontSize: '0.95rem',
+                fontWeight: 700,
                 color: 'var(--text-primary)',
-                textAlign: 'right'
+                textAlign: 'right',
+                flexShrink: 0
             }}>
                 {(() => {
                     if (!selectedDate) return 'בחר תאריך';
@@ -220,135 +308,104 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                 })()}
             </div>
 
-            {/* Quick picks */}
-            <div style={{ padding: '0.3rem 0' }}>
+            {/* 2. Fixed Quick picks */}
+            <div style={{ padding: '0.4rem 0', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
                 {quickPicks.map((qp, i) => (
                     <button key={i}
                         onClick={(e) => { e.stopPropagation(); onSelectDate(qp.date); onClose(); }}
                         style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            width: '100%', padding: '0.45rem 0.9rem', border: 'none', background: 'transparent',
-                            cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.87rem',
+                            width: '100%', padding: '0.4rem 1rem', border: 'none', background: 'transparent',
+                            cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.85rem',
                             fontFamily: 'inherit', direction: 'rtl',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
                             {qp.icon}
-                            <span style={{ fontWeight: 500 }}>{qp.label}</span>
+                            <span style={{ fontWeight: 600 }}>{qp.label}</span>
                         </div>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.77rem' }}>{qp.sub}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', opacity: 0.7 }}>{qp.sub}</span>
                     </button>
                 ))}
             </div>
 
-            <div style={{ height: '1px', background: 'var(--border-color)', margin: '0 0.7rem' }} />
-
-            {/* Calendar header: Month label RIGHT, arrows LEFT */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.45rem 0.9rem 0.2rem', direction: 'rtl' }}>
-                {/* RIGHT: month + year title */}
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                    {hebrewMonthNames[calMonth]} {calYear}
-                </span>
-
-                {/* LEFT: navigation arrows. In RTL: right key = ▶ prev, left key = ◀ next */}
-                <div style={{ display: 'flex', gap: '0.1rem', alignItems: 'center' }}>
-                    {/* ← next month (left side in RTL visual = future) */}
-                    <button onClick={goNext} onMouseDown={e => e.stopPropagation()}
-                        style={navBtnStyle()}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        title="חודש הבא"
-                    >
-                        <ChevronLeft size={15} />
-                    </button>
-                    <button onClick={goToday} onMouseDown={e => e.stopPropagation()}
-                        style={{ ...navBtnStyle(), fontSize: '10px', width: 20, height: 20, borderRadius: '50%' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        title="חודש נוכחי"
-                    >○</button>
-                    {/* → prev month (right side in RTL visual = past) */}
-                    <button onClick={goPrev} onMouseDown={e => e.stopPropagation()}
-                        style={navBtnStyle()}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        title="חודש קודם"
-                    >
-                        <ChevronRight size={15} />
-                    </button>
+            {/* 3. Dynamic Month/Year Header + Global Day Headers */}
+            <div style={{ 
+                padding: '0.8rem 0.7rem 0.4rem', // Match MonthView padding (0.7rem)
+                borderBottom: '1px solid var(--border-color)', 
+                background: 'var(--bg-secondary)',
+                flexShrink: 0 
+            }}>
+                <div style={{ 
+                    fontWeight: 800, 
+                    fontSize: '0.9rem', 
+                    color: 'var(--text-primary)', 
+                    textAlign: 'right', 
+                    marginBottom: '0.6rem',
+                    paddingRight: '0.4rem' // Match MonthView inner padding
+                }}>
+                    {hebrewMonthNames[activeMY.month]} {activeMY.year}
+                </div>
+                
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(7, 1fr)', 
+                    textAlign: 'center', 
+                    direction: 'rtl',
+                    opacity: 0.6
+                }}>
+                    {HEB_DAY_HEADERS.map((lbl, i) => (
+                        <span key={i} style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800 }}>
+                            {lbl}
+                        </span>
+                    ))}
                 </div>
             </div>
 
-            {/* Day headers: Sun=א (right) … Sat=ש (left) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', padding: '0 0.7rem', direction: 'rtl' }}>
-                {HEB_DAY_HEADERS.map((lbl, i) => (
-                    <span key={i} style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 700, padding: '0.2rem 0' }}>
-                        {lbl}
-                    </span>
-                ))}
-            </div>
+            {/* 4. Scrollable Area */}
+            <div 
+                ref={scrollRef}
+                onScroll={handleScroll}
+                style={{ 
+                    overflowY: 'auto', 
+                    flex: 1,
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    background: 'var(--bg-primary)'
+                }}
+            >
+                <div style={{ direction: 'rtl' }}>
+                    {months.map((m, i) => (
+                        <MonthView 
+                            key={`${m.year}-${m.month}`}
+                            year={m.year}
+                            month={m.month}
+                            isFirst={i === 0}
+                            selectedDate={selectedDate}
+                            onSelectDate={(d) => { onSelectDate(d); onClose(); }}
+                            theme={theme}
+                        />
+                    ))}
+                </div>
 
-            {/* Calendar rows */}
-            <div style={{ padding: '0 0.7rem 0.5rem', direction: 'rtl' }}>
-                {rows.map((row, ri) => (
-                    <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center' }}>
-                        {row.map((d, ci) => (
-                            <button key={ci}
-                                onClick={(e) => handleDayClick(e, d)}
-                                onMouseDown={e => e.stopPropagation()}
-                                disabled={!d}
-                                style={{
-                                    border: 'none',
-                                    background: isSelFn(d) ? 'var(--primary-color)' : 'transparent',
-                                    color: isSelFn(d) ? 'white' : isTodayFn(d) ? '#d1453b' : d ? 'var(--text-primary)' : 'transparent',
-                                    fontWeight: isTodayFn(d) ? 700 : 400,
-                                    fontSize: '0.8rem',
-                                    cursor: d ? 'pointer' : 'default',
-                                    borderRadius: '50%',
-                                    width: 28, height: 28,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    margin: '2px auto',
-                                    transition: 'background 0.1s',
-                                    fontFamily: 'inherit',
-                                }}
-                                onMouseEnter={e => { if (d && !isSelFn(d)) e.currentTarget.style.background = 'var(--dropdown-hover)'; }}
-                                onMouseLeave={e => { if (d && !isSelFn(d)) e.currentTarget.style.background = 'transparent'; }}
-                            >
-                                {d || ''}
-                            </button>
-                        ))}
-                    </div>
-                ))}
-            </div>
-
-            {
-                children && (
-                    <>
-                        <div style={{ height: '1px', background: 'var(--border-color)' }} />
+                {children && (
+                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '0.5rem', background: 'var(--bg-secondary)' }}>
                         {children}
-                    </>
-                )
-            }
-        </div >
+                    </div>
+                )}
+            </div>
+        </div>,
+        document.body
     );
-
-    return createPortal(panel, document.body);
 }
 
 // ---- Style helpers ----
 function iconWrap(bg, fontSize) {
     return {
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 22, height: 22, borderRadius: 4, background: bg,
+        width: 24, height: 24, borderRadius: 6, background: bg,
         fontSize: fontSize || undefined,
-    };
-}
-function navBtnStyle() {
-    return {
-        border: 'none', background: 'transparent', cursor: 'pointer',
-        color: 'var(--text-secondary)', padding: '3px', borderRadius: '4px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
     };
 }

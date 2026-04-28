@@ -484,7 +484,7 @@ const AddTaskCard = ({
 
                                     {showMoreMenu && (
                                         <div className="more-actions-menu" style={{
-                                            position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
+                                            position: 'absolute', top: '100%', right: '0', marginTop: '2px',
                                             background: 'var(--bg-secondary)',
                                             border: '1px solid var(--border-color)',
                                             borderRadius: '8px',

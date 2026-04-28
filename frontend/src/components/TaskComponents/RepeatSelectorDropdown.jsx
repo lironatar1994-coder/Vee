@@ -30,26 +30,46 @@ const RepeatSelectorDropdown = ({ isOpen, onClose, anchorRef, repeatRule, onSele
                 const PANEL_W = menuRect.width || 200;
                 const PANEL_H = menuRect.height || 250;
 
-                // Horizontal: Try to align right edges (RTL), clamp to viewport
-                let left = rect.right - PANEL_W;
-                if (left < 8) left = 8;
-                if (left + PANEL_W > window.innerWidth - 8) {
-                    left = window.innerWidth - PANEL_W - 8;
-                }
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
 
-                // Vertical: Check space below vs above
-                const spaceBelow = window.innerHeight - rect.bottom - 16;
-                const spaceAbove = rect.top - 16;
+                const spaceRight = screenW - rect.right - 12;
+                const spaceLeft = rect.left - 12;
+                const spaceBelow = screenH - rect.bottom - 12;
+                const spaceAbove = rect.top - 12;
 
-                let top;
-                if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
-                    top = rect.bottom + 6;
+                let top, left;
+
+                // Prefer side-spawning
+                if (spaceLeft >= PANEL_W) {
+                    left = rect.left - PANEL_W - 2;
+                    top = rect.top;
+                } else if (spaceRight >= PANEL_W) {
+                    left = rect.right + 2;
+                    top = rect.top;
                 } else {
-                    top = rect.top - PANEL_H - 6;
+                    // Fallback to vertical
+                    const screenMid = screenW / 2;
+                    const anchorMid = rect.left + rect.width / 2;
+                    if (anchorMid > screenMid) {
+                        left = rect.right - PANEL_W;
+                    } else {
+                        left = rect.left;
+                    }
+
+                    if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
+                        top = rect.bottom + 2;
+                    } else {
+                        top = rect.top - PANEL_H - 2;
+                    }
                 }
 
+                // Global safety clamping
+                if (left < 8) left = 8;
+                if (left + PANEL_W > screenW - 8) left = screenW - PANEL_W - 8;
                 if (top < 8) top = 8;
-                
+                if (top + PANEL_H > screenH - 8) top = screenH - PANEL_H - 8;
+
                 setPos({ top, left, visible: true });
             }
         };

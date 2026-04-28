@@ -93,18 +93,52 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
         if (isOpen && anchorRef.current) {
             const updatePosition = () => {
                 if (dropdownRef.current) {
-                    const anchorRect = anchorRef.current.getBoundingClientRect();
+                    const rect = anchorRef.current.getBoundingClientRect();
                     const dropdownRect = dropdownRef.current.getBoundingClientRect();
+                    const PANEL_W = dropdownRect.width || 320;
+                    const PANEL_H = dropdownRect.height || 280;
 
-                    let top = anchorRect.top - dropdownRect.height - 8;
-                    let left = anchorRect.right - dropdownRect.width;
-                    
-                    if (left < 16) left = 16;
-                    if (left + dropdownRect.width > window.innerWidth - 16) {
-                        left = window.innerWidth - dropdownRect.width - 16;
+                    const screenW = window.innerWidth;
+                    const screenH = window.innerHeight;
+
+                    const spaceRight = screenW - rect.right - 12;
+                    const spaceLeft = rect.left - 12;
+                    const spaceBelow = screenH - rect.bottom - 12;
+                    const spaceAbove = rect.top - 12;
+
+                    let top, left;
+
+                    // Prefer side-spawning
+                    if (spaceLeft >= PANEL_W) {
+                        left = rect.left - PANEL_W - 2;
+                        top = rect.top;
+                    } else if (spaceRight >= PANEL_W) {
+                        left = rect.right + 2;
+                        top = rect.top;
+                    } else {
+                        // Fallback to vertical
+                        const screenMid = screenW / 2;
+                        const anchorMid = rect.left + rect.width / 2;
+                        if (anchorMid > screenMid) {
+                            left = rect.right - PANEL_W;
+                        } else {
+                            left = rect.left;
+                        }
+
+                        if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
+                            top = rect.bottom + 2;
+                        } else {
+                            top = rect.top - PANEL_H - 2;
+                        }
                     }
 
-                    setDropdownPos({ top, left: Math.max(0, left), visible: true });
+                    // Global safety clamping
+                    if (left < 8) left = 8;
+                    if (left + PANEL_W > screenW - 8) left = screenW - PANEL_W - 8;
+                    if (top < 8) top = 8;
+                    if (top + PANEL_H > screenH - 8) top = screenH - PANEL_H - 8;
+
+                    setDropdownPos({ top, left, visible: true });
                 } else {
                     // If ref is not ready, check again on next frame
                     requestAnimationFrame(updatePosition);
