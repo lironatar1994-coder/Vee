@@ -321,4 +321,4 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
     );
 };
 
-export default ProjectSelectorDropdown;
+export default React.memo(ProjectSelectorDropdown);

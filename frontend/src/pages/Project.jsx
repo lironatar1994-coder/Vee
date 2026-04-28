@@ -31,7 +31,7 @@ import ProjectActionMenu from '../components/ProjectComponents/ProjectActionMenu
 import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
 import ProjectSettingsModal from '../components/ProjectComponents/ProjectSettingsModal';
-import { ActionMenu, SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
+import { ActionMenu, SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList, AddTaskButton } from '../components/TaskComponents/index.jsx';
 import { useTaskDnD, buildHierarchy } from '../hooks/useTaskDnD';
 import ProjectComments from '../components/ProjectComments';
 import ProjectTeamModal from '../components/ProjectTeamModal';
@@ -57,6 +57,7 @@ const Project = () => {
     const [addingToList, setAddingToList] = useState(null); // ID of checklist to add main task to
     const [addingAtIndex, setAddingAtIndex] = useState(null);
     const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
+    const isSubmittingRef = useRef(false);
 
     const [expandedChecklists, setExpandedChecklists] = useState(() => {
         try {
@@ -305,12 +306,12 @@ const Project = () => {
         try {
             const res = await authFetch(`${API_URL}/projects/${projectId}`);
             if (!res.ok) throw new Error('Failed to fetch project');
-            
+
             const data = await res.json();
             const { project: projectData, checklists: checklistsData, comments: commentsData, members: membersData } = data;
 
             setProject(projectData);
-            
+
             // Sort checklists so empty titled ones (no list) are always first
             const sortedChecklists = (checklistsData || []).sort((a, b) => {
                 if (a.title === '' && b.title !== '') return -1;
@@ -343,7 +344,7 @@ const Project = () => {
 
             // Fetch secondary data (progress is date-dependent)
             fetchProgressForDate(selectedDate);
-            
+
         } catch (err) {
             console.error('Error fetching project data:', err);
             toast.error('שגיאה בטעינת נתוני הפרויקט');
@@ -396,7 +397,7 @@ const Project = () => {
             setTempTitle(project.title);
         }
     };
-    
+
     const handleDescriptionSave = async () => {
         if (tempDescription === (project.description || '')) {
             setIsEditingDescription(false);
@@ -509,8 +510,8 @@ const Project = () => {
         try {
             const res = await authFetch(`${API_URL}/projects/${projectId}`, {
                 method: 'PUT',
-                body: JSON.stringify({ 
-                    title: settings.title.trim(), 
+                body: JSON.stringify({
+                    title: settings.title.trim(),
                     color: settings.color,
                     description: settings.description.trim()
                 })
@@ -539,76 +540,44 @@ const Project = () => {
         });
     };
 
-    const handleGlobalAddTask = async () => {
-        // Find existing empty-titled checklist
-        const emptyList = checklists.find(c => c.title === '');
-        if (emptyList) {
-            setExpandedChecklists(prev => ({ ...prev, [emptyList.id]: true }));
-            setAddingToList(emptyList.id);
-            return;
+    const handleGlobalAddTask = useCallback(async () => {
+        if (activePageTab === 'activity') setActivePageTab('tasks');
+        
+        // Find a "headless" list (empty title) or create one if none exists
+        let targetList = checklists.find(c => c.title === '');
+        if (!targetList) {
+            try {
+                const res = await authFetch(`${API_URL}/users/current/checklists`, {
+                    method: 'POST',
+                    body: JSON.stringify({ title: '', project_id: projectId })
+                });
+                if (res.ok) {
+                    targetList = await res.json();
+                    setChecklists(prev => [targetList, ...prev]);
+                    setExpandedChecklists(prev => ({ ...prev, [targetList.id]: true }));
+                }
+            } catch (e) { console.error(e); }
         }
 
-        // Create one if none exists
-        try {
-            const res = await authFetch(`${API_URL}/users/current/checklists`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    title: '',
-                    project_id: projectId
-                })
-            });
-            if (res.ok) {
-                const newList = await res.json();
-                setChecklists([newList, ...checklists]);
-                setExpandedChecklists(prev => ({ ...prev, [newList.id]: true }));
-                setAddingToList(newList.id);
-                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
-            }
-        } catch (e) {
-            console.error(e);
-            toast.error("שגיאה ביצירת רשימה");
+        if (targetList) {
+            setExpandedChecklists(prev => ({ ...prev, [targetList.id]: true }));
+            setAddingToList(targetList.id);
+            setAddingToItem(null);
+            setAddingAtIndex(0);
+            setNewItemContent('');
+            window.dispatchEvent(new CustomEvent('fabAddTaskOpened'));
         }
-    };
+    }, [checklists, activePageTab, projectId, authFetch]);
 
     // FAB integration: open inline AddTaskCard in first active checklist
     useEffect(() => {
-        const handleFabAddTask = async () => {
-            if (activePageTab === 'activity') return;
-            // Use the first checklist as target (default behavior)
-            const target = checklists[0];
-
-            if (!target) {
-                // No checklists — create a default one
-                try {
-                    const res = await authFetch(`${API_URL}/users/current/checklists`, {
-                        method: 'POST',
-                        body: JSON.stringify({ title: '', project_id: projectId })
-                    });
-                    if (res.ok) {
-                        const newList = await res.json();
-                        setChecklists([newList]);
-                        setExpandedChecklists(prev => ({ ...prev, [newList.id]: true }));
-                        setAddingToList(newList.id);
-                        setAddingAtIndex(null);
-                        window.dispatchEvent(new CustomEvent('fabAddTaskOpened'));
-                    }
-                } catch (e) { console.error(e); }
-                return;
-            }
-
-            setExpandedChecklists(prev => ({ ...prev, [target.id]: true }));
-            setAddingToList(target.id);
-            setAddingToItem(null);
-            setAddingAtIndex(0); // Default to top
-            setNewItemContent('');
-            window.dispatchEvent(new CustomEvent('fabAddTaskOpened'));
-        };
+        const handleFabAddTask = () => handleGlobalAddTask();
         window.addEventListener('fabAddTask', handleFabAddTask);
         return () => window.removeEventListener('fabAddTask', handleFabAddTask);
-    }, [checklists, activePageTab, projectId, selectedDayOfWeek, user?.id]);
-    
+    }, [handleGlobalAddTask]);
+
     const handleChecklistTitleChange = useCallback((checklistId, newTitle) => {
-        setChecklists(prev => prev.map(c => 
+        setChecklists(prev => prev.map(c =>
             c.id === checklistId ? { ...c, title: newTitle } : c
         ));
     }, []);
@@ -656,9 +625,12 @@ const Project = () => {
     };
 
     const handleAddItem = async (e, _checklistId, parentItemId = null, explicitContent = null) => {
+        if (isSubmittingRef.current) return;
         if (e) e.preventDefault();
         const contentToSave = explicitContent !== null ? explicitContent : newItemContent;
         if (!contentToSave || !contentToSave.trim()) return;
+
+        isSubmittingRef.current = true;
 
         const targetDateInput = window.globalNewItemDate || null;
         const descriptionInput = window.globalNewItemDescription || null;
@@ -693,8 +665,8 @@ const Project = () => {
             if (exists) {
                 return prev.map(c => {
                     if (c.id === _checklistId) {
-                        const newItems = currentAddingAtIndex === 0 
-                            ? [tempItem, ...(c.items || [])] 
+                        const newItems = currentAddingAtIndex === 0
+                            ? [tempItem, ...(c.items || [])]
                             : [...(c.items || []), tempItem];
                         return { ...c, items: newItems };
                     }
@@ -740,7 +712,7 @@ const Project = () => {
                     items: (c.items || []).map(item => item.id === tempId ? newItem : item)
                 })));
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
-                toast.success('משימה 1 נוצרה');
+                toast.success('משימה 1 נוצרה', { id: 'task-creation-success' });
             } else {
                 throw new Error('Failed to create item');
             }
@@ -752,12 +724,14 @@ const Project = () => {
                 items: (c.items || []).filter(item => item.id !== tempId)
             })));
             toast.error("שגיאה ביצירת המשימה");
+        } finally {
+            isSubmittingRef.current = false;
         }
     };
 
     const handleDeleteItem = async (e, itemId, checklistId) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-        
+
         // Find task name for modal (potentially deep)
         let taskName = '';
         checklists.some(c => {
@@ -945,13 +919,13 @@ const Project = () => {
     const handleDragEnd = async (event) => {
         const { active, over } = event;
         handleDragCancel();
-        
+
         if (active.data.current?.type === 'FAB') {
             if (over?.data.current?.type === 'FABSlot') {
                 const slotId = over.id.toString(); // slot-checklistId-index
                 const raw = slotId.replace('slot-', '');
                 const lastDashIndex = raw.lastIndexOf('-');
-                
+
                 const checklistIdStr = raw.substring(0, lastDashIndex);
                 const checklistId = isNaN(checklistIdStr) ? checklistIdStr : parseInt(checklistIdStr, 10);
                 const index = parseInt(raw.substring(lastDashIndex + 1), 10);
@@ -1124,6 +1098,7 @@ const Project = () => {
                         </h1>
                     )}
 
+
                     {(project?.description || isEditingDescription) && (
                         <div style={{ marginTop: '8px', width: '100%' }}>
                             {isEditingDescription ? (
@@ -1150,12 +1125,12 @@ const Project = () => {
                                     }}
                                 />
                             ) : (
-                                <p 
+                                <p
                                     onClick={() => { setIsEditingDescription(true); setTempDescription(project.description || ''); }}
-                                    style={{ 
-                                        margin: 0, 
-                                        fontSize: '0.95rem', 
-                                        color: 'var(--text-secondary)', 
+                                    style={{
+                                        margin: 0,
+                                        fontSize: '0.95rem',
+                                        color: 'var(--text-secondary)',
                                         lineHeight: '1.5',
                                         cursor: 'pointer',
                                         whiteSpace: 'pre-wrap',
@@ -1185,7 +1160,7 @@ const Project = () => {
                             <MoreHorizontal size={20} strokeWidth={1.5} color="var(--text-secondary)" />
                         </button>
 
-                        <ProjectActionMenu 
+                        <ProjectActionMenu
                             show={showProjectMenu}
                             onClose={() => setShowProjectMenu(false)}
                             onEdit={() => setShowSettings(true)}
@@ -1221,316 +1196,277 @@ const Project = () => {
                     )}
 
                     {/* Main Content Area */}
-                    
+
                     {activeChecklists.length === 0 ? (
-                                <div style={{ padding: '0.5rem 0' }}>
-                                    <EmptyStateDropZone active={activeDragItem?.data?.current?.type === 'FAB'} checklistId={project.id} />
-                                    <ListDropSlot id="list-slot-0" activeType={activeDragItem?.data?.current?.type} />
+                        <div style={{ padding: '0.5rem 0' }}>
+                            <EmptyStateDropZone active={!addingToList && activeDragItem?.data?.current?.type === 'FAB'} checklistId={project.id} />
+                            <ListDropSlot id="list-slot-0" activeType={activeDragItem?.data?.current?.type} />
 
-                                    {/* Inline Add Task for Empty Projects */}
-                                    {activePageTab === 'tasks' && !isCreatingList && (
-                                        <div
-                                            onClick={handleGlobalAddTask}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '10px',
-                                                padding: '10px 0',
-                                                cursor: 'pointer',
-                                                color: 'var(--add-task-btn-color)',
-                                                transition: 'all 0.2s ease',
-                                                direction: 'rtl',
-                                                WebkitTapHighlightColor: 'transparent',
-                                                width: 'fit-content'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.color = 'var(--add-task-btn-hover)';
-                                                e.currentTarget.style.transform = 'translateX(-2px)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.color = 'var(--add-task-btn-color)';
-                                                e.currentTarget.style.transform = 'none';
-                                            }}
-                                        >
-                                            <div style={{
-                                                width: '20px',
-                                                height: '20px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexShrink: 0
-                                            }}>
-                                                <Plus size={18} strokeWidth={2.5} />
-                                            </div>
-                                            <span style={{ 
-                                                fontSize: '16px', 
-                                                fontWeight: 500,
-                                                letterSpacing: '-0.2px'
-                                            }}>
-                                                הוסף משימה
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {isCreatingList === true && activePageTab === 'tasks' && (
-                                        <form 
-                                            className="add-section-form glass-morphism" 
-                                            onSubmit={handleCreateCustomList}
-                                            style={{
-                                                padding: '1rem',
-                                                marginBottom: '1rem',
-                                                borderRadius: 'var(--radius-lg)',
-                                                border: '1px solid rgba(var(--primary-rgb), 0.15)',
-                                                background: 'rgba(255, 255, 255, 0.6)',
-                                                backdropFilter: 'blur(12px)',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: '0.75rem',
-                                                boxShadow: '0 10px 30px -10px rgba(var(--primary-rgb), 0.1)'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
-                                                <input
-                                                    type="text"
-                                                    className="add-section-input"
-                                                    placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                                    value={newListTitle}
-                                                    onChange={(e) => setNewListTitle(e.target.value)}
-                                                    autoFocus
-                                                    style={{
-                                                        background: 'transparent',
-                                                        border: 'none',
-                                                        fontSize: '1rem',
-                                                        fontWeight: '600',
-                                                        color: 'var(--text-primary)',
-                                                        outline: 'none',
-                                                        width: '100%',
-                                                        fontFamily: 'inherit'
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
-                                                <button 
-                                                    type="submit" 
-                                                    className="btn btn-primary" 
-                                                    disabled={!newListTitle.trim()}
-                                                    style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
-                                                >
-                                                    הוסף רשימה
-                                                </button>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn btn-soft" 
-                                                    onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}
-                                                    style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
-                                                >
-                                                    ביטול
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-                                    {isCreatingList === true && activePageTab === 'tasks' && (
-                                        <form 
-                                            className="add-section-form glass-morphism" 
-                                            onSubmit={handleCreateCustomList}
-                                            style={{
-                                                padding: '1rem',
-                                                marginBottom: '1rem',
-                                                borderRadius: 'var(--radius-lg)',
-                                                border: '1px solid rgba(var(--primary-rgb), 0.15)',
-                                                background: 'rgba(255, 255, 255, 0.6)',
-                                                backdropFilter: 'blur(12px)',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: '0.75rem',
-                                                boxShadow: '0 10px 30px -10px rgba(var(--primary-rgb), 0.1)'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
-                                                <input
-                                                    type="text"
-                                                    className="add-section-input"
-                                                    placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                                    value={newListTitle}
-                                                    onChange={(e) => setNewListTitle(e.target.value)}
-                                                    autoFocus
-                                                    style={{
-                                                        background: 'transparent',
-                                                        border: 'none',
-                                                        fontSize: '1rem',
-                                                        fontWeight: '600',
-                                                        color: 'var(--text-primary)',
-                                                        outline: 'none',
-                                                        width: '100%',
-                                                        fontFamily: 'inherit'
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
-                                                <button 
-                                                    type="submit" 
-                                                    className="btn btn-primary" 
-                                                    disabled={!newListTitle.trim()}
-                                                    style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
-                                                >
-                                                    הוסף רשימה
-                                                </button>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn btn-soft" 
-                                                    onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}
-                                                    style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
-                                                >
-                                                    ביטול
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    <SortableContext
-                                        items={activeChecklists.map(c => `checklist-${c.id}`)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        {activeChecklists.map((checklist, idx) => (
-                                            <React.Fragment key={checklist.id}>
-                                                <ListDropSlot 
-                                                    id={`list-slot-${idx}`} 
-                                                    activeType={activeDragItem?.data?.current?.type} 
-                                                    isLastSlot={false}
-                                                />
-                                                <div data-fab-target={idx === 0 ? 'true' : undefined}>
-                                                <SortableChecklistCard
-                                                    checklist={checklist}
-                                                    idx={idx}
-                                                    expandedChecklists={expandedChecklists}
-                                                    toggleChecklistExpanded={toggleChecklistExpanded}
-                                                    handleDeleteChecklist={handleDeleteChecklist}
-                                                    todayProgress={todayProgress}
-                                                    sensors={sensors}
-                                                    handleDragEnd={handleDragEnd}
-                                                    activeTab={activeTab}
-                                                    addingToList={addingToList}
-                                                    addingToItem={addingToItem}
-                                                    toggleItem={toggleItem}
-                                                    setAddingToItem={setAddingToItem}
-                                                    setAddingToList={setAddingToList}
-                                                    handleAddItem={handleAddItem}
-                                                    handleDeleteItem={handleDeleteItem}
-                                                    newItemContent={newItemContent}
-                                                    setNewItemContent={setNewItemContent}
-                                                    handleSetTargetDate={handleSetTargetDate}
-                                                    handleUpdateItem={handleUpdateItem}
-                                                    buildHierarchy={buildHierarchy}
-                                                    calculateProgress={calculateProgress}
-                                                    setIsCreatingList={setIsCreatingList}
-                                                    projectTitle={project?.title || ''}
-                                                    defaultProject={project}
-                                                    onToggleExpand={() => toggleChecklistExpanded(checklist.id)}
-                                                    onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
-                                                    onDeleteItem={handleDeleteItem}
-                                                    onUpdateItem={handleUpdateItem}
-                                                    onToggleItem={toggleItem}
-                                                    onDeleteChecklist={(e) => handleDeleteChecklist(e, checklist.id)}
-                                                    onTitleChange={handleChecklistTitleChange}
-                                                    API_URL={API_URL}
-                                                    isInbox={false}
-                                                    useProgressArray={true}
-                                                    useSharedDndContext={true}
-                                                    className={isWaterfalling && visibleChecklistIds.has(checklist.id) ? 'magic-reveal' : (location.state?.magicReveal ? `slide-down stagger-${(idx % 4) + 1}` : '')}
-                                                    visibleTaskIds={visibleTaskIds}
-                                                    isWaterfalling={isWaterfalling}
-                                                    hideAddButton={activePageTab === 'activity'}
-                                                    activeDragItem={activeDragItem}
-                                                    addingAtIndex={addingAtIndex}
-                                                />
-                                                </div>
-                                                {isCreatingList === checklist.id && activePageTab === 'tasks' && (
-                                                    <form 
-                                                        className="add-section-form glass-morphism" 
-                                                        onSubmit={handleCreateCustomList}
-                                                        style={{
-                                                            padding: '1rem',
-                                                            margin: '0.5rem 0 1.5rem 0',
-                                                            borderRadius: 'var(--radius-lg)',
-                                                            border: '1px solid rgba(var(--primary-rgb), 0.15)',
-                                                            background: 'rgba(255, 255, 255, 0.6)',
-                                                            backdropFilter: 'blur(12px)',
-                                                            display: 'flex',
-                                                            flexDirection: 'column',
-                                                            gap: '0.75rem',
-                                                            boxShadow: '0 10px 30px -10px rgba(var(--primary-rgb), 0.1)'
-                                                        }}
-                                                    >
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
-                                                            <input
-                                                                type="text"
-                                                                className="add-section-input"
-                                                                placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                                                value={newListTitle}
-                                                                onChange={(e) => setNewListTitle(e.target.value)}
-                                                                autoFocus
-                                                                style={{
-                                                                    background: 'transparent',
-                                                                    border: 'none',
-                                                                    fontSize: '1rem',
-                                                                    fontWeight: '600',
-                                                                    color: 'var(--text-primary)',
-                                                                    outline: 'none',
-                                                                    width: '100%',
-                                                                    fontFamily: 'inherit'
-                                                                }}
-                                                            />
-                                                        </div>
-                                                        <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
-                                                            <button 
-                                                                type="submit" 
-                                                                className="btn btn-primary" 
-                                                                disabled={!newListTitle.trim()}
-                                                                style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
-                                                            >
-                                                                הוסף רשימה
-                                                            </button>
-                                                            <button 
-                                                                type="button" 
-                                                                className="btn btn-soft" 
-                                                                onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}
-                                                                style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
-                                                            >
-                                                                ביטול
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
-                                        <ListDropSlot 
-                                            id={`list-slot-${activeChecklists.length}`} 
-                                            activeType={activeDragItem?.data?.current?.type} 
-                                            isLastSlot={true}
-                                        />
-                                    </SortableContext>
-
-                                    {activePageTab === 'tasks' && completedTasks.length > 0 && (
-                                        <CompletedTaskList 
-                                            completedTasks={completedTasks} 
-                                            uncompletedCount={uncompletedCount} 
-                                            onClearAll={handleClearProjectCompleted} 
-                                            todayProgress={todayProgress}
-                                        />
-                                    )}
-
-
-
+                            {activePageTab === 'tasks' && !isCreatingList && (
+                                <div style={{ maxWidth: '200px' }}>
+                                    <AddTaskButton onClick={handleGlobalAddTask} noMarginTop={true} />
                                 </div>
                             )}
-                        </>
+
+                            {isCreatingList === true && activePageTab === 'tasks' && (
+                                <form
+                                    className="add-section-form glass-morphism"
+                                    onSubmit={handleCreateCustomList}
+                                    style={{
+                                        padding: '1rem',
+                                        marginBottom: '1rem',
+                                        borderRadius: 'var(--radius-lg)',
+                                        border: '1px solid rgba(var(--primary-rgb), 0.15)',
+                                        background: 'rgba(255, 255, 255, 0.6)',
+                                        backdropFilter: 'blur(12px)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.75rem',
+                                        boxShadow: '0 10px 30px -10px rgba(var(--primary-rgb), 0.1)'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
+                                        <input
+                                            type="text"
+                                            className="add-section-input"
+                                            placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
+                                            value={newListTitle}
+                                            onChange={(e) => setNewListTitle(e.target.value)}
+                                            autoFocus
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                color: 'var(--text-primary)',
+                                                outline: 'none',
+                                                width: '100%',
+                                                fontFamily: 'inherit'
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary"
+                                            disabled={!newListTitle.trim()}
+                                            style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
+                                        >
+                                            הוסף רשימה
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-soft"
+                                            onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}
+                                            style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
+                                        >
+                                            ביטול
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                            {isCreatingList === true && activePageTab === 'tasks' && (
+                                <form
+                                    className="add-section-form glass-morphism"
+                                    onSubmit={handleCreateCustomList}
+                                    style={{
+                                        padding: '1rem',
+                                        marginBottom: '1rem',
+                                        borderRadius: 'var(--radius-lg)',
+                                        border: '1px solid rgba(var(--primary-rgb), 0.15)',
+                                        background: 'rgba(255, 255, 255, 0.6)',
+                                        backdropFilter: 'blur(12px)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.75rem',
+                                        boxShadow: '0 10px 30px -10px rgba(var(--primary-rgb), 0.1)'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
+                                        <input
+                                            type="text"
+                                            className="add-section-input"
+                                            placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
+                                            value={newListTitle}
+                                            onChange={(e) => setNewListTitle(e.target.value)}
+                                            autoFocus
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                color: 'var(--text-primary)',
+                                                outline: 'none',
+                                                width: '100%',
+                                                fontFamily: 'inherit'
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary"
+                                            disabled={!newListTitle.trim()}
+                                            style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
+                                        >
+                                            הוסף רשימה
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-soft"
+                                            onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}
+                                            style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
+                                        >
+                                            ביטול
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            <SortableContext
+                                items={activeChecklists.map(c => `checklist-${c.id}`)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {activeChecklists.map((checklist, idx) => (
+                                    <React.Fragment key={checklist.id}>
+                                        <ListDropSlot
+                                            id={`list-slot-${idx}`}
+                                            activeType={activeDragItem?.data?.current?.type}
+                                            isLastSlot={false}
+                                        />
+                                        <div data-fab-target={idx === 0 ? 'true' : undefined}>
+                                            <SortableChecklistCard
+                                                checklist={checklist}
+                                                idx={idx}
+                                                expandedChecklists={expandedChecklists}
+                                                toggleChecklistExpanded={toggleChecklistExpanded}
+                                                handleDeleteChecklist={handleDeleteChecklist}
+                                                todayProgress={todayProgress}
+                                                sensors={sensors}
+                                                handleDragEnd={handleDragEnd}
+                                                activeTab={activeTab}
+                                                addingToList={addingToList}
+                                                addingToItem={addingToItem}
+                                                toggleItem={toggleItem}
+                                                setAddingToItem={setAddingToItem}
+                                                setAddingToList={setAddingToList}
+                                                handleAddItem={handleAddItem}
+                                                handleDeleteItem={handleDeleteItem}
+                                                newItemContent={newItemContent}
+                                                setNewItemContent={setNewItemContent}
+                                                handleSetTargetDate={handleSetTargetDate}
+                                                handleUpdateItem={handleUpdateItem}
+                                                buildHierarchy={buildHierarchy}
+                                                calculateProgress={calculateProgress}
+                                                setIsCreatingList={setIsCreatingList}
+                                                projectTitle={project?.title || ''}
+                                                defaultProject={project}
+                                                onToggleExpand={() => toggleChecklistExpanded(checklist.id)}
+                                                onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
+                                                onDeleteItem={handleDeleteItem}
+                                                onUpdateItem={handleUpdateItem}
+                                                onToggleItem={toggleItem}
+                                                onDeleteChecklist={(e) => handleDeleteChecklist(e, checklist.id)}
+                                                onTitleChange={handleChecklistTitleChange}
+                                                API_URL={API_URL}
+                                                isInbox={false}
+                                                useProgressArray={true}
+                                                useSharedDndContext={true}
+                                                className={isWaterfalling && visibleChecklistIds.has(checklist.id) ? 'magic-reveal' : (location.state?.magicReveal ? `slide-down stagger-${(idx % 4) + 1}` : '')}
+                                                visibleTaskIds={visibleTaskIds}
+                                                isWaterfalling={isWaterfalling}
+                                                hideAddButton={activePageTab === 'activity'}
+                                                activeDragItem={!addingToList && activeDragItem}
+                                                addingAtIndex={addingAtIndex}
+                                            />
+                                        </div>
+                                        {isCreatingList === checklist.id && activePageTab === 'tasks' && (
+                                            <form
+                                                className="add-section-form glass-morphism"
+                                                onSubmit={handleCreateCustomList}
+                                                style={{
+                                                    padding: '1rem',
+                                                    margin: '0.5rem 0 1.5rem 0',
+                                                    borderRadius: 'var(--radius-lg)',
+                                                    border: '1px solid rgba(var(--primary-rgb), 0.15)',
+                                                    background: 'rgba(255, 255, 255, 0.6)',
+                                                    backdropFilter: 'blur(12px)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '0.75rem',
+                                                    boxShadow: '0 10px 30px -10px rgba(var(--primary-rgb), 0.1)'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
+                                                    <input
+                                                        type="text"
+                                                        className="add-section-input"
+                                                        placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
+                                                        value={newListTitle}
+                                                        onChange={(e) => setNewListTitle(e.target.value)}
+                                                        autoFocus
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            fontSize: '1rem',
+                                                            fontWeight: '600',
+                                                            color: 'var(--text-primary)',
+                                                            outline: 'none',
+                                                            width: '100%',
+                                                            fontFamily: 'inherit'
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
+                                                    <button
+                                                        type="submit"
+                                                        className="btn btn-primary"
+                                                        disabled={!newListTitle.trim()}
+                                                        style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
+                                                    >
+                                                        הוסף רשימה
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-soft"
+                                                        onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}
+                                                        style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
+                                                    >
+                                                        ביטול
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                                <ListDropSlot
+                                    id={`list-slot-${activeChecklists.length}`}
+                                    activeType={activeDragItem?.data?.current?.type}
+                                    isLastSlot={true}
+                                />
+                            </SortableContext>
+
+                            {activePageTab === 'tasks' && completedTasks.length > 0 && (
+                                <CompletedTaskList
+                                    completedTasks={completedTasks}
+                                    uncompletedCount={uncompletedCount}
+                                    onClearAll={handleClearProjectCompleted}
+                                    todayProgress={todayProgress}
+                                />
+                            )}
+
+
+
+                        </div>
                     )}
+                </>
+            )}
 
 
 
@@ -1551,7 +1487,7 @@ const Project = () => {
 
             {/* NEW Unified Edit Project Modal */}
             {showSettings && (
-                <ProjectSettingsModal 
+                <ProjectSettingsModal
                     isOpen={showSettings}
                     onClose={() => setShowSettings(false)}
                     project={project}

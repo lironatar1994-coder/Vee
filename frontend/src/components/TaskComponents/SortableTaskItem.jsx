@@ -195,11 +195,8 @@ const SortableTaskItem = ({
                                             color: 'var(--text-secondary)',
                                             opacity: 0.8,
                                             marginTop: '2px',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
                                             lineHeight: '1.4',
                                             maxWidth: '100%',
                                             textAlign: 'right'

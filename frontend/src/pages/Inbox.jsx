@@ -190,9 +190,9 @@ const Inbox = () => {
         window.addEventListener('fabAddTask', handleFabAddTask);
         return () => window.removeEventListener('fabAddTask', handleFabAddTask);
     }, [checklists, activePageTab, user?.id]);
-    
+
     const handleChecklistTitleChange = useCallback((checklistId, newTitle) => {
-        setChecklists(prev => prev.map(c => 
+        setChecklists(prev => prev.map(c =>
             c.id === checklistId ? { ...c, title: newTitle } : c
         ));
     }, []);
@@ -248,7 +248,7 @@ const Inbox = () => {
         if (e) e.preventDefault();
         const contentToSave = explicitContent !== null ? explicitContent : newItemContent;
         if (!contentToSave || !contentToSave.trim()) return;
-        
+
         const dateInput = window.globalNewItemDate || null;
         const timeInput = window.globalNewItemTime || null;
         const durationInput = window.globalNewItemDuration || 15;
@@ -325,7 +325,7 @@ const Inbox = () => {
                     items: (c.items || []).map(item => item.id === tempId ? newItem : item)
                 })));
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
-                toast.success('משימה 1 נוצרה');
+                toast.success('משימה 1 נוצרה', { id: 'task-creation-success' });
             } else {
                 throw new Error('Failed to create item');
             }
@@ -341,7 +341,7 @@ const Inbox = () => {
 
     const handleDeleteItem = useCallback(async (e, itemId, checklistId) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-        
+
         let taskName = '';
         checklists.some(c => {
             if (c.id === checklistId) {
@@ -656,8 +656,8 @@ const Inbox = () => {
                         </p>
 
                         {isCreatingList === true && (
-                            <form 
-                                className="add-section-form glass-morphism" 
+                            <form
+                                className="add-section-form glass-morphism"
                                 onSubmit={handleCreateCustomList}
                                 style={{
                                     padding: '1rem',
@@ -695,17 +695,17 @@ const Inbox = () => {
                                     />
                                 </div>
                                 <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
-                                    <button 
-                                        type="submit" 
-                                        className="btn btn-primary" 
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
                                         disabled={!newListTitle.trim()}
                                         style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
                                     >
                                         הוסף רשימה
                                     </button>
-                                    <button 
-                                        type="button" 
-                                        className="btn btn-soft" 
+                                    <button
+                                        type="button"
+                                        className="btn btn-soft"
                                         onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}
                                         style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
                                     >
@@ -771,8 +771,8 @@ const Inbox = () => {
                                         />
                                     </div>
                                     {isCreatingList === list.id && activePageTab === 'tasks' && (
-                                        <form 
-                                            className="add-section-form glass-morphism" 
+                                        <form
+                                            className="add-section-form glass-morphism"
                                             onSubmit={handleCreateCustomList}
                                             style={{
                                                 padding: '1rem',
@@ -809,17 +809,17 @@ const Inbox = () => {
                                                 />
                                             </div>
                                             <div className="add-section-actions" style={{ display: 'flex', gap: '8px' }}>
-                                                <button 
-                                                    type="submit" 
-                                                    className="btn btn-primary" 
+                                                <button
+                                                    type="submit"
+                                                    className="btn btn-primary"
                                                     disabled={!newListTitle.trim()}
                                                     style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
                                                 >
                                                     הוסף רשימה
                                                 </button>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn btn-soft" 
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-soft"
                                                     onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}
                                                     style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', borderRadius: '10px' }}
                                                 >

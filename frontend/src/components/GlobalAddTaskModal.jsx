@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { useUser } from '../context/UserContext';
@@ -9,6 +9,7 @@ const API_URL = '/api';
 
 const GlobalAddTaskModal = ({ isOpen, onClose }) => {
     const { user, authFetch } = useUser();
+    const isSubmittingRef = useRef(false);
     const [newItemContent, setNewItemContent] = useState('');
     const [newItemDate, setNewItemDate] = useState(() => new Date().toLocaleDateString('en-CA'));
     const [newItemTime, setNewItemTime] = useState('');
@@ -72,15 +73,17 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         fetchData();
     }, [isOpen, user]);
 
-    const handleAddItem = async (e, checklistId, parentItemId, explicitContent = null) => {
+    const handleAddItem = async (e, checklistId, parentItemId = null, explicitContent = null) => {
+        if (isSubmittingRef.current) return;
         if (e) e.preventDefault();
 
         const content = explicitContent || window.globalNewItemContent;
+        if (!content) return;
+
+        isSubmittingRef.current = true;
         const description = window.globalNewItemDescription;
         const priority = window.globalNewItemPriority;
         const reminderMinutes = window.globalNewItemReminderMinutes;
-
-        if (!content) return;
 
         let finalChecklistId = checklistId;
 
@@ -147,6 +150,8 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         } catch (err) {
             console.error(err);
             toast.error('שגיאה בחיבור לשרת');
+        } finally {
+            isSubmittingRef.current = false;
         }
     };
 
@@ -159,22 +164,19 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         maxWidth: '580px',
         zIndex: 10000,
         direction: 'rtl',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2), 0 1px 10px rgba(0,0,0,0.1)',
-        borderRadius: 'var(--radius-lg)',
-        background: 'var(--bg-color)',
-        border: '1px solid var(--border-color)',
+        boxShadow: '0 20px 60px -15px rgba(0,0,0,0.15)',
+        borderRadius: '16px',
         overflow: 'visible'
     };
     const overlayStyle = {
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.1)',
-        backdropFilter: 'blur(2px)',
+        background: 'transparent',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
-        paddingTop: isMobile ? '80px' : '15vh'
+        paddingTop: isMobile ? '80px' : '10vh'
     };
 
     return createPortal(

@@ -107,7 +107,7 @@ const MonthView = ({ year, month, selectedDate, onSelectDate, theme, isFirst }) 
     );
 };
 
-export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selectedDate, selectedTime, onSelectDate, children }) {
+const DatePickerDropdown = React.memo(({ isOpen, onClose, anchorRef, selectedDate, selectedTime, onSelectDate, children }) => {
     const { theme } = useTheme();
     const dropRef = useRef(null);
     const scrollRef = useRef(null);
@@ -399,7 +399,7 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
         </div>,
         document.body
     );
-}
+});
 
 // ---- Style helpers ----
 function iconWrap(bg, fontSize) {
@@ -409,3 +409,5 @@ function iconWrap(bg, fontSize) {
         fontSize: fontSize || undefined,
     };
 }
+
+export default DatePickerDropdown;

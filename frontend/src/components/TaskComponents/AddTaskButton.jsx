@@ -3,33 +3,48 @@ import { Plus } from 'lucide-react';
 
 const AddTaskButton = ({ onClick, noMarginTop = false }) => {
     return (
-        <button
-            className="add-task-btn"
+        <div
             onClick={onClick}
             style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.4rem 0',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
+                gap: '10px',
+                padding: '10px 0',
                 cursor: 'pointer',
-                marginTop: noMarginTop ? '0' : '0.5rem',
-                transition: 'var(--transition)'
+                color: 'var(--add-task-btn-color)',
+                transition: 'all 0.2s ease',
+                direction: 'rtl',
+                WebkitTapHighlightColor: 'transparent',
+                width: '100%',
+                marginTop: noMarginTop ? '0' : '0.5rem'
             }}
-            onMouseEnter={e => {
-                e.currentTarget.style.color = 'var(--text-primary)';
+            onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--add-task-btn-hover)';
+                e.currentTarget.style.transform = 'translateX(-2px)';
             }}
-            onMouseLeave={e => {
-                e.currentTarget.style.color = 'var(--text-secondary)';
+            onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--add-task-btn-color)';
+                e.currentTarget.style.transform = 'none';
             }}
         >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Plus size={16} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
+            <div style={{
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+            }}>
+                <Plus size={18} strokeWidth={2.5} />
             </div>
-            <span style={{ fontWeight: 500, fontSize: '15px' }}>הוסף משימה</span>
-        </button>
+            <span style={{
+                fontSize: '16px',
+                fontWeight: 500,
+                letterSpacing: '-0.2px'
+            }}>
+                הוסף משימה
+            </span>
+        </div>
     );
 };
 

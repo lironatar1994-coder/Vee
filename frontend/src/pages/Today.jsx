@@ -55,6 +55,7 @@ const Today = () => {
     const [isCreatingList, setIsCreatingList] = useState(null);
     const [itemToDelete, setItemToDelete] = useState(null);
     const todayDateStr = new Date().toLocaleDateString('en-CA');
+    const isSubmittingRef = useRef(false);
 
     const getFormattedDate = useCallback(() => {
         const d = new Date();
@@ -211,12 +212,15 @@ const Today = () => {
         return getTargetChecklistObj().id;
     }, [getTargetChecklistObj]);
 
-    const handleAddItem = async (e, _checklistId, parentItemId = null, explicitContent = null) => {
+const handleAddItem = async (e, _checklistId, parentItemId = null, explicitContent = null) => {
+        if (isSubmittingRef.current) return;
         if (e) e.preventDefault();
         // Use the passed _checklistId if available and NOT 'today-unified', otherwise calculate it
         let targetId = _checklistId && _checklistId !== 'today-unified' ? _checklistId : getTargetChecklistId();
         const contentToSave = explicitContent !== null ? explicitContent : newItemContent;
         if (!contentToSave || !contentToSave.trim()) return;
+
+        isSubmittingRef.current = true;
 
         if (!targetId) {
             try {
@@ -243,6 +247,7 @@ const Today = () => {
             } catch (err) {
                 console.error('Failed to resolve target list:', err);
                 toast.error("לא נמצאה רשימה להוספת המשימה");
+                isSubmittingRef.current = false;
                 return;
             }
         }
@@ -327,7 +332,7 @@ const Today = () => {
                 // Background refresh to catch up with server state
                 fetchTodayTasks();
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
-                toast.success('משימה 1 נוצרה');
+                toast.success('משימה 1 נוצרה', { id: 'task-creation-success' });
             } else {
                 throw new Error('Failed to create item');
             }
@@ -342,6 +347,8 @@ const Today = () => {
                 }))
             })));
             toast.error("שגיאה בהוספת משימה");
+        } finally {
+            isSubmittingRef.current = false;
         }
     };
 
@@ -683,9 +690,7 @@ const Today = () => {
                             defaultItemDate={todayDateStr}
                             hideTaskCount={true}
                             useSharedDndContext={true}
-                            useProgressArray={true}
-                            hideAddCard={true}
-                            activeDragItem={activeDragItem}
+                            activeDragItem={!addingToList && activeDragItem}
                             isSortable={false}
                             hideActionMenu={true}
                             canEditTitle={false}
@@ -725,10 +730,7 @@ const Today = () => {
                             defaultItemDate={todayDateStr}
                             hideToday={true}
                             hideTaskCount={true}
-                            useSharedDndContext={true}
-                            useProgressArray={true}
-                            overrideChecklistForAdd={getTargetChecklistObj()}
-                            activeDragItem={activeDragItem}
+                            activeDragItem={!addingToList && activeDragItem}
                             addingAtIndex={addingAtIndex}
                             isSortable={false}
                             hideToggle={true}
@@ -740,7 +742,7 @@ const Today = () => {
 
                 {unfilteredAllTasksFlat.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '2rem' }}>
-                        <EmptyStateDropZone active={activeDragItem?.data?.current?.type === 'FAB'} checklistId="today-unified" />
+                        <EmptyStateDropZone active={!addingToList && activeDragItem?.data?.current?.type === 'FAB'} checklistId="today-unified" />
                         <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginTop: '1rem', opacity: 0.6 }}>
                             {activePageTab === 'tasks' ? 'הכל מוכן להיום!' : 'אין משימות שהושלמו להצגה'}
                         </p>

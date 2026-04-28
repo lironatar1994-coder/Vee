@@ -12,134 +12,67 @@ import { API_URL } from './utils.jsx';
 import { toast } from 'sonner';
 
 export const DropSlot = ({ id, active }) => {
-    const { setNodeRef, isOver } = useDroppable({
-        id,
-        data: { type: 'FABSlot' }
-    });
-
+    const { setNodeRef, isOver } = useDroppable({ id });
+    
     if (!active) return null;
 
     return (
         <div
             ref={setNodeRef}
+            className="drop-slot"
             style={{
-                height: '40px', // Large invisible hit area
-                marginTop: '-20px',
-                marginBottom: '-20px',
+                height: isOver ? '80px' : '30px',
                 width: '100%',
+                background: isOver ? '#FFFFFF' : 'transparent',
+                border: isOver ? '1px solid #000000' : 'none',
+                borderRadius: '10px',
+                margin: isOver ? '8px 0' : '0',
                 display: 'flex',
                 alignItems: 'center',
-                position: 'relative',
-                zIndex: isOver ? 100 : 1,
+                justifyContent: 'center',
                 transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
-                pointerEvents: 'auto',
+                overflow: 'hidden',
+                position: 'relative',
+                zIndex: 10
             }}
         >
-            {/* The Drop Line */}
-            <div style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'var(--primary-color)',
-                borderRadius: '3px',
-                opacity: isOver ? 1 : 0,
-                transform: isOver ? 'scaleX(1)' : 'scaleX(0.8)',
-                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
-                boxShadow: '0 0 8px rgba(var(--primary-rgb), 0.5)',
-            }} />
-            
-            {/* The Bulb (Node) */}
-            <div style={{
-                position: 'absolute',
-                right: '-6px', // assuming RTL
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                background: 'var(--primary-color)',
-                border: '2px solid var(--bg-primary)',
-                opacity: isOver ? 1 : 0,
-                transform: isOver ? 'scale(1)' : 'scale(0)',
-                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
-                boxShadow: '0 0 8px rgba(var(--primary-rgb), 0.5)',
-            }} />
+            {isOver && <span style={{ color: '#000000', fontSize: '0.85rem', fontWeight: '600' }}>הוסף לכאן</span>}
         </div>
     );
 };
 
 export const ListDropSlot = ({ id, activeType, isLastSlot = false }) => {
-    const { setNodeRef, isOver } = useDroppable({
-        id,
-        data: { type: 'ListSlot', isLastSlot }
-    });
-
-    // Determine if this slot should be visible/active based on what's being dragged
-    // User only wants "New List" hints at the end of content.
+    const { setNodeRef, isOver, active } = useDroppable({ id });
+    
+    if (!active || (activeType !== 'Task' && activeType !== 'ChecklistItem' && activeType !== 'FAB' && activeType !== 'Checklist')) return null;
     const isChecklistDragging = activeType === 'Checklist';
-    const isSmartDragging = activeType === 'FAB' || activeType === 'Task' || activeType === 'ChecklistItem';
-
-    // Logic: 
-    // - If dragging a checklist, all slots are active for reordering.
-    // - If dragging a task/fab, only the LAST slot is active for creating a new list.
-    const isActive = isChecklistDragging;
-
-    if (!isActive) return <div style={{ height: '8px' }} />;
 
     return (
         <div
             ref={setNodeRef}
             style={{
-                height: isOver ? (isChecklistDragging ? '100px' : '120px') : '60px',
+                height: isOver ? '100px' : (isLastSlot ? '40px' : '20px'),
                 width: '100%',
+                background: isOver ? '#FFFFFF' : 'transparent',
+                border: isOver ? '1px solid #000000' : 'none',
+                borderRadius: '12px',
+                margin: isOver ? '12px 0' : '0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                transition: 'all 0.25s cubic-bezier(0.2, 0, 0, 1)',
+                overflow: 'hidden',
                 position: 'relative',
-                zIndex: isOver ? 100 : 1,
-                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                margin: isOver ? '16px 0' : '-30px 0',
-                padding: '0',
+                zIndex: 5
             }}
         >
-            <div style={{
-                width: '100%',
-                height: isOver ? '100%' : '4px',
-                border: isOver ? '2px dashed var(--primary-color)' : 'none',
-                background: isOver ? 'rgba(var(--primary-rgb), 0.05)' : 'transparent',
-                borderRadius: 'var(--radius-lg)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: isOver ? 1 : 0,
-                transform: isOver ? 'scale(1)' : 'scale(0.95)',
-                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                gap: '8px',
-                color: 'var(--primary-color)',
-                fontWeight: '600',
-                fontSize: '1rem',
-                boxShadow: isOver ? '0 0 20px rgba(var(--primary-rgb), 0.1)' : 'none',
-            }}>
-                {isOver && (
-                    <>
-                        <Plus size={20} />
-                        {isChecklistDragging ? 'שחרר כאן להעברת הרשימה' : 'שחרר כאן ליצירת רשימה חדשה'}
-                    </>
-                )}
-            </div>
-            
-            {/* The horizontal line between lists when just hovering nearby (not fully over) */}
-            {!isOver && isChecklistDragging && (
-                <div style={{
-                    position: 'absolute',
-                    width: '60%',
-                    height: '4px',
-                    background: 'rgba(var(--primary-rgb), 0.2)',
-                    borderRadius: '4px',
-                    opacity: 0.5,
-                }} />
+            {isOver && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#000000', fontWeight: '700' }}>
+                     <Plus size={20} />
+                     <span>{isChecklistDragging ? 'שחרר כאן להעברת הרשימה' : 'שחרר כאן ליצירת רשימה חדשה'}</span>
+                </div>
             )}
         </div>
-
     );
 };
 
@@ -577,7 +510,7 @@ const SortableChecklistCard = ({
                                 transition: 'all 0.2s ease',
                                 direction: 'rtl',
                                 WebkitTapHighlightColor: 'transparent',
-                                width: 'fit-content'
+                                width: '100%'
                             }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.color = 'var(--add-task-btn-hover)';
@@ -637,40 +570,27 @@ const EmptyStateDropZone = ({ active, checklistId = 'inbox' }) => {
     });
 
     if (!active) return null;
-
+    
     return (
-        <div
+        <div 
             ref={setNodeRef}
             style={{
-                height: isOver ? '120px' : '60px',
+                width: '100%',
+                minHeight: '60px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: isOver ? '2px dashed var(--primary-color)' : '2px dashed rgba(var(--primary-rgb), 0.2)',
-                borderRadius: 'var(--radius-lg)',
-                margin: '1rem 0',
-                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                background: isOver ? 'rgba(var(--primary-rgb), 0.05)' : 'rgba(var(--primary-rgb), 0.01)',
-                color: isOver ? 'var(--primary-color)' : 'var(--text-secondary)',
-                gap: '0.8rem',
-                cursor: 'pointer',
-                transform: isOver ? 'scale(1.02)' : 'scale(1)',
-                boxShadow: isOver ? '0 0 20px rgba(var(--primary-rgb), 0.1)' : 'none',
+                background: isOver ? '#FFFFFF' : 'rgba(0,0,0,0.02)',
+                border: isOver ? '1px solid #000000' : '1px dashed #000000',
+                borderRadius: '12px',
+                color: '#000000',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                marginBottom: '1rem',
+                transition: 'all 0.2s ease'
             }}
         >
-            <Plus size={24} style={{ 
-                opacity: isOver ? 1 : 0.6,
-                transform: isOver ? 'scale(1.2)' : 'scale(1)',
-                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)'
-            }} />
-            <span style={{ 
-                fontWeight: 600, 
-                opacity: isOver ? 1 : 0.8,
-                fontSize: '1.05rem',
-                transition: 'all 0.3s ease'
-            }}>
-                {isOver ? 'שחרר כאן להוספת משימה' : 'גרור לכאן כדי להוסיף משימה'}
-            </span>
+            {isOver ? 'שחרר כאן להוספת משימה' : 'גרור לכאן כדי להוסיף משימה'}
         </div>
     );
 };

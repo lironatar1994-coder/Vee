@@ -100,6 +100,8 @@ const Home = () => {
                     >
                         הפרויקטים שלי
                     </h1>
+
+
                 </div>
             }
             externalScrollTop={scrollTop}
@@ -161,6 +163,10 @@ const Home = () => {
                                 </button>
                             </div>
                         )}
+                    </div>
+
+                    <div style={{ marginTop: '1rem', marginBottom: '0.2rem' }}>
+                        <AddTaskButton onClick={() => window.dispatchEvent(new CustomEvent('fabAddTask'))} />
                     </div>
                 </div>
 
@@ -239,7 +245,7 @@ const Home = () => {
                                         e.currentTarget.querySelector('.project-arrow').style.opacity = '1';
                                         e.currentTarget.querySelector('.project-icon').style.color = 'var(--primary-color)';
                                         e.currentTarget.querySelector('.project-icon').style.background = 'var(--sidebar-active-bg)';
-                                        
+
                                         // Intelligent Pre-fetching
                                         cache.prefetch(`project_data_${project.id}`, `${API_URL}/users/current/projects/${project.id}`, authFetch);
                                     }}

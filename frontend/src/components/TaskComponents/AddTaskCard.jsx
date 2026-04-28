@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
     Calendar as CalendarIcon, Bell, RefreshCw, X, ArrowLeft, ChevronDown, 
@@ -19,6 +19,7 @@ import RepeatSelectorDropdown from './RepeatSelectorDropdown';
 import '../../styles/task-card.css';
 
 const API_URL = '/api';
+const DEFAULT_ACTIONS = ['date', 'time', 'reminders', 'project', 'priority', 'repeat'];
 
 const AddTaskCard = ({ 
     newItemContent: propContent, 
@@ -35,18 +36,54 @@ const AddTaskCard = ({
     const { user, authFetch } = useUser();
     const { theme } = useTheme();
 
-    const quickAddSettings = user?.quick_add_settings ? (typeof user.quick_add_settings === 'string' ? JSON.parse(user.quick_add_settings) : user.quick_add_settings) : null;
-    const showLabels = quickAddSettings?.showLabels ?? true;
-    const DEFAULT_ACTIONS = ['date', 'time', 'reminders', 'project', 'priority', 'repeat'];
-    const enabledActions = quickAddSettings?.actions?.filter(a => a.enabled).map(a => a.id) || DEFAULT_ACTIONS;
-    const actionOrder = quickAddSettings?.actions?.map(a => a.id) || DEFAULT_ACTIONS;
+    const quickAddSettings = useMemo(() => {
+        return user?.quick_add_settings ? (typeof user.quick_add_settings === 'string' ? JSON.parse(user.quick_add_settings) : user.quick_add_settings) : null;
+    }, [user?.quick_add_settings]);
 
-    // Internal state if props are not provided
-    const [internalContent, setInternalContent] = useState('');
+    const showLabels = quickAddSettings?.showLabels ?? true;
+    
+    const enabledActions = useMemo(() => {
+        return quickAddSettings?.actions?.filter(a => a.enabled).map(a => a.id) || DEFAULT_ACTIONS;
+    }, [quickAddSettings]);
+
+    const actionOrder = useMemo(() => {
+        return quickAddSettings?.actions?.map(a => a.id) || DEFAULT_ACTIONS;
+    }, [quickAddSettings]);
+
+    // Internal state for performance - decouples typing from parent re-renders
+    const [localContent, setLocalContent] = useState(propContent || '');
     const [internalDate, setInternalDate] = useState('');
 
-    const newItemContent = propContent !== undefined ? propContent : internalContent;
-    const setNewItemContent = propSetContent || setInternalContent;
+    // Sync from outside if needed
+    useEffect(() => {
+        if (propContent !== undefined && propContent !== localContent) {
+            setLocalContent(propContent);
+        }
+    }, [propContent]);
+
+    // Use a ref for the debounced function to keep it stable
+    const debouncedSetContent = useRef(null);
+    if (!debouncedSetContent.current && propSetContent) {
+        // Simple debounce
+        let timeout;
+        debouncedSetContent.current = (val) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                propSetContent(val);
+            }, 100);
+        };
+    }
+
+    const newItemContent = localContent;
+    const setNewItemContent = useCallback((val) => {
+        setLocalContent(val);
+        if (debouncedSetContent.current) {
+            debouncedSetContent.current(val);
+        } else if (propSetContent) {
+            propSetContent(val);
+        }
+    }, [propSetContent]);
+
     const newItemDate = propDate !== undefined ? propDate : internalDate;
     const setNewItemDate = propSetDate || setInternalDate;
 
@@ -67,6 +104,8 @@ const AddTaskCard = ({
     const [showReminderMenu, setShowReminderMenu] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const isSubmittingRef = useRef(false);
     
     const isMenuOpen = showDateDropdown || showRepeatMenu || showTimeMenu || showProjectSelector || showPriorityMenu || showReminderMenu || showMoreMenu;
     
@@ -79,7 +118,15 @@ const AddTaskCard = ({
     const reminderBtnRef = useRef(null);
     const repeatBtnRef = useRef(null);
     const moreBtnRef = useRef(null);
+    const descriptionRef = useRef(null);
     const smartInputRef = useRef(null);
+
+    useEffect(() => {
+        if (descriptionRef.current) {
+            descriptionRef.current.style.height = 'auto';
+            descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`;
+        }
+    }, [description]);
 
     useEffect(() => {
         if (cardRef.current) {
@@ -123,7 +170,7 @@ const AddTaskCard = ({
         { label: 'מותאם אישית...', value: 'custom' },
     ];
 
-    const reminderOptions = [
+    const reminderOptions = useMemo(() => [
         { label: 'ללא תזכורת', value: null },
         { label: 'בזמן האירוע', value: 0 },
         { label: '5 דקות לפני', value: 5 },
@@ -131,9 +178,13 @@ const AddTaskCard = ({
         { label: '30 דקות לפני', value: 30 },
         { label: 'שעה לפני', value: 60 },
         { label: 'יום לפני', value: 1440 },
-    ];
+    ], []);
 
-    const handleSubmit = async (e, explicitContent = null) => {
+    const handleSubmit = useCallback(async (e, explicitContent = null) => {
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+        setIsSubmitting(true);
+
         let plainText;
         if (explicitContent !== null) {
             plainText = explicitContent.replace(/<[^>]*>?/gm, '').trim();
@@ -147,6 +198,7 @@ const AddTaskCard = ({
         if (!plainText) return;
 
         if (e) e.preventDefault();
+        setIsSubmitting(true);
         
         // Expose values globally for handleAddItem (legacy compatibility if needed)
         window.globalNewItemContent = plainText;
@@ -187,23 +239,30 @@ const AddTaskCard = ({
             }
         }
 
-        handleAddItem(e, targetChecklistId, null, plainText);
+        try {
+            await handleAddItem(e, targetChecklistId, null, plainText);
+            
+            // Reset state
+            setNewItemContent('');
+            setDescription('');
+            setTime('');
+            setDuration(0);
+            setNewItemDate('');
+            setRepeatRule(null);
+            setPriority(4);
+            setReminderMinutes(null);
+            setDynamicPlaceholder(getRandomTaskPlaceholder());
 
-        // Reset state
-        setNewItemContent('');
-        setDescription('');
-        setTime('');
-        setDuration(0);
-        setNewItemDate('');
-        setRepeatRule(null);
-        setPriority(4);
-        setReminderMinutes(null);
-        setDynamicPlaceholder(getRandomTaskPlaceholder());
-
-        if (smartInputRef.current) {
-            smartInputRef.current.focus();
+            if (smartInputRef.current) {
+                smartInputRef.current.focus();
+            }
+        } catch (err) {
+            console.error('Submission failed', err);
+        } finally {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
         }
-    };
+    }, [newItemContent, description, time, duration, newItemDate, repeatRule, priority, reminderMinutes, selectedChecklist, selectedProject, handleAddItem, setAddingToList, setNewItemContent, authFetch]);
 
     return (
         <div 
@@ -222,7 +281,7 @@ const AddTaskCard = ({
                             className="date-badge-smart"
                             style={{
                                 color: getDateDisplayInfo(newItemDate).color,
-                                fontWeight: 600, fontSize: '0.85em', cursor: 'pointer'
+                                fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer'
                             }} 
                             onClick={(e) => { e.stopPropagation(); setShowDateDropdown(true); }}
                         >
@@ -245,6 +304,7 @@ const AddTaskCard = ({
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 const currentContent = e.target.innerText || e.target.textContent;
                                 handleSubmit(e, currentContent);
                             }
@@ -256,6 +316,7 @@ const AddTaskCard = ({
                 </div>
                 
                 <textarea
+                    ref={descriptionRef}
                     className={`task-description-textarea ${(description || isFocused || isMenuOpen) ? 'active' : ''}`}
                     placeholder="תיאור"
                     value={description}
@@ -263,6 +324,7 @@ const AddTaskCard = ({
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     rows={1}
+                    style={{ overflow: 'hidden' }}
                 />
             </div>
 
@@ -506,8 +568,8 @@ const AddTaskCard = ({
 
 
 
-            <div className="task-card-footer">
-                <div className="footer-left">
+            <div className="task-card-footer" onClick={handleSubmit} style={{ cursor: 'pointer' }}>
+                <div className="footer-left" onClick={e => e.stopPropagation()}>
                     {!enabledActions.includes('project') && (
                         <button
                             ref={projectBtnRef}
@@ -553,18 +615,18 @@ const AddTaskCard = ({
                     )}
                 </div>
                 <div className="footer-right">
-                    <button type="button" onClick={() => { if (setAddingToList) setAddingToList(null); window.dispatchEvent(new CustomEvent('fabAddTaskClosed')); }} className="btn-cancel-task desktop-only">
+                    <button type="button" onClick={(e) => { e.stopPropagation(); if (setAddingToList) setAddingToList(null); window.dispatchEvent(new CustomEvent('fabAddTaskClosed')); }} className="btn-cancel-task desktop-only">
                         ביטול
                     </button>
-                    <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim()} className="btn-add-task desktop-only">
-                        הוסף משימה
+                    <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim() || isSubmitting} className="btn-add-task desktop-only">
+                        {isSubmitting ? 'מוסיף...' : 'הוסף משימה'}
                     </button>
                     
-                    <button type="button" onClick={() => { if (setAddingToList) setAddingToList(null); window.dispatchEvent(new CustomEvent('fabAddTaskClosed')); }} className="mobile-only btn-cancel-task" style={{ padding: '0.5rem' }}>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); if (setAddingToList) setAddingToList(null); window.dispatchEvent(new CustomEvent('fabAddTaskClosed')); }} className="mobile-only btn-cancel-task" style={{ padding: '0.5rem' }}>
                         <X size={20} />
                     </button>
-                    <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim()} className="mobile-only btn-add-task" style={{ padding: '0.5rem' }}>
-                        <SendHorizontal size={20} style={{ transform: 'scaleX(-1)' }} />
+                    <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim() || isSubmitting} className="mobile-only btn-add-task" style={{ padding: '0.5rem' }}>
+                        <SendHorizontal size={20} style={{ transform: 'scaleX(-1)', opacity: isSubmitting ? 0.5 : 1 }} />
                     </button>
                 </div>
             </div>

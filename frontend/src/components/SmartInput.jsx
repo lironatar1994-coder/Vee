@@ -1,8 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import ContentEditable from 'react-contenteditable';
 import { parse } from 'date-fns';
 
-const SmartInput = ({ html, setHtml, placeholder, autoFocus, style, onKeyDown, date, setDate, time, setTime, showSpan = true, ref, className }) => {
+const SmartInput = ({ html, setHtml, placeholder, autoFocus, style, onKeyDown, date, setDate, time, setTime, showSpan = true, ref, className, disabled }) => {
     const contentEditable = useRef(null);
     const [lastSyncText, setLastSyncText] = useState('');
     const hebrewMonthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
@@ -24,43 +23,49 @@ const SmartInput = ({ html, setHtml, placeholder, autoFocus, style, onKeyDown, d
         }
     }, [autoFocus]);
 
-    const handleChange = (evt) => {
-        const currentHtml = evt.target.value;
-        setHtml(currentHtml);
+    const onInput = (evt) => {
+        let currentHtml = evt.target.innerHTML;
+        const plainText = evt.target.innerText || '';
+        
+        if (plainText !== lastSyncText) {
+            setLastSyncText(plainText);
 
-        const plainText = currentHtml.replace(/<[^>]*>?/gm, '').trim();
-        if (plainText === lastSyncText) return;
-        setLastSyncText(plainText);
+            const timeRegex = /@(\d{1,2}:\d{2})/;
+            const timeMatch = plainText.match(timeRegex);
 
-        const timeRegex = /@(\d{1,2}:\d{2})/;
-        const timeMatch = plainText.match(timeRegex);
-
-        if (timeMatch && setTime) {
-            setTime(timeMatch[1].padStart(5, '0'));
-            const cleanedHtml = currentHtml.replace(timeRegex, '').trim();
-            setHtml(cleanedHtml);
+            if (timeMatch && setTime) {
+                setTime(timeMatch[1].padStart(5, '0'));
+                // Note: we don't necessarily want to strip the text while they type if it's confusing
+                // but let's keep the existing logic of cleaning it if matched
+                currentHtml = currentHtml.replace(/@\d{1,2}:\d{2}/, '').trim();
+            }
         }
+        
+        setHtml(currentHtml);
     };
 
+    // Sync HTML to DOM only if it changes from OUTSIDE
+    useEffect(() => {
+        if (contentEditable.current && html !== contentEditable.current.innerHTML) {
+            contentEditable.current.innerHTML = html || '';
+        }
+    }, [html]);
+
     return (
-        <ContentEditable
-            innerRef={contentEditable}
-            html={html || ''}
-            disabled={false}
-            onChange={handleChange}
-            onInput={(evt) => {
-                // Immediate sync for mobile
-                setHtml(evt.target.innerHTML);
-            }}
-            tagName="div"
+        <div
+            ref={contentEditable}
+            contentEditable={!disabled}
+            suppressContentEditableWarning={true}
+            onInput={onInput}
+            onKeyDown={onKeyDown}
             style={{
                 ...style,
                 minHeight: '1.5em',
+                outline: 'none',
                 cursor: 'text'
             }}
-            onKeyDown={onKeyDown}
             data-placeholder={placeholder}
-            className={`smart-input-area ${className || ''} ${(!html || html === '<br>') ? 'is-empty' : ''}`}
+            className={`smart-input-area ${className || ''} ${(!html || html === '<br>' || html === '') ? 'is-empty' : ''}`}
         />
     );
 };

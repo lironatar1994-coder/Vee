@@ -16,9 +16,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Toaster 
             position="bottom-center" 
             dir="rtl" 
-            richColors 
             toastOptions={{
-              style: { zIndex: 1000000 }
+              className: 'premium-toast',
             }}
           />
           <App />

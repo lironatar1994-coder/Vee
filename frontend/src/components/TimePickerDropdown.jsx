@@ -390,4 +390,4 @@ const TimeOptionsList = React.forwardRef(({ options, onSelect, selected, theme }
     </div>
 ));
 
-export default TimePickerDropdown;
+export default React.memo(TimePickerDropdown);
