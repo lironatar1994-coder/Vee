@@ -27,6 +27,18 @@ export const buildHierarchy = (items) => {
     return roots;
 };
 
+// Helper to get all descendant IDs from a flat list of items
+export const getDescendantIds = (items, parentId) => {
+    let ids = [];
+    items.forEach(item => {
+        if (item.parent_item_id === parentId) {
+            ids.push(item.id);
+            ids = ids.concat(getDescendantIds(items, item.id));
+        }
+    });
+    return ids;
+};
+
 export const useTaskDnD = ({
     checklists,
     setChecklists,
@@ -120,18 +132,6 @@ export const useTaskDnD = ({
 
             const activeList = prev[activeListIndex];
             const overList = prev[overListIndex];
-
-            // Find parent and all its descendants in the flat list
-            const getDescendantIds = (items, parentId) => {
-                let ids = [];
-                items.forEach(item => {
-                    if (item.parent_item_id === parentId) {
-                        ids.push(item.id);
-                        ids = ids.concat(getDescendantIds(items, item.id));
-                    }
-                });
-                return ids;
-            };
 
             const descendantIds = getDescendantIds(activeList.items, activeNumericId);
             const allMovingIds = [activeNumericId, ...descendantIds];

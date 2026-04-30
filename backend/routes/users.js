@@ -100,6 +100,16 @@ router.put('/:id', async (req, res) => {
 
 // --- Progress & Tasks ---
 
+// Helper to get all child IDs recursively
+const getRecursiveSubtaskIds = (parentId) => {
+    const children = db.prepare('SELECT id FROM checklist_items WHERE parent_item_id = ?').all(parentId);
+    let ids = children.map(c => c.id);
+    for (const childId of ids) {
+        ids = ids.concat(getRecursiveSubtaskIds(childId));
+    }
+    return ids;
+};
+
 // GET /api/users/:userId/progress?date=YYYY-MM-DD
 router.get('/:userId/progress', (req, res) => {
     const userId = req.user.id;
@@ -128,6 +138,7 @@ router.post('/:userId/progress', (req, res) => {
             `);
             upsert.run(userId, checklist_item_id, date, completed ? 1 : 0);
 
+            // Handle repeat rule for the main item
             if (completed) {
                 const item = db.prepare('SELECT id, target_date, repeat_rule FROM checklist_items WHERE id = ?').get(checklist_item_id);
                 if (item && item.repeat_rule && item.repeat_rule !== 'none') {
@@ -135,6 +146,24 @@ router.post('/:userId/progress', (req, res) => {
                     const nextDate = calculateNextOccurrence(baseDate, item.repeat_rule);
                     if (nextDate) {
                         db.prepare('UPDATE checklist_items SET target_date = ? WHERE id = ?').run(nextDate, checklist_item_id);
+                    }
+                }
+            }
+
+            // Recursive completion for subtasks
+            if (completed) {
+                const subtaskIds = getRecursiveSubtaskIds(checklist_item_id);
+                for (const subId of subtaskIds) {
+                    upsert.run(userId, subId, date, 1);
+                    
+                    // Handle repeat rules for subtasks too
+                    const subItem = db.prepare('SELECT id, target_date, repeat_rule FROM checklist_items WHERE id = ?').get(subId);
+                    if (subItem && subItem.repeat_rule && subItem.repeat_rule !== 'none') {
+                        const baseDate = subItem.target_date || date;
+                        const nextDate = calculateNextOccurrence(baseDate, subItem.repeat_rule);
+                        if (nextDate) {
+                            db.prepare('UPDATE checklist_items SET target_date = ? WHERE id = ?').run(nextDate, subId);
+                        }
                     }
                 }
             }

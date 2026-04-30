@@ -240,7 +240,7 @@ const SortableChecklistCard = ({
             }}
             className={`checklist-card checklist-minimal ${className} ${isDragging ? 'dragging-placeholder' : ''} ${isOverlay ? 'dragging-overlay' : ''}`}
         >
-            {!isFlatList && checklist.title !== '' && (
+            {!isFlatList && (checklist.title !== '' || isEditingTitle) && (
                 <div
                     className="checklist-header"
                     {...(isSortable && !isOverlay ? { ...attributes, ...listeners } : {})}

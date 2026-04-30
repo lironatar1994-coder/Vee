@@ -21,7 +21,7 @@ import {
 import { SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
 import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
-import { useTaskDnD, buildHierarchy } from '../hooks/useTaskDnD';
+import { useTaskDnD, buildHierarchy, getDescendantIds } from '../hooks/useTaskDnD';
 import cache from '../utils/cache';
 import PageSkeleton from '../components/PageSkeleton';
 
@@ -165,8 +165,24 @@ const Today = () => {
         const delay = newCompleted ? 400 : 0; // Wait a bit for the completion animation to play
         setTimeout(() => {
             setTodayProgress(prev => {
-                const filtered = prev.filter(p => p.checklist_item_id !== itemId);
-                return [...filtered, { checklist_item_id: itemId, completed: newCompleted ? 1 : 0, date: todayDateStr }];
+                let updatedProgress = prev.filter(p => p.checklist_item_id !== itemId);
+                const mainEntry = { checklist_item_id: itemId, completed: newCompleted ? 1 : 0, date: todayDateStr };
+                
+                if (newCompleted) {
+                    // Recursively complete all subtasks
+                    const allItems = projectGroups.flatMap(pg => pg.checklists.flatMap(c => c.items || []));
+                    const subtaskIds = getDescendantIds(allItems, itemId);
+                    
+                    const subtaskEntries = subtaskIds.map(subId => ({
+                        checklist_item_id: subId, completed: 1, date: todayDateStr
+                    }));
+                    
+                    // Filter out any existing entries for these subtasks and add the new completed ones
+                    updatedProgress = updatedProgress.filter(p => !subtaskIds.includes(p.checklist_item_id));
+                    return [...updatedProgress, mainEntry, ...subtaskEntries];
+                }
+                
+                return [...updatedProgress, mainEntry];
             });
             window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
         }, delay);

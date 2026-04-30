@@ -1007,9 +1007,7 @@ export default function TaskEditModal({
                     }} className="hide-scrollbar">
                         {loadingComments ? (
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center' }}>טוען תגובות...</div>
-                        ) : itemComments.length === 0 ? (
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center', opacity: 0.6 }}>אין תגובות עדיין. היה הראשון לתמוך!</div>
-                        ) : (
+                        ) : itemComments.length === 0 ? null : (
                             itemComments.map(comment => (
                                 <div key={comment.id} style={{ display: 'flex', gap: '0.75rem' }}>
                                     <div style={{

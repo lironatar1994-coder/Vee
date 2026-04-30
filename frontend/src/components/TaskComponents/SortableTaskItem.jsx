@@ -221,11 +221,7 @@ const SortableTaskItem = ({
                                                             setAnchorRect(rect);
                                                             setShowReminderMenu(!showReminderMenu);
                                                         }, reminderRef)
-                                                    ) : (
-                                                        <span style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <CalendarIcon size={12} /> הגדר תאריך
-                                                        </span>
-                                                    )}
+                                                    ) : null}
                                                 </div>
                                             )}
                                         </div>
