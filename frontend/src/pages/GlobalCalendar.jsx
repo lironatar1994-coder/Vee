@@ -92,7 +92,7 @@ const GlobalCalendar = () => {
     const urlDate = searchParams.get('date');
     const urlView = searchParams.get('view');
 
-    const [viewMode, setViewMode] = useState(() => urlView || localStorage.getItem('calendarViewMode') || 'weekly');
+    const [viewMode, setViewMode] = useState(() => urlView || localStorage.getItem('calendarViewMode') || 'monthly');
     const [events, setEvents] = useState(() => (user && cache.get(`calendar_events_monthly_${user.id}`)) || []);
     const [loading, setLoading] = useState(user ? !cache.get(`calendar_events_monthly_${user.id}`) : true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -129,7 +129,8 @@ const GlobalCalendar = () => {
         const targetView = urlView === 'monthly' ? 'dayGridMonth' :
             urlView === 'weekly' ? 'timeGridWeek' :
                 urlView === 'daily' ? 'timeGridDay' :
-                    (localStorage.getItem('calendarViewMode') === 'monthly' ? 'dayGridMonth' : 'timeGridWeek');
+                    (localStorage.getItem('calendarViewMode') === 'weekly' ? 'timeGridWeek' : 
+                     localStorage.getItem('calendarViewMode') === 'daily' ? 'timeGridDay' : 'dayGridMonth');
 
         const targetDate = urlDate || getLocalDateString(new Date());
 

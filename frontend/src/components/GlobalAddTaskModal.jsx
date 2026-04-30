@@ -11,7 +11,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
     const { user, authFetch } = useUser();
     const isSubmittingRef = useRef(false);
     const [newItemContent, setNewItemContent] = useState('');
-    const [newItemDate, setNewItemDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+    const [newItemDate, setNewItemDate] = useState('');
     const [newItemTime, setNewItemTime] = useState('');
     const [checklists, setChecklists] = useState([]);
     const [defaultChecklist, setDefaultChecklist] = useState(null);
@@ -27,7 +27,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         const globalDate = window.globalNewItemDate;
         const globalTime = window.globalNewItemTime;
         
-        setNewItemDate(globalDate || new Date().toLocaleDateString('en-CA'));
+        setNewItemDate(globalDate || '');
         setNewItemTime(globalTime || '');
 
         const fetchData = async () => {

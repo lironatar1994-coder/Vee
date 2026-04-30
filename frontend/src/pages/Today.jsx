@@ -706,10 +706,11 @@ const handleAddItem = async (e, _checklistId, parentItemId = null, explicitConte
                             defaultItemDate={todayDateStr}
                             hideTaskCount={true}
                             useSharedDndContext={true}
-                            activeDragItem={!addingToList && activeDragItem}
+                            activeDragItem={null}
                             isSortable={false}
                             hideActionMenu={true}
                             canEditTitle={false}
+                            hideAddButton={true}
                         />
                     </div>
                 )}
