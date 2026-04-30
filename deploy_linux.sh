@@ -97,12 +97,12 @@ sleep 5
 pm2 status
 
 # Health check
-if curl -s -I http://localhost:3001/today | grep -q "200 OK"; then
-    log "HEALTH CHECK PASSED (Port 3001 /today)" "SUCCESS"
+if curl -s -I http://localhost:3001/api/health | grep -q "200 OK"; then
+    log "HEALTH CHECK PASSED (Port 3001 /api/health)" "SUCCESS"
 else
-    log "HEALTH CHECK FAILED (Port 3001 /today)" "ERROR"
+    log "HEALTH CHECK FAILED (Port 3001 /api/health)" "ERROR"
     log "Checking log for clue..." "WARN"
-    pm2 logs "$APP_NAME" --lines 5 --no-colors
+    pm2 logs "$APP_NAME" --lines 5
 fi
 
 log "DEPLOYMENT COMPLETE V3" "SUCCESS"
