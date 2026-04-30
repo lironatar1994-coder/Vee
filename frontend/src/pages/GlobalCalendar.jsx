@@ -7,6 +7,7 @@ import { ChevronDown, Loader2, X, Check, CheckCircle } from 'lucide-react';
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
+import GoogleCalendarInfoModal from '../components/GoogleCalendarInfoModal';
 
 const getLocalDateString = (date) => {
     if (!date) return '';
@@ -100,6 +101,7 @@ const GlobalCalendar = () => {
     const [currentRange, setCurrentRange] = useState({ start: null, end: null });
     const [scrollTop, setScrollTop] = useState(0);
     const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
+    const [showGoogleInfo, setShowGoogleInfo] = useState(false);
     const viewDropdownRef = useRef(null);
     const calendarWrapperRef = useRef(null);
     const popoverRef = useRef(null);
@@ -599,7 +601,7 @@ const GlobalCalendar = () => {
                         </button>
                     ) : (
                         <button
-                            onClick={() => window.location.href = `${API_URL}/google/auth-url?userId=${user.id}`}
+                            onClick={() => setShowGoogleInfo(true)}
                             className="btn-icon-soft"
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.4rem',
@@ -897,6 +899,11 @@ const GlobalCalendar = () => {
                     allItems={events.map(e => e.originalTask)}
                 />
             )}
+            <GoogleCalendarInfoModal 
+                isOpen={showGoogleInfo} 
+                onClose={() => setShowGoogleInfo(false)} 
+                onConnect={() => window.location.href = `${API_URL}/google/auth-url?userId=${user.id}`}
+            />
         </CalendarPageLayout>
     );
 };
