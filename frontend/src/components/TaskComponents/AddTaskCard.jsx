@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import { 
     Calendar as CalendarIcon, Bell, RefreshCw, X, ArrowLeft, ChevronDown, 
-    Inbox, List, Flag, SendHorizontal, Clock, AlignLeft, MoreHorizontal 
+    Inbox, List, Star, SendHorizontal, Clock, AlignLeft, MoreHorizontal 
 } from 'lucide-react';
 import SmartInput from '../SmartInput';
 import DatePickerDropdown from '../DatePickerDropdown';
@@ -104,6 +104,8 @@ const AddTaskCard = ({
     const [showReminderMenu, setShowReminderMenu] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
+    const [moreMenuPos, setMoreMenuPos] = useState({ top: 0, left: 0, width: 0 });
+    const [promotedActions, setPromotedActions] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isSubmittingRef = useRef(false);
     
@@ -141,9 +143,8 @@ const AddTaskCard = ({
 
     useEffect(() => {
         const handleClickOutside = (e) => {
+            if (e.target.closest('.portal-dropdown')) return;
             if (cardRef.current && !cardRef.current.contains(e.target)) {
-                setShowPriorityMenu(false);
-                setShowReminderMenu(false);
                 setShowDateDropdown(false);
                 setShowProjectSelector(false);
                 setShowRepeatMenu(false);
@@ -331,8 +332,9 @@ const AddTaskCard = ({
             <div className="actions-pills-row">
                 {(() => {
                     const enabledActionIds = actionOrder.filter(id => enabledActions.includes(id));
-                    const visibleActions = enabledActionIds.slice(0, 3);
-                    const hiddenActions = enabledActionIds.slice(3);
+                    const effectiveVisible = Array.from(new Set([...enabledActionIds.slice(0, 3), ...promotedActions]));
+                    const hiddenActions = enabledActionIds.filter(id => !effectiveVisible.includes(id));
+                    const visibleActions = effectiveVisible;
 
                     const renderAction = (actionId, isHidden = false) => {
                         if (actionId === 'date') {
@@ -342,6 +344,7 @@ const AddTaskCard = ({
                                         ref={dateBtnRef}
                                         type="button"
                                         onClick={() => {
+                                            if (isHidden) setPromotedActions(prev => [...prev, actionId]);
                                             setShowDateDropdown(!showDateDropdown);
                                             setShowPriorityMenu(false);
                                             setShowReminderMenu(false);
@@ -389,6 +392,7 @@ const AddTaskCard = ({
                                         ref={timeBtnRef}
                                         type="button"
                                         onClick={() => {
+                                            if (isHidden) setPromotedActions(prev => [...prev, actionId]);
                                             setShowTimeMenu(!showTimeMenu);
                                             setShowDateDropdown(false);
                                             setShowPriorityMenu(false);
@@ -416,6 +420,7 @@ const AddTaskCard = ({
                                         ref={projectBtnRef}
                                         type="button"
                                         onClick={() => {
+                                            if (isHidden) setPromotedActions(prev => [...prev, actionId]);
                                             setShowProjectSelector(!showProjectSelector);
                                             setShowDateDropdown(false);
                                             setShowPriorityMenu(false);
@@ -446,6 +451,7 @@ const AddTaskCard = ({
                                         ref={priorityBtnRef}
                                         type="button"
                                         onClick={() => {
+                                            if (isHidden) setPromotedActions(prev => [...prev, actionId]);
                                             setShowPriorityMenu(!showPriorityMenu);
                                             setShowReminderMenu(false);
                                             setShowDateDropdown(false);
@@ -457,7 +463,7 @@ const AddTaskCard = ({
                                         className={`action-pill ${priority !== 4 ? 'active' : ''} ${isHidden ? 'in-menu' : ''}`}
                                         style={priority !== 4 ? { color: priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : 'var(--priority-3)', borderColor: 'currentColor' } : {}}
                                     >
-                                        <Flag size={14} className="action-pill-icon" fill={priority !== 4 ? 'currentColor' : 'transparent'} />
+                                        <Star size={14} className="action-pill-icon" fill={priority !== 4 ? 'currentColor' : 'transparent'} />
                                         {(priority !== 4 || showLabels || isHidden) && (
                                             <span>{priority === 4 ? 'עדיפות' : `עדיפות ${priority}`}</span>
                                         )}
@@ -473,6 +479,7 @@ const AddTaskCard = ({
                                         ref={reminderBtnRef}
                                         type="button"
                                         onClick={() => {
+                                            if (isHidden) setPromotedActions(prev => [...prev, actionId]);
                                             setShowReminderMenu(!showReminderMenu);
                                             setShowPriorityMenu(false);
                                             setShowDateDropdown(false);
@@ -499,6 +506,7 @@ const AddTaskCard = ({
                                         ref={repeatBtnRef}
                                         type="button"
                                         onClick={() => {
+                                            if (isHidden) setPromotedActions(prev => [...prev, actionId]);
                                             setShowRepeatMenu(!showRepeatMenu);
                                             setShowDateDropdown(false);
                                             setShowPriorityMenu(false);
@@ -529,7 +537,13 @@ const AddTaskCard = ({
                                     <button
                                         ref={moreBtnRef}
                                         type="button"
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            if (!showMoreMenu) {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                let left = rect.right - 180;
+                                                if (left < 8) left = 8;
+                                                setMoreMenuPos({ top: rect.bottom + 2, left });
+                                            }
                                             setShowMoreMenu(!showMoreMenu);
                                             setShowDateDropdown(false);
                                             setShowPriorityMenu(false);
@@ -544,20 +558,22 @@ const AddTaskCard = ({
                                         {showLabels && <span>עוד</span>}
                                     </button>
 
-                                    {showMoreMenu && (
-                                        <div className="more-actions-menu" style={{
-                                            position: 'absolute', top: '100%', right: '0', marginTop: '2px',
+                                    {showMoreMenu && createPortal(
+                                        <div className="more-actions-menu portal-dropdown" style={{
+                                            position: 'fixed', top: `${moreMenuPos.top}px`, left: `${moreMenuPos.left}px`,
                                             background: 'var(--bg-secondary)',
                                             border: '1px solid var(--border-color)',
                                             borderRadius: '8px',
                                             boxShadow: 'var(--card-shadow)',
-                                            zIndex: 2000, display: 'flex', flexDirection: 'column',
+                                            zIndex: 99999, display: 'flex', flexDirection: 'column',
                                             minWidth: '180px', padding: '4px',
                                             backdropFilter: 'blur(10px)',
                                             WebkitBackdropFilter: 'blur(10px)',
+                                            direction: 'rtl'
                                         }}>
                                             {hiddenActions.map(id => renderAction(id, true))}
-                                        </div>
+                                        </div>,
+                                        document.body
                                     )}
                                 </div>
                             )}

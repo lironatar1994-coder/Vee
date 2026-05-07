@@ -36,28 +36,19 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
 
                 let top, left;
 
-                // Prefer side-spawning
-                if (spaceLeft >= PANEL_W) {
-                    left = rect.left - PANEL_W - 2;
-                    top = rect.top;
-                } else if (spaceRight >= PANEL_W) {
-                    left = rect.right + 2;
-                    top = rect.top;
+                // Prefer vertical
+                const screenMid = screenW / 2;
+                const anchorMid = rect.left + rect.width / 2;
+                if (anchorMid > screenMid) {
+                    left = rect.right - PANEL_W;
                 } else {
-                    // Fallback to vertical
-                    const screenMid = screenW / 2;
-                    const anchorMid = rect.left + rect.width / 2;
-                    if (anchorMid > screenMid) {
-                        left = rect.right - PANEL_W;
-                    } else {
-                        left = rect.left;
-                    }
+                    left = rect.left;
+                }
 
-                    if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
-                        top = rect.bottom + 2;
-                    } else {
-                        top = rect.top - PANEL_H - 2;
-                    }
+                if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
+                    top = rect.bottom + 2;
+                } else {
+                    top = rect.top - PANEL_H - 2;
                 }
 
                 // Global safety clamping
@@ -228,7 +219,7 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
 
     return createPortal(
         <div ref={dropdownRef} 
-            className="dropdown-menu" 
+            className="dropdown-menu portal-dropdown" 
             style={{
                 position: 'fixed',
                 top: pos.top,

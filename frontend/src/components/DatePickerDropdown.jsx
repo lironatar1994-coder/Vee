@@ -191,14 +191,7 @@ const DatePickerDropdown = React.memo(({ isOpen, onClose, anchorRef, selectedDat
 
                 let top, left;
 
-                if (spaceLeft >= PANEL_W) {
-                    left = rect.left - PANEL_W - 2;
-                    top = rect.top;
-                } else if (spaceRight >= PANEL_W) {
-                    left = rect.right + 2;
-                    top = rect.top;
-                } else {
-                    const screenMid = screenW / 2;
+                const screenMid = screenW / 2;
                     const anchorMid = rect.left + rect.width / 2;
 
                     if (anchorMid > screenMid) {
@@ -212,7 +205,6 @@ const DatePickerDropdown = React.memo(({ isOpen, onClose, anchorRef, selectedDat
                     } else {
                         top = rect.top - PANEL_H - 2;
                     }
-                }
 
                 if (left < 8) left = 8;
                 if (left + PANEL_W > screenW - 8) left = screenW - PANEL_W - 8;

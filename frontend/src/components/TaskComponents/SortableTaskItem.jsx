@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, Check, Plus, RefreshCw, GripVertical, Folder, ListTree, MessageSquare, Calendar as CalendarIcon } from 'lucide-react';
+import { CheckCircle, Check, Plus, RefreshCw, GripVertical, Folder, ListTree, MessageSquare, Calendar as CalendarIcon, Star } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DatePickerDropdown from '../DatePickerDropdown';
 import TimePickerDropdown from '../TimePickerDropdown';
 import TaskEditModal from '../TaskEditModal';
+import { useUser } from '../../context/UserContext';
 import { renderFormattedDate, TIME_OPTIONS, repeatLabels, repeatOptions } from './utils.jsx';
 
 const SortableTaskItem = ({
@@ -23,6 +24,7 @@ const SortableTaskItem = ({
     hideToday = false,
     completionDateString = null
 }) => {
+    const { user } = useUser();
     const [localCompleted, setLocalCompleted] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -41,11 +43,21 @@ const SortableTaskItem = ({
     }, [todayProgress, isCompletedFallback]);
 
     let isCompleted = false;
+    let completedBy = null;
     if (localCompleted !== null) {
         isCompleted = localCompleted;
     } else if (useProgressArray && todayProgress) {
-        const progress = todayProgress.find(p => p.checklist_item_id === item.id);
-        isCompleted = progress ? progress.completed === 1 : false;
+        const myProgress = todayProgress.find(p => p.checklist_item_id === item.id && p.user_id === user?.id);
+        if (myProgress) {
+            isCompleted = myProgress.completed === 1;
+            completedBy = myProgress;
+        } else {
+            const anyoneProgress = todayProgress.find(p => p.checklist_item_id === item.id && p.completed === 1);
+            if (anyoneProgress) {
+                isCompleted = true;
+                completedBy = anyoneProgress;
+            }
+        }
     } else {
         isCompleted = isCompletedFallback;
     }
@@ -187,7 +199,24 @@ const SortableTaskItem = ({
 
                         <div style={{ flexGrow: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', minWidth: 0 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, width: '100%', gap: '2px', opacity: 1, transition: 'opacity 0.2s', overflow: 'hidden', textAlign: 'right' }}>
-                                <span style={{ fontSize: '16px', fontWeight: 400, textDecoration: 'none', color: isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.4', display: 'block' }} dangerouslySetInnerHTML={{ __html: item.content }} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                                    {priority !== 4 && (
+                                        <Star 
+                                            size={14} 
+                                            style={{ color: priorityColor, flexShrink: 0 }} 
+                                            fill={priorityColor} 
+                                        />
+                                    )}
+                                    <span style={{ fontSize: '16px', fontWeight: 400, textDecoration: 'none', color: isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.4', display: 'block' }} dangerouslySetInnerHTML={{ __html: item.content }} />
+                                    {isCompleted && completedBy && completedBy.user_id !== user?.id && (
+                                        <img 
+                                            src={completedBy.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(completedBy.username || 'U')}&background=random`} 
+                                            alt={completedBy.username}
+                                            title={`הושלם על ידי ${completedBy.username}`}
+                                            style={{ width: 16, height: 16, borderRadius: '50%', opacity: 0.8, border: '1px solid var(--border-color)', flexShrink: 0 }}
+                                        />
+                                    )}
+                                </div>
                                 {item.description && (
                                     <div
                                         style={{

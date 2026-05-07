@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Flag } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 const PrioritySelectorDropdown = ({ isOpen, onClose, anchorRef, priority, onSelect }) => {
     const dropdownRef = useRef(null);
@@ -29,28 +29,19 @@ const PrioritySelectorDropdown = ({ isOpen, onClose, anchorRef, priority, onSele
 
                 let top, left;
 
-                // Prefer spawning to the side if there's enough space
-                if (spaceLeft >= PANEL_W) {
-                    left = rect.left - PANEL_W - 2;
-                    top = rect.top;
-                } else if (spaceRight >= PANEL_W) {
-                    left = rect.right + 2;
-                    top = rect.top;
+                // Prefer vertical positioning
+                const screenMid = screenW / 2;
+                const anchorMid = rect.left + rect.width / 2;
+                if (anchorMid > screenMid) {
+                    left = rect.right - PANEL_W;
                 } else {
-                    // Fallback to vertical positioning
-                    const screenMid = screenW / 2;
-                    const anchorMid = rect.left + rect.width / 2;
-                    if (anchorMid > screenMid) {
-                        left = rect.right - PANEL_W;
-                    } else {
-                        left = rect.left;
-                    }
+                    left = rect.left;
+                }
 
-                    if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
-                        top = rect.bottom + 2;
-                    } else {
-                        top = rect.top - PANEL_H - 2;
-                    }
+                if (spaceBelow >= PANEL_H || spaceBelow >= spaceAbove) {
+                    top = rect.bottom + 2;
+                } else {
+                    top = rect.top - PANEL_H - 2;
                 }
 
                 // Global safety clamping
@@ -90,6 +81,7 @@ const PrioritySelectorDropdown = ({ isOpen, onClose, anchorRef, priority, onSele
     return createPortal(
         <div
             ref={dropdownRef}
+            className="portal-dropdown"
             style={{
                 position: 'fixed',
                 top: pos.top,
@@ -138,7 +130,7 @@ const PrioritySelectorDropdown = ({ isOpen, onClose, anchorRef, priority, onSele
                         else e.currentTarget.style.background = 'var(--dropdown-selected)';
                     }}
                 >
-                    <Flag size={14} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
+                    <Star size={14} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: priority === p.level ? 600 : 400 }}>{p.label}</span>
                 </button>
             ))}

@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import TaskPageLayout from '../components/TaskPageLayout';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
+import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
+import { toast } from 'sonner';
 
 const API_URL = '/api';
 
@@ -14,12 +16,33 @@ const History = () => {
     const [projects, setProjects] = useState([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [projectSearch, setProjectSearch] = useState('');
+    const [selectedActivity, setSelectedActivity] = useState(null);
     const [selectedFilter, setSelectedFilter] = useState({
         type: 'all',
         id: null,
         label: 'כל הפרויקטים',
     });
     const dropdownRef = useRef(null);
+
+    const handleToggleComplete = async (activity) => {
+        try {
+            const res = await authFetch(`/api/users/current/progress`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    checklist_item_id: activity.id,
+                    date: activity.progress_date || activity.date,
+                    completed: false
+                })
+            });
+            if (res.ok) {
+                setActivities(prev => prev.filter(a => a.id !== activity.id || a.date !== activity.date));
+                if (selectedActivity && selectedActivity.id === activity.id) setSelectedActivity(null);
+                toast.success('המשימה הוחזרה בהצלחה 🔄');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -398,41 +421,54 @@ const History = () => {
                         >
                             {items.map((activity) => (
                                 <article
-                                    key={activity.id}
+                                    key={`${activity.id}_${activity.date}`}
+                                    onClick={() => setSelectedActivity(activity)}
                                     style={{
-                                        padding: '0.25rem 0.5rem',
+                                        padding: '0.75rem 1rem',
                                         display: 'flex',
-                                        alignItems: 'flex-start',
+                                        alignItems: 'center',
                                         gap: '1rem',
-                                        background: 'transparent',
-                                        borderBottom: '1px solid var(--border-color)',
-                                        transition: 'background 0.2s ease',
-                                        cursor: 'default'
+                                        background: 'var(--bg-secondary)',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--border-color)',
+                                        marginBottom: '0.5rem',
+                                        transition: 'all 0.2s ease',
+                                        cursor: 'pointer'
                                     }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = 'var(--hover-bg)';
+                                        e.currentTarget.style.transform = 'translateY(-1px)';
+                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'var(--bg-secondary)';
+                                        e.currentTarget.style.transform = 'none';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                 >
-                                    {/* Avatar */}
-                                    <div
+                                    {/* Check Circle (Completed) */}
+                                    <div 
+                                        onClick={(e) => { e.stopPropagation(); handleToggleComplete(activity); }}
                                         style={{
-                                            width: '36px',
-                                            height: '36px',
-                                            borderRadius: '50%',
-                                            overflow: 'hidden',
-                                            flexShrink: 0,
-                                            background: user.profile_image
-                                                ? `url(${API_URL}${user.profile_image}) center/cover`
-                                                : 'var(--primary-color)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: '#fff',
-                                            fontSize: '0.9rem',
-                                            fontWeight: 700,
-                                            marginTop: '0.2rem'
+                                            width: 24, height: 24, borderRadius: '50%',
+                                            background: 'var(--primary-color)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            flexShrink: 0, cursor: 'pointer',
+                                            position: 'relative'
                                         }}
                                     >
-                                        {!user.profile_image && (user.username?.[0] || 'א')}
+                                        <Check size={14} color="white" strokeWidth={3} />
+                                        {activity.completer_id !== user?.id && (
+                                            <img 
+                                                src={activity.completer_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.completer_name || 'U')}&background=random`} 
+                                                style={{ 
+                                                    position: 'absolute', bottom: -6, right: -6, 
+                                                    width: 16, height: 16, borderRadius: '50%', 
+                                                    border: '2px solid var(--bg-secondary)', background: 'var(--bg-secondary)' 
+                                                }}
+                                                title={`הושלם על ידי ${activity.completer_name}`}
+                                            />
+                                        )}
                                     </div>
 
                                     {/* Text and meta */}
@@ -442,18 +478,19 @@ const History = () => {
                                             minWidth: 0,
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            gap: '0.35rem'
+                                            gap: '0.2rem'
                                         }}
                                     >
                                         <div
                                             style={{
                                                 fontSize: '1rem',
                                                 color: 'var(--text-primary)',
-                                                lineHeight: 1.4,
-                                                fontWeight: 500
+                                                fontWeight: 500,
+                                                textDecoration: 'none',
+                                                opacity: 0.8
                                             }}
                                         >
-                                            {activity.message}
+                                            {activity.content || (activity.completer_name ? `השלמת משימה: ${activity.completer_name}` : 'משימה הושלמה')}
                                         </div>
                                         <div
                                             style={{
@@ -466,10 +503,10 @@ const History = () => {
                                         >
                                             {activity.project_name && (
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                                    {activity.project_name} 🏷️
+                                                    {activity.project_name}
                                                 </span>
                                             )}
-                                            <span>#</span>
+                                            <span>•</span>
                                             <span>{formatTime(activity.date)}</span>
                                         </div>
                                     </div>
@@ -479,7 +516,21 @@ const History = () => {
                     </section>
                 ))}
             </div>
+
+            {/* Task Edit Modal */}
+            {selectedActivity && (
+                <TaskEditModal
+                    item={selectedActivity}
+                    projectTitle={selectedActivity.project_name || 'כללי'}
+                    isOpen={!!selectedActivity}
+                    onClose={() => setSelectedActivity(null)}
+                    isCompleted={true}
+                    onToggleComplete={() => handleToggleComplete(selectedActivity)}
+                    onSave={() => {}}
+                />
+            )}
         </TaskPageLayout>
+
     );
 };
 

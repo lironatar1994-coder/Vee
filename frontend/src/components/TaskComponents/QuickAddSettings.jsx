@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Calendar, Clock, Folder, Flag, Bell, RefreshCw, AlignLeft, 
+    Calendar, Clock, Folder, Star, Bell, RefreshCw, AlignLeft, 
     GripVertical, Check, Eye, EyeOff, MoreHorizontal 
 } from 'lucide-react';
 import {
@@ -24,7 +24,7 @@ const ACTION_ICONS = {
     date: Calendar,
     time: Clock,
     project: Folder,
-    priority: Flag,
+    priority: Star,
     reminders: Bell,
     repeat: RefreshCw
 };

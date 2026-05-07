@@ -4,7 +4,7 @@ import { useUser } from '../context/UserContext';
 import {
     X, ChevronUp, ChevronDown, ChevronLeft, MoreHorizontal,
     Calendar as CalendarIcon, Tag, MapPin,
-    Flag, Plus, Trash2, CheckCircle, Circle, RefreshCw, Check,
+    Star, Plus, Trash2, CheckCircle, Circle, RefreshCw, Check,
     Home, List, MessageSquare, Paperclip, CheckSquare, Bell, Inbox, Folder, Send, Layout, Clock, AlarmClock
 } from 'lucide-react';
 import DatePickerDropdown from './DatePickerDropdown';
@@ -164,18 +164,6 @@ export default function TaskEditModal({
     // Click outside handler for menus
     useEffect(() => {
         const handler = (e) => {
-            // Reminder menu
-            if (showReminderMenu) {
-                if (!(reminderMenuRef.current?.contains(e.target)) && !(reminderBtnRef.current?.contains(e.target))) {
-                    setShowReminderMenu(false);
-                }
-            }
-            // Priority menu
-            if (showPriorityMenu) {
-                if (!(priorityMenuRef.current?.contains(e.target)) && !(priorityBtnRef.current?.contains(e.target))) {
-                    setShowPriorityMenu(false);
-                }
-            }
             // More menu
             if (showMoreMenu) {
                 if (!(moreMenuRef.current?.contains(e.target))) {
@@ -185,7 +173,7 @@ export default function TaskEditModal({
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
-    }, [showReminderMenu, showPriorityMenu, showMoreMenu]);
+    }, [showMoreMenu]);
 
     const scrollToBottom = () => {
         commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -198,7 +186,6 @@ export default function TaskEditModal({
             if (res.ok) {
                 const data = await res.json();
                 setItemComments(data);
-                setTimeout(scrollToBottom, 150);
             }
         } catch (err) {
             console.error('Failed to fetch task comments', err);
@@ -329,6 +316,16 @@ export default function TaskEditModal({
                 setSubtasks(prev => prev.map(s => s.id === subId ? { ...s, completed } : s));
                 if (completed && window.navigator?.vibrate) window.navigator.vibrate(10);
                 window.dispatchEvent(new CustomEvent('refreshTasks'));
+
+                if (completed) {
+                    toast.success('כל הכבוד! המשימה הושלמה ✨', {
+                        action: {
+                            label: 'ביטול',
+                            onClick: () => handleToggleSubtask(subId, checklistId, false)
+                        },
+                        id: `complete-sub-${subId}`
+                    });
+                }
             }
         } catch (err) {
             console.error('Failed to toggle subtask', err);
@@ -368,6 +365,9 @@ export default function TaskEditModal({
     useEffect(() => {
         const handler = (e) => {
             if (panelRef.current && !panelRef.current.contains(e.target)) {
+                // Ignore clicks on portal dropdowns
+                if (e.target.closest('.dropdown-menu') || e.target.closest('.portal-dropdown')) return;
+                
                 // If clicking outside, try to save if we're currently editing
                 if (isEditing) {
                     handleSave();
@@ -840,7 +840,7 @@ export default function TaskEditModal({
                             onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
-                            <Flag size={18} fill={priority !== 4 ? (priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : 'var(--priority-3)') : 'transparent'} />
+                            <Star size={18} fill={priority !== 4 ? (priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : 'var(--priority-3)') : 'transparent'} />
                             <span>
                                 {priority === 1 ? 'עדיפות 1 (גבוהה ביותר)' : priority === 2 ? 'עדיפות 2' : priority === 3 ? 'עדיפות 3' : 'עדיפות 4 (רגילה)'}
                             </span>

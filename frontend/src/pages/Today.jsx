@@ -185,6 +185,16 @@ const Today = () => {
                 return [...updatedProgress, mainEntry];
             });
             window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+
+            if (newCompleted) {
+                toast.success('כל הכבוד! המשימה הושלמה ✨', {
+                    action: {
+                        label: 'ביטול',
+                        onClick: () => toggleItem(itemId, true)
+                    },
+                    id: `complete-${itemId}`
+                });
+            }
         }, delay);
 
         try {

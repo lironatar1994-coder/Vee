@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import CalendarWrapper from '../components/CalendarWrapper';
-import { ChevronDown, Loader2, X, Check, CheckCircle } from 'lucide-react';
+import { ChevronDown, Loader2, X, Check, CheckCircle, Star } from 'lucide-react';
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
@@ -868,6 +868,13 @@ const GlobalCalendar = () => {
                                     }}>
                                         {task.content}
                                     </span>
+                                    {priority !== 4 && (
+                                        <Star 
+                                            size={12} 
+                                            style={{ color: priorityColor, flexShrink: 0 }} 
+                                            fill={priorityColor} 
+                                        />
+                                    )}
                                     {task.time && (
                                         <span style={{
                                             fontSize: '0.75rem',

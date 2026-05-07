@@ -116,9 +116,24 @@ router.get('/:userId/progress', (req, res) => {
     const { date } = req.query;
     if (!date) return res.status(400).json({ error: 'date required' });
     try {
-        const progress = db.prepare('SELECT * FROM daily_progress WHERE user_id = ? AND date = ?').all(userId, date);
+        // Fetch progress for items that either belong to the user OR are in a project where the user is a member
+        const progress = db.prepare(`
+            SELECT dp.*, u.username, u.profile_image
+            FROM daily_progress dp
+            LEFT JOIN users u ON dp.user_id = u.id
+            WHERE dp.date = ? AND (
+                dp.user_id = ? 
+                OR dp.checklist_item_id IN (
+                    SELECT ci.id FROM checklist_items ci
+                    JOIN checklists c ON ci.checklist_id = c.id
+                    JOIN project_members pm ON c.project_id = pm.project_id
+                    WHERE pm.user_id = ?
+                )
+            )
+        `).all(date, userId, userId);
         res.json(progress);
     } catch (err) {
+        console.error('Progress fetch error:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });
@@ -130,49 +145,69 @@ router.post('/:userId/progress', (req, res) => {
     const io = req.io;
 
     try {
-        db.transaction(() => {
-            const upsert = db.prepare(`
-                INSERT INTO daily_progress (user_id, checklist_item_id, date, completed)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(user_id, checklist_item_id, date) DO UPDATE SET completed = excluded.completed
-            `);
-            upsert.run(userId, checklist_item_id, date, completed ? 1 : 0);
+        // Check if this item belongs to a collaborative project
+        const itemInfo = db.prepare(`
+            SELECT c.project_id 
+            FROM checklist_items ci 
+            JOIN checklists c ON ci.checklist_id = c.id 
+            WHERE ci.id = ?
+        `).get(checklist_item_id);
 
-            // Handle repeat rule for the main item
-            if (completed) {
-                const item = db.prepare('SELECT id, target_date, repeat_rule FROM checklist_items WHERE id = ?').get(checklist_item_id);
-                if (item && item.repeat_rule && item.repeat_rule !== 'none') {
-                    const baseDate = item.target_date || date;
-                    const nextDate = calculateNextOccurrence(baseDate, item.repeat_rule);
-                    if (nextDate) {
-                        db.prepare('UPDATE checklist_items SET target_date = ? WHERE id = ?').run(nextDate, checklist_item_id);
+        db.transaction(() => {
+            if (!completed && itemInfo && itemInfo.project_id) {
+                // Shared Un-completion: Remove completion records for all users for this item and date
+                db.prepare('DELETE FROM daily_progress WHERE checklist_item_id = ? AND date = ?').run(checklist_item_id, date);
+                
+                // If it's a parent, also uncomplete subtasks recursively for everyone
+                const subtaskIds = getRecursiveSubtaskIds(checklist_item_id);
+                if (subtaskIds.length > 0) {
+                    const placeholders = subtaskIds.map(() => '?').join(',');
+                    db.prepare(`DELETE FROM daily_progress WHERE checklist_item_id IN (${placeholders}) AND date = ?`).run(...subtaskIds, date);
+                }
+            } else {
+                // Personal or Shared Completion: Standard upsert for current user
+                const upsert = db.prepare(`
+                    INSERT INTO daily_progress (user_id, checklist_item_id, date, completed)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(user_id, checklist_item_id, date) DO UPDATE SET completed = excluded.completed
+                `);
+                upsert.run(userId, checklist_item_id, date, completed ? 1 : 0);
+
+                // Handle repeat rule for the main item
+                if (completed) {
+                    const item = db.prepare('SELECT id, target_date, repeat_rule FROM checklist_items WHERE id = ?').get(checklist_item_id);
+                    if (item && item.repeat_rule && item.repeat_rule !== 'none') {
+                        const baseDate = item.target_date || date;
+                        const nextDate = calculateNextOccurrence(baseDate, item.repeat_rule);
+                        if (nextDate) {
+                            db.prepare('UPDATE checklist_items SET target_date = ? WHERE id = ?').run(nextDate, checklist_item_id);
+                        }
                     }
                 }
-            }
 
-            // Recursive completion for subtasks
-            if (completed) {
-                const subtaskIds = getRecursiveSubtaskIds(checklist_item_id);
-                for (const subId of subtaskIds) {
-                    upsert.run(userId, subId, date, 1);
-                    
-                    // Handle repeat rules for subtasks too
-                    const subItem = db.prepare('SELECT id, target_date, repeat_rule FROM checklist_items WHERE id = ?').get(subId);
-                    if (subItem && subItem.repeat_rule && subItem.repeat_rule !== 'none') {
-                        const baseDate = subItem.target_date || date;
-                        const nextDate = calculateNextOccurrence(baseDate, subItem.repeat_rule);
-                        if (nextDate) {
-                            db.prepare('UPDATE checklist_items SET target_date = ? WHERE id = ?').run(nextDate, subId);
+                // Recursive completion for subtasks
+                if (completed) {
+                    const subtaskIds = getRecursiveSubtaskIds(checklist_item_id);
+                    for (const subId of subtaskIds) {
+                        upsert.run(userId, subId, date, 1);
+                        
+                        // Handle repeat rules for subtasks too
+                        const subItem = db.prepare('SELECT id, target_date, repeat_rule FROM checklist_items WHERE id = ?').get(subId);
+                        if (subItem && subItem.repeat_rule && subItem.repeat_rule !== 'none') {
+                            const baseDate = subItem.target_date || date;
+                            const nextDate = calculateNextOccurrence(baseDate, subItem.repeat_rule);
+                            if (nextDate) {
+                                db.prepare('UPDATE checklist_items SET target_date = ? WHERE id = ?').run(nextDate, subId);
+                            }
                         }
                     }
                 }
             }
         })();
 
-        const info = db.prepare('SELECT c.project_id FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id WHERE ci.id = ?').get(checklist_item_id);
-        if (info && info.project_id && io) {
+        if (itemInfo && itemInfo.project_id && io) {
             const userRow = db.prepare('SELECT username, profile_image FROM users WHERE id = ?').get(userId);
-            io.to(`project_${info.project_id}`).emit('task_completed', {
+            io.to(`project_${itemInfo.project_id}`).emit('task_completed', {
                 checklist_item_id,
                 completed: completed ? 1 : 0,
                 userId: parseInt(userId),
@@ -182,7 +217,7 @@ router.post('/:userId/progress', (req, res) => {
         }
         res.json({ success: true });
     } catch (err) {
-        console.error(err);
+        console.error('Update progress error:', err);
         res.status(500).json({ error: 'Update progress failed' });
     }
 });
@@ -309,13 +344,24 @@ router.get('/:userId/activity', userAuth, (req, res) => {
     const userId = req.user.id;
     try {
         const activity = db.prepare(`
-            SELECT dp.date, ci.content as message, p.title as project_name
-            FROM daily_progress dp JOIN checklist_items ci ON dp.checklist_item_id = ci.id
-            JOIN checklists c ON ci.checklist_id = c.id LEFT JOIN projects p ON c.project_id = p.id
-            WHERE dp.user_id = ? AND dp.completed = 1 ORDER BY dp.date DESC, dp.id DESC LIMIT 50
-        `).all(userId);
-        res.json(activity.map(a => ({ ...a, message: `השלמת משימה: ${a.message}`, project_name: a.project_name || 'תיבת דואר' })));
+            SELECT dp.date as progress_date, u.username as completer_name, u.profile_image as completer_image, u.id as completer_id,
+                   ci.*, c.project_id as project_id, p.title as project_name, c.title as checklist_title
+            FROM daily_progress dp 
+            JOIN checklist_items ci ON dp.checklist_item_id = ci.id
+            JOIN checklists c ON ci.checklist_id = c.id 
+            LEFT JOIN projects p ON c.project_id = p.id
+            JOIN users u ON dp.user_id = u.id
+            WHERE (
+                dp.user_id = ? 
+                OR c.project_id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+            )
+            AND dp.completed = 1 
+            ORDER BY dp.date DESC, dp.id DESC 
+            LIMIT 50
+        `).all(userId, userId);
+        res.json(activity);
     } catch (err) {
+        console.error('Activity fetch error:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });
