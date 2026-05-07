@@ -78,7 +78,7 @@ function App() {
 
         {/* Normal App Routes */}
         <Route path="/" element={user ? <Layout /> : <Login />}>
-          <Route index element={<Navigate to="/today" replace />} />
+          <Route index element={<Navigate to="/inbox" replace />} />
           <Route path="projects" element={<Home />} />
           <Route path="project/:projectId" element={<Project />} />
           <Route path="calendar" element={<GlobalCalendar />} />

@@ -7,6 +7,7 @@ import { ChevronDown, Loader2, X, Check, CheckCircle, Star } from 'lucide-react'
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
+import GoogleCalendarInfoModal from '../components/GoogleCalendarInfoModal';
 
 const getLocalDateString = (date) => {
     if (!date) return '';
@@ -92,7 +93,7 @@ const GlobalCalendar = () => {
     const urlDate = searchParams.get('date');
     const urlView = searchParams.get('view');
 
-    const [viewMode, setViewMode] = useState(() => urlView || localStorage.getItem('calendarViewMode') || 'weekly');
+    const [viewMode, setViewMode] = useState(() => urlView || localStorage.getItem('calendarViewMode') || 'monthly');
     const [events, setEvents] = useState(() => (user && cache.get(`calendar_events_monthly_${user.id}`)) || []);
     const [loading, setLoading] = useState(user ? !cache.get(`calendar_events_monthly_${user.id}`) : true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -100,6 +101,7 @@ const GlobalCalendar = () => {
     const [currentRange, setCurrentRange] = useState({ start: null, end: null });
     const [scrollTop, setScrollTop] = useState(0);
     const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
+    const [showGoogleInfo, setShowGoogleInfo] = useState(false);
     const viewDropdownRef = useRef(null);
     const calendarWrapperRef = useRef(null);
     const popoverRef = useRef(null);
@@ -129,7 +131,8 @@ const GlobalCalendar = () => {
         const targetView = urlView === 'monthly' ? 'dayGridMonth' :
             urlView === 'weekly' ? 'timeGridWeek' :
                 urlView === 'daily' ? 'timeGridDay' :
-                    (localStorage.getItem('calendarViewMode') === 'monthly' ? 'dayGridMonth' : 'timeGridWeek');
+                    (localStorage.getItem('calendarViewMode') === 'weekly' ? 'timeGridWeek' : 
+                     localStorage.getItem('calendarViewMode') === 'daily' ? 'timeGridDay' : 'dayGridMonth');
 
         const targetDate = urlDate || getLocalDateString(new Date());
 
@@ -598,7 +601,7 @@ const GlobalCalendar = () => {
                         </button>
                     ) : (
                         <button
-                            onClick={() => window.location.href = `${API_URL}/google/auth-url?userId=${user.id}`}
+                            onClick={() => setShowGoogleInfo(true)}
                             className="btn-icon-soft"
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.4rem',
@@ -903,6 +906,11 @@ const GlobalCalendar = () => {
                     allItems={events.map(e => e.originalTask)}
                 />
             )}
+            <GoogleCalendarInfoModal 
+                isOpen={showGoogleInfo} 
+                onClose={() => setShowGoogleInfo(false)} 
+                onConnect={() => window.location.href = `${API_URL}/google/auth-url?userId=${user.id}`}
+            />
         </CalendarPageLayout>
     );
 };
