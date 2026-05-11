@@ -1,25 +1,25 @@
 :root {
-  --app-bg: #FFFFFF;
-  --bg-color: #FFFFFF;
+  --app-bg: #F5F5F8;
+  --bg-color: #F5F5F8;
   --bg-secondary: #FFFFFF;
   /* Now pure white for elevation */
-  --bg-inset: #F8F9FA;
+  --bg-inset: #F5F5F8;
   /* Keeping a very light gray for insets if needed elsewhere */
-  --sidebar-bg: #F8F9FA;
+  --sidebar-bg: #F5F5F8;
   /* Keep sidebar same as before for light mode */
-  --text-primary: #000000;
+  --text-primary: #1D1D2F;
   /* Pure black for main content */
   --text-secondary: #475569;
   /* Darker slate gray for better readability */
-  --primary-color: #4F46E5;
-  --primary-rgb: 79, 70, 229;
-  --primary-hover: #4338CA;
+  --primary-color: #0067CC;
+  --primary-rgb: 0, 103, 204;
+  --primary-hover: #0059B3;
   --accent-color: #0EA5E9;
   --border-color: #E2E8F0;
   --hover-bg: #F1F5F9;
   /* Adjusted hover slightly darker than secondary */
-  --sidebar-active-bg: #EEF2FF;
-  --sidebar-active-text: #4F46E5;
+  --sidebar-active-bg: rgba(0, 103, 204, 0.08);
+  --sidebar-active-text: #0067CC;
   --sidebar-active-shadow: none;
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(255, 255, 255, 0.4);
