@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import cache from '../utils/cache';
 
 const UserContext = createContext();
 
@@ -72,6 +73,7 @@ export const UserProvider = ({ children }) => {
         setToken(null);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
+        cache.clear();
     };
 
     const updateUser = (newUserData) => {

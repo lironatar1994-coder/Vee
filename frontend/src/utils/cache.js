@@ -36,6 +36,10 @@ const cache = {
             console.error('Cache persistence failed', e);
         }
     },
+    clear() {
+        this.data = {};
+        localStorage.removeItem('vee_cache_v1');
+    },
     // Intelligent Pre-fetching Helper
     async prefetch(key, url, authFetch) {
         // Don't prefetch if we recently fetched it (within 30 seconds)

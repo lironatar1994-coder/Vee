@@ -5,6 +5,7 @@ const { hashPassword } = require('../utils/authUtils');
 const { calculateNextOccurrence, isOccurrenceOnDate } = require('../utils/dateUtils');
 const userAuth = require('../middleware/userAuth');
 const googleCalendarService = require('../services/googleCalendar');
+const logger = require('../utils/logger');
 
 // Protected routes (except legacy quick-create)
 router.post('/', (req, res, next) => next()); // Allow legacy creation for now
@@ -121,11 +122,16 @@ router.get('/:userId/progress', (req, res) => {
             SELECT dp.*, u.username, u.profile_image
             FROM daily_progress dp
             LEFT JOIN users u ON dp.user_id = u.id
-            WHERE dp.date = ? AND (
+            JOIN checklist_items ci ON dp.checklist_item_id = ci.id
+            WHERE (
+                (ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none' AND dp.date = ?)
+                OR 
+                ((ci.repeat_rule IS NULL OR ci.repeat_rule = 'none'))
+            ) AND (
                 dp.user_id = ? 
                 OR dp.checklist_item_id IN (
-                    SELECT ci.id FROM checklist_items ci
-                    JOIN checklists c ON ci.checklist_id = c.id
+                    SELECT ci2.id FROM checklist_items ci2
+                    JOIN checklists c ON ci2.checklist_id = c.id
                     JOIN project_members pm ON c.project_id = pm.project_id
                     WHERE pm.user_id = ?
                 )
@@ -143,6 +149,8 @@ router.post('/:userId/progress', (req, res) => {
     const userId = req.user.id;
     const { checklist_item_id, date, completed } = req.body;
     const io = req.io;
+
+    logger.info(`Updating progress: user=${userId}, item=${checklist_item_id}, date=${date}, completed=${completed}`);
 
     try {
         // Check if this item belongs to a collaborative project
@@ -276,20 +284,26 @@ router.get('/:userId/tasks/by-date', (req, res) => {
     if (!date) return res.status(400).json({ error: 'date required' });
     try {
         const tasks = db.prepare(`
-            SELECT ci.*, c.title as checklist_title, c.order_index as c_order, p.title as project_title, p.id as project_id
+            SELECT ci.*, c.title as checklist_title, c.order_index as c_order, p.title as project_title, p.id as project_id,
+                   (
+                     SELECT MAX(dp.completed) 
+                     FROM daily_progress dp 
+                     WHERE dp.checklist_item_id = ci.id 
+                     AND (
+                       (ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none' AND dp.date = ?)
+                       OR 
+                       ((ci.repeat_rule IS NULL OR ci.repeat_rule = 'none'))
+                     )
+                   ) as completed_status
             FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id
             LEFT JOIN projects p ON c.project_id = p.id
             WHERE c.user_id = ? AND ((ci.target_date IS NOT NULL AND ci.target_date <= ?) OR (ci.target_date IS NULL AND ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none'))
             ORDER BY COALESCE(c.project_id, 0) ASC, c.order_index ASC, ci.order_index ASC
-        `).all(userId, date);
-
-        const progressData = db.prepare('SELECT checklist_item_id, completed FROM daily_progress WHERE user_id = ? AND date = ?').all(userId, date);
-        const progressMap = {};
-        progressData.forEach(p => progressMap[p.checklist_item_id] = p.completed === 1);
+        `).all(date, userId, date);
 
         const groupedMap = new Map();
         tasks.forEach(task => {
-            task.completed = !!progressMap[task.id];
+            task.completed = !!task.completed_status;
             const projIdKey = task.project_id || 0;
             if (!groupedMap.has(projIdKey)) groupedMap.set(projIdKey, { project_id: task.project_id, project_title: task.project_title || 'תיבת המשימות', checklistsMap: new Map() });
             const pObj = groupedMap.get(projIdKey);
@@ -310,23 +324,52 @@ router.get('/:userId/sidebar-counts', (req, res) => {
     try {
         const todayCount = db.prepare(`
             SELECT COUNT(*) as count FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id
-            WHERE c.user_id = ? AND ci.parent_item_id IS NULL AND ((ci.target_date = ?) OR (ci.target_date IS NULL AND ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none'))
-            AND ci.id NOT IN (SELECT checklist_item_id FROM daily_progress WHERE user_id = ? AND date = ? AND completed = 1)
-        `).get(userId, date, userId, date).count;
+            WHERE c.user_id = ? AND ci.parent_item_id IS NULL 
+            AND ((ci.target_date = ?) OR (ci.target_date IS NULL AND ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none'))
+            AND ci.id NOT IN (
+                SELECT checklist_item_id 
+                FROM daily_progress 
+                WHERE (
+                    (ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none' AND date = ?)
+                    OR 
+                    ((ci.repeat_rule IS NULL OR ci.repeat_rule = 'none'))
+                )
+                AND completed = 1
+            )
+        `).get(userId, date, date).count;
 
         const inboxCount = db.prepare(`
             SELECT COUNT(*) as count FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id
             WHERE c.user_id = ? AND c.project_id IS NULL AND ci.parent_item_id IS NULL
-            AND ci.id NOT IN (SELECT checklist_item_id FROM daily_progress WHERE user_id = ? AND date = ? AND completed = 1)
-        `).get(userId, userId, date).count;
+            AND ci.id NOT IN (
+                SELECT checklist_item_id 
+                FROM daily_progress 
+                WHERE (
+                    (ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none' AND date = ?)
+                    OR 
+                    ((ci.repeat_rule IS NULL OR ci.repeat_rule = 'none'))
+                )
+                AND completed = 1
+            )
+        `).get(userId, date).count;
 
         const projectCountsRows = db.prepare(`
             SELECT c.project_id, COUNT(*) as count 
-            FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id
+            FROM checklist_items ci 
+            JOIN checklists c ON ci.checklist_id = c.id
             WHERE c.user_id = ? AND c.project_id IS NOT NULL AND ci.parent_item_id IS NULL
-            AND ci.id NOT IN (SELECT checklist_item_id FROM daily_progress WHERE user_id = ? AND date = ? AND completed = 1)
+            AND ci.id NOT IN (
+                SELECT checklist_item_id 
+                FROM daily_progress 
+                WHERE (
+                    (ci.repeat_rule IS NOT NULL AND ci.repeat_rule != 'none' AND date = ?)
+                    OR 
+                    ((ci.repeat_rule IS NULL OR ci.repeat_rule = 'none'))
+                )
+                AND completed = 1
+            )
             GROUP BY c.project_id
-        `).all(userId, userId, date);
+        `).all(userId, date);
 
         const projectCounts = {};
         projectCountsRows.forEach(row => {
