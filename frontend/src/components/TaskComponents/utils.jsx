@@ -160,13 +160,13 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
                 <span style={{
                     color,
                     fontWeight: 400,
-                    fontSize: '11px', 
+                    fontSize: '13px', 
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-end',
                     gap: '5px',
-                    lineHeight: '1.2'
+                    lineHeight: '1'
                 }}>
-                    {shouldShowCalendarIcon && <CalendarIcon size={12} style={{ opacity: 0.8 }} />}
+                    {shouldShowCalendarIcon && <CalendarIcon size={12} style={{ opacity: 0.8, marginBottom: '1px' }} />}
                     {showDateText && <span>{text}</span>}
                     {hasTime && (
                         <span style={{ 
@@ -174,12 +174,14 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
                             color: (isToday || diffDays < 0) ? color : 'var(--text-primary)',
                             background: 'transparent',
                             padding: '0',
-                            borderRadius: '4px'
+                            borderRadius: '4px',
+                            direction: 'ltr',
+                            display: 'inline-block'
                         }}>
                             {timeDisplay}
                         </span>
                     )}
-                    {isRecurring && <RefreshCw size={11} strokeWidth={3} style={{ opacity: 0.8 }} />}
+                    {isRecurring && <RefreshCw size={11} strokeWidth={3} style={{ opacity: 0.8, marginBottom: '1px' }} />}
                     {hasAlarm && <ReminderBadge minutes={reminderMinutes} onClick={onReminderClick} ref={reminderRef} />}
                 </span>
             )}

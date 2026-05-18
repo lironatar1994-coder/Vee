@@ -827,24 +827,27 @@ const GlobalCalendar = () => {
                                             width: 19,
                                             height: 19,
                                             flexShrink: 0,
-                                            borderRadius: isCompleted ? '6px' : '50%',
-                                            border: isCompleted ? 'none' : `1px solid ${priority === 4 ? 'rgba(120, 120, 131, 1)' : priorityColor}`,
-                                            background: isCompleted ? 'var(--success-color)' : 'transparent',
+                                            borderRadius: '50%',
+                                            border: isCompleted ? '1px solid var(--success-color)' : `1px solid ${priority === 4 ? 'rgba(120, 120, 131, 1)' : priorityColor}`,
+                                            background: 'transparent',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            color: 'white',
+                                            color: 'var(--success-color)',
                                             transition: 'all 0.15s ease',
-                                            boxShadow: isCompleted ? '0 2px 4px rgba(16, 185, 129, 0.2)' : 'none',
                                             position: 'relative'
                                         }}
                                         onMouseEnter={e => {
-                                            const check = e.currentTarget.querySelector('.popover-hover-check');
-                                            if (check) check.style.opacity = 0.5;
+                                            if (!isCompleted) {
+                                                const check = e.currentTarget.querySelector('.popover-hover-check');
+                                                if (check) check.style.opacity = 0.5;
+                                            }
                                         }}
                                         onMouseLeave={e => {
-                                            const check = e.currentTarget.querySelector('.popover-hover-check');
-                                            if (check) check.style.opacity = 0;
+                                            if (!isCompleted) {
+                                                const check = e.currentTarget.querySelector('.popover-hover-check');
+                                                if (check) check.style.opacity = 0;
+                                            }
                                         }}
                                     >
                                         {isCompleted ? (

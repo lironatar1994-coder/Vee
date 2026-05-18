@@ -364,6 +364,8 @@ export default function TaskEditModal({
     // Click-outside to close
     useEffect(() => {
         const handler = (e) => {
+            // If the element has been unmounted during the event propagation, ignore it to prevent premature closing
+            if (e.target && !document.body.contains(e.target)) return;
             if (panelRef.current && !panelRef.current.contains(e.target)) {
                 // Ignore clicks on portal dropdowns
                 if (e.target.closest('.dropdown-menu') || e.target.closest('.portal-dropdown')) return;
@@ -560,23 +562,21 @@ export default function TaskEditModal({
                             style={{
                                 marginTop: '4px', cursor: 'pointer', flexShrink: 0,
                                 width: 24, height: 24, borderRadius: '50%',
-                                // Professional UI: Border is more saturated, fill is softer
-                                border: isCompleted ? 'none' : `2px solid ${priority === 1 ? 'var(--priority-1)' :
+                                border: isCompleted ? '2px solid var(--success-color)' : `2px solid ${priority === 1 ? 'var(--priority-1)' :
                                     priority === 2 ? 'var(--priority-2)' :
                                         priority === 3 ? 'var(--priority-3)' : 'var(--primary-color)'
                                     }`,
-                                background: isCompleted ? 'var(--primary-color)' : (
-                                    priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' :
+                                background: (isCompleted || priority === 4) ? 'transparent' : `rgba(${priority === 1 ? '209, 69, 59' :
                                         priority === 2 ? '235, 137, 9' :
                                             '36, 111, 224'
-                                        }, 0.12)` : 'transparent'
-                                ),
+                                        }, 0.12)`,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                boxShadow: !isCompleted && priority !== 4 ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                                boxShadow: !isCompleted && priority !== 4 ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                color: 'var(--success-color)'
                             }}
                         >
-                            {isCompleted && <Check size={14} strokeWidth={3} color="white" />}
+                            {isCompleted && <Check size={14} strokeWidth={3} />}
                         </div>
 
                         {/* Text Content Area with Focus Border */}

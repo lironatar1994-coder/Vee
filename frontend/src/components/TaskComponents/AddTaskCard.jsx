@@ -143,6 +143,8 @@ const AddTaskCard = ({
 
     useEffect(() => {
         const handleClickOutside = (e) => {
+            // If the element has been unmounted during the event propagation, ignore it to prevent premature closing
+            if (e.target && !document.body.contains(e.target)) return;
             if (e.target.closest('.portal-dropdown')) return;
             if (cardRef.current && !cardRef.current.contains(e.target)) {
                 setShowDateDropdown(false);

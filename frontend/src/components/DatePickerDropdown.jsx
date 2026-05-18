@@ -226,8 +226,11 @@ const DatePickerDropdown = React.memo(({ isOpen, onClose, anchorRef, selectedDat
     useEffect(() => {
         const handler = (e) => {
             if (!isOpen) return;
+            // If the element has been unmounted during event propagation, ignore it to prevent premature closing
+            if (e.target && !document.body.contains(e.target)) return;
             if (dropRef.current && dropRef.current.contains(e.target)) return;
             if (anchorRef?.current && anchorRef.current.contains(e.target)) return;
+            if (e.target.closest('.portal-dropdown')) return;
             onClose();
         };
         document.addEventListener('mousedown', handler);
@@ -260,6 +263,7 @@ const DatePickerDropdown = React.memo(({ isOpen, onClose, anchorRef, selectedDat
     return createPortal(
         <div
             ref={dropRef}
+            className="portal-dropdown"
             onMouseDown={e => e.stopPropagation()}
             style={{
                 position: 'fixed',

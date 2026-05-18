@@ -116,6 +116,8 @@ const SortableTaskItem = ({
     useEffect(() => {
         const handler = (e) => {
             if (!showReminderMenu) return;
+            // If the element has been unmounted during the event propagation, ignore it to prevent premature closing
+            if (e.target && !document.body.contains(e.target)) return;
             // If click is inside the menu, let it handle it
             if (reminderMenuRef.current && reminderMenuRef.current.contains(e.target)) return;
             // If click is on the trigger, the trigger's onClick will handle toggling
@@ -187,7 +189,7 @@ const SortableTaskItem = ({
                             }}
                         >
                             {isCompleted ? (
-                                <div style={{ width: 19, height: 19, borderRadius: '6px', background: 'var(--success-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                                <div style={{ width: 19, height: 19, borderRadius: '50%', border: '1px solid var(--success-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-color)', background: 'transparent' }}>
                                     <Check size={10} strokeWidth={3} />
                                 </div>
                             ) : (

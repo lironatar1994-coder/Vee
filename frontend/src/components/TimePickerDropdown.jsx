@@ -11,6 +11,7 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
     const [showToOptions, setShowToOptions] = useState(false);
     const [showDurationMenu, setShowDurationMenu] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+    const [hasInteracted, setHasInteracted] = useState(false);
     const dropdownRef = useRef(null);
     const fromOptionsRef = useRef(null);
     const toOptionsRef = useRef(null);
@@ -28,6 +29,14 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
         const next15 = Math.ceil((mins + 1) / 15) * 15;
         now.setMinutes(next15);
         now.setSeconds(0);
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    };
+
+    const getClosest15MinTime = () => {
+        const now = new Date();
+        const mins = now.getMinutes();
+        const rounded = Math.round(mins / 15) * 15;
+        now.setMinutes(rounded);
         return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     };
 
@@ -148,11 +157,17 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
 
     useEffect(() => {
         const handleClickOutside = (event) => {
+            // If the element has been unmounted during the event propagation, ignore it to prevent premature closing
+            if (event.target && !document.body.contains(event.target)) return;
+
             // Check if click is outside the main dropdown AND outside the anchor button
             const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target);
             const isOutsideAnchor = anchorRef.current && !anchorRef.current.contains(event.target);
             
             if (isOutsideDropdown && isOutsideAnchor) {
+                if (hasInteracted || initialTime) {
+                    onSave(selectedTime, duration);
+                }
                 onClose();
             }
 
@@ -172,12 +187,18 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
             document.addEventListener('mousedown', handleClickOutside);
         }
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isOpen, onClose, showFromOptions, showToOptions, showDurationMenu]);
+    }, [isOpen, onClose, showFromOptions, showToOptions, showDurationMenu, selectedTime, duration, hasInteracted]);
 
     // Update local state when initial values change (e.g. when opening)
     useEffect(() => {
         if (isOpen) {
-            setSelectedTime(initialTime || '');
+            if (initialTime) {
+                setSelectedTime(initialTime);
+                setHasInteracted(true);
+            } else {
+                setSelectedTime(getClosest15MinTime());
+                setHasInteracted(false);
+            }
             setDuration(initialDuration || 0);
         }
     }, [isOpen, initialTime, initialDuration]);
@@ -186,9 +207,11 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
 
     const handleFromChange = (newVal) => {
         setSelectedTime(newVal);
+        setHasInteracted(true);
     };
 
     const handleToChange = (newVal) => {
+        setHasInteracted(true);
         if (!selectedTime) {
             setSelectedTime(newVal);
             setDuration(0);
@@ -231,13 +254,24 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                                     setShowFromOptions(true);
                                 }}
                                 onChange={(e) => handleFromChange(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        onSave(e.target.value, duration);
+                                        onClose();
+                                    }
+                                }}
                                 style={inputStyle(theme, duration > 0 ? 'center' : 'right')}
                             />
                             {showFromOptions && (
                                 <TimeOptionsList 
                                     ref={fromOptionsRef}
                                     options={dynamicTimeOptions} 
-                                    onSelect={(opt) => { setSelectedTime(opt === 'ללא שעה' ? '' : opt); setShowFromOptions(false); }}
+                                    onSelect={(opt) => {
+                                        const val = opt === 'ללא שעה' ? '' : opt;
+                                        setSelectedTime(val);
+                                        setShowFromOptions(false);
+                                        setHasInteracted(true);
+                                    }}
                                     selected={selectedTime}
                                     theme={theme}
                                 />
@@ -256,13 +290,39 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                                             setShowToOptions(true);
                                         }}
                                         onChange={(e) => handleToChange(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                const val = e.target.value;
+                                                let newDur = 0;
+                                                if (val && selectedTime) {
+                                                    const startMins = timeToMinutes(selectedTime);
+                                                    let endMins = timeToMinutes(val);
+                                                    if (endMins < startMins) endMins += 24 * 60;
+                                                    newDur = endMins - startMins;
+                                                }
+                                                onSave(selectedTime, newDur);
+                                                onClose();
+                                            }
+                                        }}
                                         style={inputStyle(theme, 'center')}
                                     />
                                     {showToOptions && (
                                         <TimeOptionsList 
                                             ref={toOptionsRef}
                                             options={dynamicTimeOptions} 
-                                            onSelect={(opt) => { handleToChange(opt === 'ללא שעה' ? '' : opt); setShowToOptions(false); }}
+                                            onSelect={(opt) => {
+                                                const val = opt === 'ללא שעה' ? '' : opt;
+                                                let newDur = 0;
+                                                if (val && selectedTime) {
+                                                    const startMins = timeToMinutes(selectedTime);
+                                                    let endMins = timeToMinutes(val);
+                                                    if (endMins < startMins) endMins += 24 * 60;
+                                                    newDur = endMins - startMins;
+                                                }
+                                                setDuration(newDur);
+                                                setShowToOptions(false);
+                                                setHasInteracted(true);
+                                            }}
                                             selected={getToTime()}
                                             theme={theme}
                                         />
@@ -313,7 +373,11 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                                 ].map((opt, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => { setDuration(opt.val); setShowDurationMenu(false); }}
+                                        onClick={() => {
+                                            setDuration(opt.val);
+                                            setShowDurationMenu(false);
+                                            setHasInteracted(true);
+                                        }}
                                         style={{
                                             display: 'block', width: '100%', padding: '0.6rem 0.8rem', border: 'none',
                                             background: duration === opt.val ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
@@ -356,30 +420,47 @@ const actionBtnStyle = (theme, primary) => ({
     color: primary ? '#fff' : 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem',
     cursor: 'pointer', fontFamily: 'inherit'
 });
-const TimeOptionsList = React.forwardRef(({ options, onSelect, selected, theme }, ref) => (
-    <div
-        ref={ref}
-        style={{
-            position: 'absolute', top: '100%', left: 0, right: 0,
-            background: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff', border: '1px solid var(--border-color)',
-            borderRadius: '6px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', maxHeight: '180px',
-            overflowY: 'auto', zIndex: 100, marginTop: '4px'
-        }}
-    >
-        {options.map((opt, i) => (
-            <button
-                key={i} type="button"
-                onMouseDown={(e) => { e.preventDefault(); onSelect(opt); }}
-                style={{
-                    display: 'block', width: '100%', padding: '0.6rem', border: 'none',
-                    background: selected === opt ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
-                    color: 'var(--text-primary)', fontSize: '0.9rem', cursor: 'pointer', textAlign: 'center'
-                }}
-            >
-                {opt}
-            </button>
-        ))}
-    </div>
-));
+const TimeOptionsList = React.forwardRef(({ options, onSelect, selected, theme }, ref) => {
+    const listRef = React.useRef(null);
+    React.useImperativeHandle(ref, () => listRef.current);
+
+    React.useEffect(() => {
+        if (listRef.current && selected) {
+            const buttons = listRef.current.querySelectorAll('button');
+            for (const btn of buttons) {
+                if (btn.textContent.trim() === selected.trim()) {
+                    btn.scrollIntoView({ block: 'center', behavior: 'auto' });
+                    break;
+                }
+            }
+        }
+    }, [selected]);
+
+    return (
+        <div
+            ref={listRef}
+            style={{
+                position: 'absolute', top: '100%', left: 0, right: 0,
+                background: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff', border: '1px solid var(--border-color)',
+                borderRadius: '6px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', maxHeight: '180px',
+                overflowY: 'auto', zIndex: 100, marginTop: '4px'
+            }}
+        >
+            {options.map((opt, i) => (
+                <button
+                    key={i} type="button"
+                    onMouseDown={(e) => { e.preventDefault(); onSelect(opt); }}
+                    style={{
+                        display: 'block', width: '100%', padding: '0.6rem', border: 'none',
+                        background: selected === opt ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                        color: 'var(--text-primary)', fontSize: '0.9rem', cursor: 'pointer', textAlign: 'center'
+                    }}
+                >
+                    {opt}
+                </button>
+            ))}
+        </div>
+    );
+});
 
 export default React.memo(TimePickerDropdown);
