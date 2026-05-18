@@ -109,7 +109,7 @@ export const getFullDateDisplay = (targetDate, repeatRule, time = null) => {
     return { text: combinedText, color, isImportant };
 };
 
-export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null, showRecentlyCompleted = false, duration = null, onReminderClick = null, reminderRef = null) => {
+export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = null, createdAt = null, hideToday = false, time = null, reminderMinutes = null, showRecentlyCompleted = false, duration = null, onReminderClick = null, reminderRef = null, hideDate = false) => {
     if (!targetDate && (!repeatRule || repeatRule === 'none') && reminderMinutes === null) return null;
 
     const today = new Date().toISOString().split('T')[0];
@@ -130,7 +130,7 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
     const hasAlarm = (reminderMinutes !== null && reminderMinutes !== undefined);
     const isToday = diffDays === 0;
     const isRecurring = !!(repeatRule && repeatRule !== 'none' && repeatRule !== 'null');
-    const showDateText = !hideToday || !isToday;
+    const showDateText = !hideDate && (!hideToday || !isToday);
 
     // Time Formatting
     let timeDisplay = hasTime ? time.trim() : null;

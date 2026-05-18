@@ -99,7 +99,8 @@ const TaskPageLayout = ({
             headerActions,
             showCompletedToggle,
             isCompletedActive,
-            onCompletedToggle
+            onCompletedToggle,
+            forceShowTitle: false
         });
     }, [title, breadcrumb, headerActions, showCompletedToggle, isCompletedActive, onCompletedToggle, updateHeader]);
 

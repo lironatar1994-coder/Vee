@@ -41,7 +41,8 @@ const CalendarPageLayout = ({
     onCompletedToggle = null,
     isCompletedActive = false,
     showCompletedToggle = false,
-    forceHeaderTitle = false
+    forceHeaderTitle = false,
+    hideFAB = false
 }) => {
     const [internalScrollTop, setInternalScrollTop] = useState(0);
     const { updateHeader } = useHeader();
@@ -218,7 +219,7 @@ const CalendarPageLayout = ({
                 </div>
             </div>
 
-            <GlobalFAB />
+            {!hideFAB && <GlobalFAB />}
 
             <DragOverlay modifiers={[restrictToWindowEdges]} dropAnimation={dropAnimation} zIndex={9999}>
                 {activeDragItem ? (

@@ -3,7 +3,9 @@ import { useUser } from '../context/UserContext';
 import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import CalendarWrapper from '../components/CalendarWrapper';
-import { ChevronDown, Loader2, X, Check, CheckCircle, Star } from 'lucide-react';
+import ScrollableMonthlyView from '../components/ScrollableMonthlyView';
+import CalendarAgendaSidebar from '../components/CalendarAgendaSidebar';
+import { ChevronDown, Loader2, X, Check, CheckCircle, Star, List } from 'lucide-react';
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
@@ -102,6 +104,7 @@ const GlobalCalendar = () => {
     const [scrollTop, setScrollTop] = useState(0);
     const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
     const [showGoogleInfo, setShowGoogleInfo] = useState(false);
+    const [showAgendaSidebar, setShowAgendaSidebar] = useState(() => localStorage.getItem('showAgendaSidebar') === 'true');
     const viewDropdownRef = useRef(null);
     const calendarWrapperRef = useRef(null);
     const popoverRef = useRef(null);
@@ -565,6 +568,7 @@ const GlobalCalendar = () => {
         <CalendarPageLayout
             title='לו"ז'
             forceHeaderTitle={true}
+            hideFAB={true}
             maxWidth="100%"
             padding="0"
             onDragEnd={handleDragEnd}
@@ -615,6 +619,31 @@ const GlobalCalendar = () => {
                             <span style={{ display: isMobile ? 'none' : 'block' }}>חבר גוגל קלנדר</span>
                         </button>
                     )}
+
+                    <button
+                        onClick={() => setShowAgendaSidebar(prev => {
+                            const next = !prev;
+                            localStorage.setItem('showAgendaSidebar', String(next));
+                            return next;
+                        })}
+                        className="btn-icon-soft"
+                        title="תצוגת לוז משימות"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: 'var(--radius-md)',
+                            background: showAgendaSidebar ? 'var(--primary-color)' : 'transparent',
+                            color: showAgendaSidebar ? 'white' : 'var(--text-secondary)',
+                            border: `1px solid ${showAgendaSidebar ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                            transition: 'all 0.2s',
+                            marginTop: '4px'
+                        }}
+                    >
+                        <List size={16} />
+                    </button>
 
                     <div ref={viewDropdownRef} style={{ position: 'relative', marginTop: '4px' }}>
                         <button
@@ -691,15 +720,43 @@ const GlobalCalendar = () => {
                 </div>
             }
         >
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative',
-                height: isMobile ? 'calc(100vh - 160px)' : 'calc(100vh - 180px)', // Fixed height for smoother scrolling
-                overflow: 'hidden'
-            }}>
-                {/* Initial Loading Overlay (Deadlock-safe) */}
+            <div style={{ display: 'flex', width: '100%', height: 'calc(100vh - 56px)', position: 'relative' }}>
+                {showAgendaSidebar && (
+                    <div className="fade-in" style={{ 
+                        width: isMobile ? '100%' : '350px', 
+                        height: '100%', 
+                        position: 'absolute', 
+                        right: 0, 
+                        top: 0, 
+                        zIndex: 100, 
+                        background: 'var(--bg-secondary)',
+                        boxShadow: '-8px 0 24px rgba(0,0,0,0.15)',
+                        borderLeft: '1px solid var(--border-color)',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        <CalendarAgendaSidebar 
+                            events={finalEvents} 
+                            onUpdateItem={handleUpcomingTaskUpdate} 
+                            onToggleItem={handleUpcomingTaskToggle} 
+                            onDeleteItem={handleUpcomingTaskDelete}
+                            onClose={() => setShowAgendaSidebar(prev => {
+                                localStorage.setItem('showAgendaSidebar', 'false');
+                                return false;
+                            })}
+                        />
+                    </div>
+                )}
+                
+                <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative',
+                    height: '100%',
+                    overflow: 'hidden'
+                }}>
+                    {/* Initial Loading Overlay (Deadlock-safe) */}
                 {loading && events.length === 0 && (
                     <div style={{
                         position: 'absolute',
@@ -723,39 +780,80 @@ const GlobalCalendar = () => {
                         <Loader2 className="animate-spin" size={20} />
                     </div>
                 )}
-                <CalendarWrapper
-                    ref={calendarWrapperRef}
-                    isDraggingFAB={activeDragItem?.id === 'global-fab-draggable'}
-                    events={finalEvents}
-                    viewMode={viewMode}
-                    initialDate={urlDate || undefined}
-                    onDateClick={(arg) => {
-                        const dateStr = arg.dateStr.split('T')[0];
-                        const timeStr = arg.dateStr.includes('T') ? arg.dateStr.split('T')[1].substring(0, 5) : null;
+                {viewMode === 'monthly' ? (
+                    <ScrollableMonthlyView
+                        events={finalEvents}
+                        onDateClick={(arg) => {
+                            const dateStr = arg.dateStr.split('T')[0];
+                            const timeStr = arg.dateStr.includes('T') ? arg.dateStr.split('T')[1].substring(0, 5) : null;
 
-                        // Set global variables for the Add Task Modal to pick up
-                        window.globalNewItemDate = dateStr;
-                        window.globalNewItemTime = timeStr;
+                            // Set global variables for the Add Task Modal to pick up
+                            window.globalNewItemDate = dateStr;
+                            window.globalNewItemTime = timeStr;
 
-                        // Trigger the global add task modal
-                        window.dispatchEvent(new CustomEvent('fabAddTask'));
+                            // Trigger the global add task modal
+                            window.dispatchEvent(new CustomEvent('fabAddTask'));
 
-                        setAddingToDate(dateStr);
-                        setAddingToTime(timeStr);
-                        setNewTaskContent('');
-                    }}
-                    onEventClick={handleEventClick}
-                    onEventDrop={handleEventDrop}
-                    onEventResize={handleEventResize}
-                    onDatesSet={handleDatesSet}
-                    onMoreLinkClick={handleMoreLinkClick}
-                    height="100%"
-                    headerToolbar={{
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: ''
-                    }}
-                />
+                            setAddingToDate(dateStr);
+                            setAddingToTime(timeStr);
+                            setNewTaskContent('');
+                        }}
+                        onEventClick={handleEventClick}
+                        onDatesSet={(arg) => {
+                            const midDate = new Date((arg.start.getTime() + arg.end.getTime()) / 2);
+                            const y = midDate.getFullYear();
+                            const m = String(midDate.getMonth() + 1).padStart(2, '0');
+                            const monthStr = `${y}-${m}`;
+
+                            if (monthStr !== currentRange.month) {
+                                setCurrentRange({ month: monthStr });
+                                fetchCalendarEvents(monthStr);
+
+                                if (!isURLSyncing.current) {
+                                    const visibleDate = getLocalDateString(midDate);
+                                    if (visibleDate !== urlDate) {
+                                        navigate(`/calendar?date=${visibleDate}&view=monthly`, { replace: !urlDate });
+                                    }
+                                }
+                            }
+                        }}
+                    />
+                ) : (
+                    <CalendarWrapper
+                        ref={calendarWrapperRef}
+                        isDraggingFAB={activeDragItem?.id === 'global-fab-draggable'}
+                        events={finalEvents}
+                        viewMode={viewMode}
+                        initialDate={urlDate || undefined}
+                        onDateClick={(arg) => {
+                            const dateStr = arg.dateStr.split('T')[0];
+                            const timeStr = arg.dateStr.includes('T') ? arg.dateStr.split('T')[1].substring(0, 5) : null;
+
+                            // Set global variables for the Add Task Modal to pick up
+                            window.globalNewItemDate = dateStr;
+                            window.globalNewItemTime = timeStr;
+
+                            // Trigger the global add task modal
+                            window.dispatchEvent(new CustomEvent('fabAddTask'));
+
+                            setAddingToDate(dateStr);
+                            setAddingToTime(timeStr);
+                            setNewTaskContent('');
+                        }}
+                        onEventClick={handleEventClick}
+                        onEventDrop={handleEventDrop}
+                        onEventResize={handleEventResize}
+                        onDatesSet={handleDatesSet}
+                        onMoreLinkClick={handleMoreLinkClick}
+                        height="100%"
+                        headerToolbar={{
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: ''
+                        }}
+                    />
+                )}
+                </div>
             </div>
 
             {/* Day Tasks Popover */}

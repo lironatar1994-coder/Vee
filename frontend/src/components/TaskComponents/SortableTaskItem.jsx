@@ -22,6 +22,7 @@ const SortableTaskItem = ({
     projectTitle = '',
     compact = false,
     hideToday = false,
+    hideDate = false,
     completionDateString = null
 }) => {
     const { user } = useUser();
@@ -251,7 +252,7 @@ const SortableTaskItem = ({
                                                             const rect = e.currentTarget.getBoundingClientRect();
                                                             setAnchorRect(rect);
                                                             setShowReminderMenu(!showReminderMenu);
-                                                        }, reminderRef)
+                                                        }, reminderRef, hideDate)
                                                     ) : null}
                                                 </div>
                                             )}

@@ -35,6 +35,7 @@ export const HeaderProvider = ({ children }) => {
     const updateHeader = useCallback((newState) => {
         setHeaderState(prev => ({
             ...prev,
+            forceShowTitle: false, // Reset by default to prevent leaking across pages
             ...newState
         }));
     }, []);
