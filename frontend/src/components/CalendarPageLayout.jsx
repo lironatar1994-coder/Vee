@@ -42,7 +42,8 @@ const CalendarPageLayout = ({
     isCompletedActive = false,
     showCompletedToggle = false,
     forceHeaderTitle = false,
-    hideFAB = false
+    hideFAB = false,
+    overflowY = null
 }) => {
     const [internalScrollTop, setInternalScrollTop] = useState(0);
     const { updateHeader } = useHeader();
@@ -193,13 +194,13 @@ const CalendarPageLayout = ({
                     className="page-content"
                     style={{
                         flexGrow: 1,
-                        overflowY: activeDragItem ? 'hidden' : 'auto',
+                        overflowY: overflowY !== null ? overflowY : (activeDragItem ? 'hidden' : 'auto'),
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         overscrollBehavior: 'contain',
                         marginTop: '56px', // Keeps scrollbar below the absolute header
-                        height: 'calc(100vh - 56px)' // Ensures proper height for scrolling
+                        height: 'calc(100dvh - 56px)' // Ensures proper height for scrolling
                     }}
                     onScroll={handleScroll}
                 >

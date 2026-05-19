@@ -14,18 +14,18 @@ html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .se
 
 /* Light Theme (Already defined in index.css :root, but ensuring base) */
 [data-theme="light"] {
-  --app-bg: #F5F5F8;
-  --bg-color: #F5F5F8;
+  --app-bg: #F6F6F9;
+  --bg-color: #F6F6F9;
   --bg-secondary: #FFFFFF;
-  --bg-inset: #F5F5F8;
-  --sidebar-bg: #F5F5F8;
-  --text-primary: #1D1D2F;
-  --text-secondary: #475569;
-  --primary-color: #0067CC;
-  --primary-rgb: 0, 103, 204;
-  --primary-hover: #0059B3;
-  --sidebar-active-bg: rgba(0, 103, 204, 0.08);
-  --sidebar-active-text: #0067CC;
+  --bg-inset: #F6F6F9;
+  --sidebar-bg: #F6F6F9;
+  --text-primary: #1A1A24;
+  --text-secondary: #565D6A;
+  --primary-color: #0A74DA;
+  --primary-rgb: 10, 116, 218;
+  --primary-hover: #0860B8;
+  --sidebar-active-bg: rgba(10, 116, 218, 0.08);
+  --sidebar-active-text: #0A74DA;
 
   /* Priority Colors (Light Gentle) */
   --p1-bg: #FFF1F2; --p1-border: #FFD1D7; --p1-accent: #E11D48;

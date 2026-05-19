@@ -614,6 +614,7 @@ const GlobalCalendar = () => {
             onScroll={setScrollTop}
             onDragEnd={handleDragEnd}
             headerActions={null}
+            overflowY="hidden"
         >
             <style>
                 {`
@@ -624,7 +625,7 @@ const GlobalCalendar = () => {
                 `}
             </style>
 
-            <div style={{ display: 'flex', width: '100%', height: 'calc(100vh - 56px)', position: 'relative' }}>
+            <div style={{ display: 'flex', width: '100%', height: 'calc(100dvh - 56px)', position: 'relative' }}>
                 {showAgendaSidebar && (
                     <div className="fade-in" style={{
                         width: isMobile ? '100%' : '350px',
@@ -663,9 +664,11 @@ const GlobalCalendar = () => {
                     {/* Unified Calendar Sub-Header */}
                     <div style={{
                         display: 'flex',
-                        alignItems: 'center',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        alignItems: isMobile ? 'stretch' : 'center',
                         justifyContent: 'space-between',
-                        padding: '0.8rem 1.5rem',
+                        gap: isMobile ? '0.75rem' : '1.5rem',
+                        padding: isMobile ? '0.6rem 1rem' : '0.8rem 1.5rem',
                         background: 'var(--bg-secondary)',
                         borderBottom: '1px solid var(--border-color)',
                         backdropFilter: 'blur(10px)',
@@ -673,7 +676,13 @@ const GlobalCalendar = () => {
                         zIndex: 10
                     }}>
                         {/* Right side: Title & Navigation */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            width: isMobile ? '100%' : 'auto', 
+                            gap: '1rem' 
+                        }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <CalendarIcon size={18} style={{ color: 'var(--primary-color)' }} />
                                 <div key={viewMode === 'monthly' ? `${activeMY.year}-${activeMY.month}` : viewTitle} style={{ animation: 'monthHeaderSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1)' }}>
@@ -697,7 +706,13 @@ const GlobalCalendar = () => {
                         </div>
 
                         {/* Left side: Google Sync, Agenda Toggle, View Dropdown */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: isMobile ? 'space-between' : 'flex-end',
+                            width: isMobile ? '100%' : 'auto', 
+                            gap: '0.75rem' 
+                        }}>
                             {user?.google_calendar_email ? (
                                 <button
                                     onClick={async () => {

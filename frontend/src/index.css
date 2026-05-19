@@ -1244,7 +1244,7 @@ h2.react-datepicker__current-month {
   align-items: center;
   gap: 0.75rem;
   padding: var(--sidebar-link-py) 0.6rem;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   color: var(--text-primary);
   font-weight: 500;
   font-size: 1rem;

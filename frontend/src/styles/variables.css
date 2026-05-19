@@ -1,25 +1,25 @@
 :root {
-  --app-bg: #F5F5F8;
-  --bg-color: #F5F5F8;
+  --app-bg: #F6F6F9;
+  --bg-color: #F6F6F9;
   --bg-secondary: #FFFFFF;
   /* Now pure white for elevation */
-  --bg-inset: #F5F5F8;
+  --bg-inset: #F6F6F9;
   /* Keeping a very light gray for insets if needed elsewhere */
-  --sidebar-bg: #F5F5F8;
+  --sidebar-bg: #F6F6F9;
   /* Keep sidebar same as before for light mode */
-  --text-primary: #1D1D2F;
+  --text-primary: #1A1A24;
   /* Pure black for main content */
-  --text-secondary: #475569;
+  --text-secondary: #565D6A;
   /* Darker slate gray for better readability */
-  --primary-color: #0067CC;
-  --primary-rgb: 0, 103, 204;
-  --primary-hover: #0059B3;
+  --primary-color: #0A74DA;
+  --primary-rgb: 10, 116, 218;
+  --primary-hover: #0860B8;
   --accent-color: #0EA5E9;
-  --border-color: #E2E8F0;
-  --hover-bg: #F1F5F9;
+  --border-color: #E3E8EE;
+  --hover-bg: #F0F2F5;
   /* Adjusted hover slightly darker than secondary */
-  --sidebar-active-bg: rgba(0, 103, 204, 0.08);
-  --sidebar-active-text: #0067CC;
+  --sidebar-active-bg: rgba(10, 116, 218, 0.08);
+  --sidebar-active-text: #0A74DA;
   --sidebar-active-shadow: none;
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(255, 255, 255, 0.4);
@@ -60,7 +60,7 @@
   /* Dropdown specific */
   --dropdown-hover: #F1F5F9;
   --dropdown-selected: #EEF2FF;
-  --v-separator: 1px solid rgba(0, 0, 0, 0.05);
+  --v-separator: 1px solid var(--border-color);
   --add-task-btn-color: #64748b;
   --add-task-btn-hover: #475569;
   --header-scrolled-title: var(--text-primary);

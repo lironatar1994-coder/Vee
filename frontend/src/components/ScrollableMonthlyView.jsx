@@ -22,6 +22,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
     const rows = buildCalRows(year, month);
 
     const isTodayFn = (d) => d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    const isMobile = window.innerWidth <= 768;
 
     return (
         <div
@@ -30,7 +31,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
             data-year={year}
             style={{
                 borderBottom: '1px solid var(--border-color)',
-                background: 'var(--bg-primary)'
+                background: 'var(--bg-secondary)'
             }}
         >
             {/* Weeks Grid */}
@@ -48,7 +49,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                             display: 'grid',
                             gridTemplateColumns: 'repeat(7, 1fr)',
                             gap: '1px',
-                            background: 'var(--bg-primary)',
+                            background: 'var(--border-color)',
                             scrollSnapAlign: 'start'
                         }}
                     >
@@ -59,7 +60,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                         key={ci}
                                         style={{
                                             background: 'var(--bg-secondary)',
-                                            minHeight: '135px',
+                                            minHeight: isMobile ? '70px' : '135px',
                                             opacity: 0.3
                                         }}
                                     />
@@ -77,8 +78,8 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                     key={ci}
                                     onClick={() => onDateClick({ dateStr: dateKey })}
                                     style={{
-                                        background: isToday ? 'var(--bg-today-light, rgba(5, 133, 39, 0.03))' : 'var(--bg-primary)',
-                                        minHeight: '135px',
+                                        background: isToday ? 'var(--bg-today-light, rgba(5, 133, 39, 0.03))' : 'var(--bg-secondary)',
+                                        minHeight: isMobile ? '70px' : '135px',
                                         padding: '6px',
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -92,7 +93,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                         e.currentTarget.style.background = isToday ? 'var(--bg-today-hover, rgba(5, 133, 39, 0.05))' : 'var(--hover-bg)';
                                     }}
                                     onMouseLeave={e => {
-                                        e.currentTarget.style.background = isToday ? 'var(--bg-today-light, rgba(5, 133, 39, 0.03))' : 'var(--bg-primary)';
+                                        e.currentTarget.style.background = isToday ? 'var(--bg-today-light, rgba(5, 133, 39, 0.03))' : 'var(--bg-secondary)';
                                     }}
                                 >
                                     {/* Day Header */}
@@ -121,16 +122,41 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                     {/* Day Tasks List */}
                                     <div style={{
                                         display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '4px',
+                                        flexDirection: isMobile ? 'row' : 'column',
+                                        flexWrap: isMobile ? 'wrap' : 'nowrap',
+                                        gap: isMobile ? '3px' : '4px',
                                         overflow: 'hidden',
-                                        flex: 1
+                                        flex: 1,
+                                        justifyContent: isMobile ? 'center' : 'flex-start',
+                                        alignItems: 'center'
                                     }}>
                                         {dayEvents.map(event => {
                                             const priority = event.extendedProps?.priority || 4;
                                             const priorityColor = priority === 1 ? 'var(--p1-accent)' : priority === 2 ? 'var(--p2-accent)' : priority === 3 ? 'var(--p3-accent)' : 'var(--p4-accent)';
                                             const priorityBg = priority === 1 ? 'var(--p1-bg)' : priority === 2 ? 'var(--p2-bg)' : priority === 3 ? 'var(--p3-bg)' : 'var(--p4-bg)';
                                             const priorityBorder = priority === 1 ? 'var(--p1-border)' : priority === 2 ? 'var(--p2-border)' : priority === 3 ? 'var(--p3-border)' : 'var(--p4-border)';
+
+                                            if (isMobile) {
+                                                return (
+                                                    <div
+                                                        key={event.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onEventClick({ event });
+                                                        }}
+                                                        style={{
+                                                            width: '8px',
+                                                            height: '8px',
+                                                            borderRadius: '50%',
+                                                            background: priorityColor,
+                                                            border: `1px solid ${priorityBorder}`,
+                                                            cursor: 'pointer',
+                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                                        }}
+                                                        title={event.title}
+                                                    />
+                                                );
+                                            }
 
                                             return (
                                                 <div
@@ -201,6 +227,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
 const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet, activeMY, setActiveMY }) => {
     const { theme } = useTheme();
     const scrollContainerRef = useRef(null);
+    const isMobile = window.innerWidth <= 768;
 
     // Initial load: 3 months past, current month, 12 months future
     const [months, setMonths] = useState(() => {
@@ -330,7 +357,7 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet, 
             height: '100%',
             overflow: 'hidden',
             direction: 'rtl',
-            background: 'var(--bg-primary)'
+            background: 'var(--bg-secondary)'
         }}>
             {/* Weekly Days Header */}
             <div style={{
@@ -341,7 +368,7 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet, 
                 padding: '0.5rem 0',
                 zIndex: 5
             }}>
-                {HEB_DAY_HEADERS.map((lbl, idx) => (
+                {(isMobile ? ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"] : HEB_DAY_HEADERS).map((lbl, idx) => (
                     <span
                         key={idx}
                         style={{

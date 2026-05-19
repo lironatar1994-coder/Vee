@@ -155,7 +155,7 @@ const SortableTaskItem = ({
                         alignItems: 'flex-start',
                         background: isOverlay ? 'var(--bg-secondary)' : 'transparent',
                         cursor: (!isCompleted && depth === 0) ? 'grab' : 'pointer',
-                        padding: compact ? '4px 8px' : '8px 0',
+                        padding: compact ? '6px 8px' : '10px 0',
                         marginBottom: '0',
                         position: 'relative',
                         borderRadius: isOverlay ? 'var(--radius-md)' : '0',
@@ -194,8 +194,8 @@ const SortableTaskItem = ({
                                     <Check size={10} strokeWidth={3} />
                                 </div>
                             ) : (
-                                <div className="empty-circle-container" style={{ width: 19, height: 19, borderRadius: '50%', border: `1px solid ${priority === 4 ? 'rgba(120, 120, 131, 1)' : priorityColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Check className="hover-check" size={10} strokeWidth={3} style={{ color: priority === 4 ? '#8e8e93' : priorityColor, opacity: 0 }} />
+                                <div className="empty-circle-container" style={{ width: 19, height: 19, borderRadius: '50%', border: `1.5px solid ${priority === 4 ? 'var(--text-secondary)' : priorityColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Check className="hover-check" size={10} strokeWidth={3} style={{ color: priority === 4 ? 'var(--text-secondary)' : priorityColor, opacity: 0 }} />
                                 </div>
                             )}
                         </div>
