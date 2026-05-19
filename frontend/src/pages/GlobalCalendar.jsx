@@ -896,6 +896,33 @@ const GlobalCalendar = () => {
                                 setNewTaskContent('');
                             }}
                             onEventClick={handleEventClick}
+                            onMoreClick={({ dateStr, tasks, jsEvent }) => {
+                                const date = new Date(dateStr);
+                                const rect = jsEvent.currentTarget.getBoundingClientRect();
+                                const x = rect.left + rect.width / 2;
+                                const y = rect.top;
+                                const spawnBelow = rect.top < 350;
+                                const now = new Date();
+                                now.setHours(0, 0, 0, 0);
+                                const clickedDate = new Date(date);
+                                clickedDate.setHours(0, 0, 0, 0);
+                                const isOverdue = clickedDate < now;
+
+                                setDayPopoverData({
+                                    date: date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
+                                    tasks: tasks.map(ev => ev.extendedProps?.originalTask || {
+                                        id: ev.id,
+                                        content: ev.title,
+                                        time: ev.start && ev.start.includes('T') ? ev.start.split('T')[1].substring(0, 5) : null,
+                                        priority: ev.extendedProps?.priority || 4,
+                                        completed: ev.extendedProps?.completed ? 1 : 0
+                                    }),
+                                    position: { x, y, rectTop: rect.top, rectBottom: rect.bottom },
+                                    spawnBelow,
+                                    isOverdue
+                                });
+                                setShowDayPopover(true);
+                            }}
                             onDatesSet={(arg) => {
                                 const midDate = new Date((arg.start.getTime() + arg.end.getTime()) / 2);
                                 const y = midDate.getFullYear();

@@ -8,16 +8,34 @@ const HEB_DAY_HEADERS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'ח
 function buildCalRows(year, month) {
     const dim = new Date(year, month + 1, 0).getDate();
     const firstDow = new Date(year, month, 1).getDay(); // 0=Sun … 6=Sat
-    const cells = [];
-    for (let i = 0; i < firstDow; i++) cells.push(null);
-    for (let d = 1; d <= dim; d++) cells.push(d);
-    while (cells.length % 7 !== 0) cells.push(null);
+    
+    // We want exactly 5 rows = 35 cells.
+    const cells = Array(35).fill(null);
+    
+    for (let d = 1; d <= dim; d++) {
+        const targetIndex = firstDow + d - 1;
+        if (targetIndex < 35) {
+            cells[targetIndex] = d;
+        } else {
+            // It goes to the 6th row. Place it at the first available null cell at the beginning of the grid (under firstDow)
+            const firstNull = cells.indexOf(null);
+            if (firstNull !== -1 && firstNull < firstDow) {
+                cells[firstNull] = d;
+            } else {
+                // Fallback: merge into the 5th row's corresponding column
+                const fallbackCol = targetIndex % 7;
+                const row4Index = 28 + fallbackCol;
+                cells[row4Index] = d;
+            }
+        }
+    }
+    
     const rows = [];
     for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
     return rows;
 }
 
-const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) => {
+const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick, onMoreClick }) => {
     const today = new Date();
     const rows = buildCalRows(year, month);
 
@@ -31,7 +49,9 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
             data-year={year}
             style={{
                 borderBottom: '1px solid var(--border-color)',
-                background: 'var(--bg-secondary)'
+                background: 'var(--bg-secondary)',
+                scrollSnapAlign: 'start',
+                scrollSnapStop: 'always'
             }}
         >
             {/* Weeks Grid */}
@@ -50,7 +70,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                             gridTemplateColumns: 'repeat(7, 1fr)',
                             gap: '1px',
                             background: 'var(--border-color)',
-                            scrollSnapAlign: 'start'
+                            scrollSnapAlign: 'none'
                         }}
                     >
                         {row.map((d, ci) => {
@@ -60,7 +80,9 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                         key={ci}
                                         style={{
                                             background: 'var(--bg-secondary)',
-                                            minHeight: isMobile ? '70px' : '135px',
+                                            minHeight: isMobile ? '80px' : '135px',
+                                            height: isMobile ? '80px' : '135px',
+                                            maxHeight: isMobile ? '80px' : '135px',
                                             opacity: 0.3
                                         }}
                                     />
@@ -79,7 +101,9 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                     onClick={() => onDateClick({ dateStr: dateKey })}
                                     style={{
                                         background: isToday ? 'var(--bg-today-light, rgba(5, 133, 39, 0.03))' : 'var(--bg-secondary)',
-                                        minHeight: isMobile ? '70px' : '135px',
+                                        minHeight: isMobile ? '80px' : '135px',
+                                        height: isMobile ? '80px' : '135px',
+                                        maxHeight: isMobile ? '80px' : '135px',
                                         padding: '6px',
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -87,7 +111,8 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                         border: isToday ? '1px solid rgba(5, 133, 39, 0.2)' : 'none',
                                         position: 'relative',
                                         cursor: 'pointer',
-                                        transition: 'background 0.15s ease'
+                                        transition: 'background 0.15s ease',
+                                        overflow: 'hidden'
                                     }}
                                     onMouseEnter={e => {
                                         e.currentTarget.style.background = isToday ? 'var(--bg-today-hover, rgba(5, 133, 39, 0.05))' : 'var(--hover-bg)';
@@ -122,19 +147,23 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                     {/* Day Tasks List */}
                                     <div style={{
                                         display: 'flex',
-                                        flexDirection: isMobile ? 'row' : 'column',
-                                        flexWrap: isMobile ? 'wrap' : 'nowrap',
-                                        gap: isMobile ? '3px' : '4px',
+                                        flexDirection: 'column',
+                                        gap: '2px',
                                         overflow: 'hidden',
                                         flex: 1,
-                                        justifyContent: isMobile ? 'center' : 'flex-start',
-                                        alignItems: 'center'
+                                        justifyContent: 'flex-start',
+                                        alignItems: 'stretch',
+                                        width: '100%'
                                     }}>
-                                        {dayEvents.map(event => {
+                                        {dayEvents.slice(0, 3).map(event => {
                                             const priority = event.extendedProps?.priority || 4;
                                             const priorityColor = priority === 1 ? 'var(--p1-accent)' : priority === 2 ? 'var(--p2-accent)' : priority === 3 ? 'var(--p3-accent)' : 'var(--p4-accent)';
                                             const priorityBg = priority === 1 ? 'var(--p1-bg)' : priority === 2 ? 'var(--p2-bg)' : priority === 3 ? 'var(--p3-bg)' : 'var(--p4-bg)';
                                             const priorityBorder = priority === 1 ? 'var(--p1-border)' : priority === 2 ? 'var(--p2-border)' : priority === 3 ? 'var(--p3-border)' : 'var(--p4-border)';
+                                            const isCompleted = event.extendedProps?.completed || event.completed || event.originalTask?.completed;
+
+                                            const truncateLen = isMobile ? 6 : 14;
+                                            const displayTitle = event.title.length > truncateLen ? `${event.title.substring(0, truncateLen)}...` : event.title;
 
                                             if (isMobile) {
                                                 return (
@@ -145,16 +174,27 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                                             onEventClick({ event });
                                                         }}
                                                         style={{
-                                                            width: '8px',
-                                                            height: '8px',
-                                                            borderRadius: '50%',
-                                                            background: priorityColor,
+                                                            fontSize: '9px',
+                                                            fontWeight: 700,
+                                                            padding: '2px 4px',
+                                                            borderRadius: '3px',
+                                                            background: priorityBg,
                                                             border: `1px solid ${priorityBorder}`,
+                                                            color: priorityColor,
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
                                                             cursor: 'pointer',
-                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                                            width: '100%',
+                                                            textAlign: 'right',
+                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.01)',
+                                                            textDecoration: isCompleted ? 'line-through' : 'none',
+                                                            opacity: isCompleted ? 0.65 : 1
                                                         }}
                                                         title={event.title}
-                                                    />
+                                                    >
+                                                        {displayTitle}
+                                                    </div>
                                                 );
                                             }
 
@@ -199,7 +239,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                                         whiteSpace: 'nowrap',
                                                         flex: 1
                                                     }}>
-                                                        {event.title}
+                                                        {displayTitle}
                                                     </span>
                                                     {event.start.includes('T') && (
                                                         <span style={{
@@ -213,6 +253,45 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                                 </div>
                                             );
                                         })}
+
+                                        {dayEvents.length > 3 && (
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (onMoreClick) {
+                                                        onMoreClick({
+                                                            dateStr: dateKey,
+                                                            tasks: dayEvents.map(ev => ev.originalTask || ev),
+                                                            jsEvent: e
+                                                        });
+                                                    }
+                                                }}
+                                                style={{
+                                                    fontSize: isMobile ? '8px' : '10px',
+                                                    fontWeight: 700,
+                                                    color: 'var(--primary-color)',
+                                                    textAlign: 'center',
+                                                    cursor: 'pointer',
+                                                    padding: isMobile ? '2px' : '3px 6px',
+                                                    background: 'rgba(5, 133, 39, 0.05)',
+                                                    border: '1px dashed var(--primary-color)',
+                                                    borderRadius: '4px',
+                                                    transition: 'all 0.15s ease',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                                                }}
+                                                onMouseEnter={e => {
+                                                    e.currentTarget.style.background = 'rgba(5, 133, 39, 0.1)';
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.currentTarget.style.background = 'rgba(5, 133, 39, 0.05)';
+                                                }}
+                                            >
+                                                + {dayEvents.length - 3} עוד
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -224,7 +303,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
     );
 };
 
-const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet, activeMY, setActiveMY }) => {
+const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet, activeMY, setActiveMY, onMoreClick }) => {
     const { theme } = useTheme();
     const scrollContainerRef = useRef(null);
     const isMobile = window.innerWidth <= 768;
@@ -403,6 +482,7 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet, 
                         eventsByDate={eventsByDate}
                         onDateClick={onDateClick}
                         onEventClick={onEventClick}
+                        onMoreClick={onMoreClick}
                     />
                 ))}
             </div>
