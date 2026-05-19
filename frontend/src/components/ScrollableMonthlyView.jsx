@@ -24,61 +24,44 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
     const isTodayFn = (d) => d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
     return (
-        <div 
-            className="month-block" 
-            data-month={month} 
+        <div
+            className="month-block"
+            data-month={month}
             data-year={year}
-            style={{ 
-                padding: '1rem 0',
+            style={{
                 borderBottom: '1px solid var(--border-color)',
                 background: 'var(--bg-primary)'
             }}
         >
-            {/* Month Title */}
-            <div style={{ 
-                marginBottom: '1rem', 
-                textAlign: 'right', 
-                paddingRight: '1.5rem' 
-            }}>
-                <span style={{ 
-                    fontWeight: 850, 
-                    fontSize: '1.4rem', 
-                    color: 'var(--text-primary)',
-                    letterSpacing: '-0.02em'
-                }}>
-                    {hebrewMonthNames[month]} {year}
-                </span>
-            </div>
-
             {/* Weeks Grid */}
-            <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
                 gap: '1px',
                 background: 'var(--border-color)',
-                borderTop: '1px solid var(--border-color)',
                 borderBottom: '1px solid var(--border-color)'
             }}>
                 {rows.map((row, ri) => (
-                    <div 
-                        key={ri} 
-                        style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(7, 1fr)', 
+                    <div
+                        key={ri}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(7, 1fr)',
                             gap: '1px',
-                            background: 'var(--bg-primary)'
+                            background: 'var(--bg-primary)',
+                            scrollSnapAlign: 'start'
                         }}
                     >
                         {row.map((d, ci) => {
                             if (!d) {
                                 return (
-                                    <div 
-                                        key={ci} 
-                                        style={{ 
-                                            background: 'var(--bg-secondary)', 
+                                    <div
+                                        key={ci}
+                                        style={{
+                                            background: 'var(--bg-secondary)',
                                             minHeight: '135px',
-                                            opacity: 0.3 
-                                        }} 
+                                            opacity: 0.3
+                                        }}
                                     />
                                 );
                             }
@@ -90,7 +73,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                             const isToday = isTodayFn(d);
 
                             return (
-                                <div 
+                                <div
                                     key={ci}
                                     onClick={() => onDateClick({ dateStr: dateKey })}
                                     style={{
@@ -113,10 +96,10 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                     }}
                                 >
                                     {/* Day Header */}
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        justifyContent: 'space-between', 
-                                        alignItems: 'center' 
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
                                     }}>
                                         <span style={{
                                             fontSize: '0.85rem',
@@ -136,10 +119,10 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                     </div>
 
                                     {/* Day Tasks List */}
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        flexDirection: 'column', 
-                                        gap: '4px', 
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '4px',
                                         overflow: 'hidden',
                                         flex: 1
                                     }}>
@@ -184,17 +167,17 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
                                                         e.currentTarget.style.filter = 'none';
                                                     }}
                                                 >
-                                                    <span style={{ 
-                                                        overflow: 'hidden', 
-                                                        textOverflow: 'ellipsis', 
+                                                    <span style={{
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
                                                         whiteSpace: 'nowrap',
-                                                        flex: 1 
+                                                        flex: 1
                                                     }}>
                                                         {event.title}
                                                     </span>
                                                     {event.start.includes('T') && (
-                                                        <span style={{ 
-                                                            fontSize: '9px', 
+                                                        <span style={{
+                                                            fontSize: '9px',
                                                             opacity: 0.8,
                                                             direction: 'ltr'
                                                         }}>
@@ -215,7 +198,7 @@ const MonthBlock = ({ year, month, eventsByDate, onDateClick, onEventClick }) =>
     );
 };
 
-const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet }) => {
+const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet, activeMY, setActiveMY }) => {
     const { theme } = useTheme();
     const scrollContainerRef = useRef(null);
 
@@ -230,11 +213,6 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet }
         return initial;
     });
 
-    const [activeMY, setActiveMY] = useState(() => {
-        const today = new Date();
-        return { month: today.getMonth(), year: today.getFullYear() };
-    });
-
     // Hash events by date for fast O(1) day-cell lookups
     const eventsByDate = useMemo(() => {
         const hash = {};
@@ -245,7 +223,7 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet }
                 hash[dateStr].push(event);
             }
         });
-        
+
         // Sort each day's events by time (all-day tasks first, then chronological)
         Object.keys(hash).forEach(dateStr => {
             hash[dateStr].sort((a, b) => {
@@ -288,16 +266,17 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet }
         // Active header calculations
         const children = e.target.querySelectorAll('.month-block');
         const containerRect = e.target.getBoundingClientRect();
-        
+
         for (const child of children) {
             const rect = child.getBoundingClientRect();
             // If the block is mostly visible at the top area of the scroll container
             if (rect.bottom > containerRect.top + 80) {
                 const m = parseInt(child.dataset.month);
                 const y = parseInt(child.dataset.year);
-                if (m !== activeMY.month || y !== activeMY.year) {
+                if (activeMY && (m !== activeMY.month || y !== activeMY.year)) {
+                    lastActiveMY.current = { month: m, year: y };
                     setActiveMY({ month: m, year: y });
-                    
+
                     // Trigger parent callback to fetch tasks if range shifted
                     if (onDatesSet) {
                         const start = new Date(y, m, 1);
@@ -317,31 +296,32 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet }
             `[data-month="${today.getMonth()}"][data-year="${today.getFullYear()}"]`
         );
         if (activeBlock) {
-            // Scroll to the active block
             activeBlock.scrollIntoView({ block: 'start' });
         }
     }, []);
 
-    const scrollToMonth = (direction) => {
-        const targetDate = new Date(activeMY.year, activeMY.month + direction, 1);
-        
-        // Ensure month is loaded
-        const exists = months.some(m => m.month === targetDate.getMonth() && m.year === targetDate.getFullYear());
-        if (!exists) {
-            if (direction > 0) {
+    // Listen to external activeMY changes (e.g. from parent navigation buttons)
+    const lastActiveMY = useRef(activeMY);
+    useEffect(() => {
+        if (activeMY && (activeMY.month !== lastActiveMY.current.month || activeMY.year !== lastActiveMY.current.year)) {
+            lastActiveMY.current = activeMY;
+
+            // Check if month is loaded
+            const exists = months.some(m => m.month === activeMY.month && m.year === activeMY.year);
+            if (!exists) {
                 loadMoreFuture();
             }
-        }
 
-        setTimeout(() => {
-            const activeBlock = scrollContainerRef.current?.querySelector(
-                `[data-month="${targetDate.getMonth()}"][data-year="${targetDate.getFullYear()}"]`
-            );
-            if (activeBlock) {
-                activeBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }, 50);
-    };
+            setTimeout(() => {
+                const activeBlock = scrollContainerRef.current?.querySelector(
+                    `[data-month="${activeMY.month}"][data-year="${activeMY.year}"]`
+                );
+                if (activeBlock) {
+                    activeBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 50);
+        }
+    }, [activeMY, months]);
 
     return (
         <div style={{
@@ -352,87 +332,22 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet }
             direction: 'rtl',
             background: 'var(--bg-primary)'
         }}>
-            {/* Sticky Floating Month Header */}
-            <div style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.8rem 1.5rem',
-                background: 'var(--bg-secondary)',
-                borderBottom: '1px solid var(--border-color)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <CalendarIcon size={18} style={{ color: 'var(--primary-color)' }} />
-                    <span style={{ 
-                        fontWeight: 800, 
-                        fontSize: '1.1rem', 
-                        color: 'var(--text-primary)' 
-                    }}>
-                        {hebrewMonthNames[activeMY.month]} {activeMY.year}
-                    </span>
-                </div>
-                
-                {/* Navigation Arrows */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <button 
-                        onClick={() => scrollToMonth(1)} // next month
-                        className="btn-icon-soft"
-                        style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-                        title="החודש הבא"
-                    >
-                        <ChevronRight size={18} />
-                    </button>
-                    <button 
-                        onClick={() => {
-                            const today = new Date();
-                            const activeBlock = scrollContainerRef.current?.querySelector(
-                                `[data-month="${today.getMonth()}"][data-year="${today.getFullYear()}"]`
-                            );
-                            if (activeBlock) activeBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }} 
-                        className="btn-icon-soft"
-                        style={{ 
-                            padding: '0.3rem 0.8rem', 
-                            borderRadius: '20px',
-                            fontSize: '0.85rem',
-                            fontWeight: 700
-                        }}
-                    >
-                        היום
-                    </button>
-                    <button 
-                        onClick={() => scrollToMonth(-1)} // prev month
-                        className="btn-icon-soft"
-                        style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-                        title="החודש הקודם"
-                    >
-                        <ChevronLeft size={18} />
-                    </button>
-                </div>
-            </div>
-
             {/* Weekly Days Header */}
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, 1fr)',
                 textAlign: 'center',
                 background: 'var(--bg-secondary)',
-                borderBottom: '1px solid var(--border-color)',
                 padding: '0.5rem 0',
                 zIndex: 5
             }}>
                 {HEB_DAY_HEADERS.map((lbl, idx) => (
-                    <span 
-                        key={idx} 
-                        style={{ 
-                            fontSize: '0.8rem', 
-                            color: 'var(--text-secondary)', 
-                            fontWeight: 800 
+                    <span
+                        key={idx}
+                        style={{
+                            fontSize: '0.8rem',
+                            color: 'var(--text-secondary)',
+                            fontWeight: 800
                         }}
                     >
                         {lbl}
@@ -441,18 +356,20 @@ const ScrollableMonthlyView = ({ events, onDateClick, onEventClick, onDatesSet }
             </div>
 
             {/* Ever Scrollable Month Blocks */}
-            <div 
+            <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
                 style={{
                     overflowY: 'auto',
                     flex: 1,
                     scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
+                    msOverflowStyle: 'none',
+                    scrollSnapType: 'y mandatory',
+                    scrollBehavior: 'smooth'
                 }}
             >
                 {months.map((m, idx) => (
-                    <MonthBlock 
+                    <MonthBlock
                         key={`${m.year}-${m.month}`}
                         year={m.year}
                         month={m.month}
