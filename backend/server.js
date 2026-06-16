@@ -99,17 +99,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// --- Mount Routers ---
-app.use('/api/auth', authRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/google', googleRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/projects', projectsRouter);
-app.use('/api/friends', friendsRouter);
-app.use('/api/invitations', invitationsRouter);
-app.use('/api', checklistsRouter);
-app.use('/api', miscRouter);
-
 // --- Health Check ---
 app.get('/api/health', (req, res) => {
     try {
@@ -132,6 +121,17 @@ app.get('/api/health', (req, res) => {
         res.status(500).json({ status: 'error', database: 'disconnected' });
     }
 });
+
+// --- Mount Routers ---
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/google', googleRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/projects', projectsRouter);
+app.use('/api/friends', friendsRouter);
+app.use('/api/invitations', invitationsRouter);
+app.use('/api', checklistsRouter);
+app.use('/api', miscRouter);
 
 // --- Cron Job (Reminders) ---
 cron.schedule('* * * * *', async () => {

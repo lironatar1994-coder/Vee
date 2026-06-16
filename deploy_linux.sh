@@ -52,7 +52,7 @@ log "Git Sync COMPLETE." "SUCCESS"
 log "Killing all existing Node/PM2 processes on ports 3001 and 5000..."
 sudo fuser -k 3001/tcp > /dev/null 2>&1 || true
 sudo fuser -k 5000/tcp > /dev/null 2>&1 || true
-pm2 delete all > /dev/null 2>&1 || true
+pm2 delete "$APP_NAME" "$WORKER_APP_NAME" > /dev/null 2>&1 || true
 log "Cleanup COMPLETE." "SUCCESS"
 
 # 4. Frontend Setup
@@ -102,7 +102,7 @@ if curl -s -I http://localhost:3001/api/health | grep -q "200 OK"; then
 else
     log "HEALTH CHECK FAILED (Port 3001 /api/health)" "ERROR"
     log "Checking log for clue..." "WARN"
-    pm2 logs "$APP_NAME" --lines 5
+    tail -n 20 ~/.pm2/logs/"$APP_NAME"-error.log || true
 fi
 
 log "DEPLOYMENT COMPLETE V3" "SUCCESS"
