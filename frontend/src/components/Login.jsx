@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { BookOpen, Eye, EyeOff, ArrowLeft, Sparkles, MailOpen } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Sparkles, MailOpen } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import Logo from '../assets/Logo.png';
 
@@ -10,8 +10,9 @@ export default function Login() {
     const { login } = useUser();
     const [searchParams] = useSearchParams();
     const inviteToken = searchParams.get('invite');
+    const requestedMode = searchParams.get('mode');
 
-    const [mode, setMode] = useState(inviteToken ? 'register' : 'login'); // Default to register if invited
+    const [mode, setMode] = useState(inviteToken || requestedMode === 'register' ? 'register' : 'login'); // Default to register if invited
     const [identifier, setIdentifier] = useState(searchParams.get('email') || ''); // pre-fill email if provided
     const [password, setPassword] = useState('');
     const [forgotSuccess, setForgotSuccess] = useState(false);

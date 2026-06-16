@@ -1,0 +1,48 @@
+.app-redirect-loader {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  background:
+    linear-gradient(135deg, rgba(10, 116, 218, 0.08), transparent 34%),
+    linear-gradient(315deg, rgba(16, 185, 129, 0.08), transparent 34%),
+    var(--app-bg);
+  color: var(--text-primary);
+}
+
+.app-redirect-loader__mark {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+}
+
+.app-redirect-loader__mark img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 22px rgba(10, 116, 218, 0.16));
+}
+
+.app-redirect-loader__mark span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 3px solid rgba(10, 116, 218, 0.16);
+  border-top-color: var(--primary-color);
+  animation: vee-loader-spin 0.82s linear infinite;
+}
+
+.app-redirect-loader p {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+@keyframes vee-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
