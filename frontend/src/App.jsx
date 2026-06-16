@@ -1,10 +1,12 @@
-import { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useUser } from './context/UserContext';
+import PropTypes from 'prop-types';
 import Layout from './components/Layout';
 import Login from './components/Login';
+import { Toaster } from 'sonner';
+import { Loader2 } from 'lucide-react';
 import DynamicTitle from './components/DynamicTitle';
-import AppRedirectLoader from './components/AppRedirectLoader';
 
 // Lazy-loaded Admin imports
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -24,7 +26,6 @@ const Inbox = lazy(() => import('./pages/Inbox'));
 const Today = lazy(() => import('./pages/Today'));
 const History = lazy(() => import('./pages/History'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const Landing = lazy(() => import('./pages/Landing'));
 
 import OnboardingWizard from './components/OnboardingWizard';
 
@@ -75,22 +76,9 @@ function App() {
           <Route path="logs" element={<AdminLogs />} />
         </Route>
 
-        {/* Public landing/auth routes */}
-        <Route
-          path="/"
-          element={
-            user
-              ? <AppRedirectLoader to="/inbox" />
-              : <Suspense fallback={<></>}><Landing /></Suspense>
-          }
-        />
-        <Route
-          path="/login"
-          element={user ? <AppRedirectLoader to="/inbox" /> : <Login />}
-        />
-
         {/* Normal App Routes */}
-        <Route element={user ? <Layout /> : <Navigate to="/" replace />}>
+        <Route path="/" element={user ? <Layout /> : <Login />}>
+          <Route index element={<Navigate to="/inbox" replace />} />
           <Route path="projects" element={<Home />} />
           <Route path="project/:projectId" element={<Project />} />
           <Route path="calendar" element={<GlobalCalendar />} />
@@ -98,9 +86,8 @@ function App() {
           <Route path="today" element={<Today />} />
           <Route path="history" element={<History />} />
           <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
-
-        <Route path="*" element={<Navigate to={user ? "/inbox" : "/"} replace />} />
       </Routes>
     </>
   );
